@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6fb">
+  <meta name="description" content="Jelajahi informasi perlombaan, cek tenggat, dan buka pendaftaran lewat katalog CSSMoRA UNAIR.">
+  <title>Jelajah Lomba — CSSMoRA UNAIR</title>
+  <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#katalog">Langsung ke katalog</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="./" aria-label="Beranda CSSMoRA Jelajah Lomba">
+        <img class="brand-logo" src="./assets/cssmora-logo.png" alt="" width="58" height="58">
+        <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong><small>Jelajah Lomba</small></span>
+      </a>
+      <nav aria-label="Navigasi utama"><a href="#katalog">Jelajah lomba</a><a href="#cara-pakai">Cara pakai</a></nav>
+      <button class="studio-launch" id="studio-open" type="button" aria-controls="studio-panel" aria-expanded="false"><span aria-hidden="true">◉</span> Atur desain</button>
+      <a class="header-action" href="#katalog">Temukan lomba <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="live-dot"></span> CSSMoRA UNAIR <span class="eyebrow-line"></span> COMPETITION HUB</div>
+          <h1>Next lomba?<br><em>Temuin</em> di sini.</h1>
+          <p>Scroll posternya, pilih yang cocok, terus cek semua detail sebelum daftar. Peluang bagus dimulai dari satu klik.</p>
+          <a class="hero-cta" href="#katalog">Eksplor lomba <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="hero-glow"></div>
+          <div class="hero-ticket ticket-back"><span>CREATE</span><strong>your<br>next move.</strong><b>✳</b></div>
+          <div class="hero-ticket ticket-front"><div class="ticket-top"><span>CSSMoRA / 26—27</span><span>↗</span></div><div class="ticket-spark">✳</div><div class="ticket-copy"><small>EXPLORE WHAT'S NEXT</small><strong>Berani<br>coba<span>?</span></strong></div><div class="ticket-bottom"><span>IDE → AKSI → PRESTASI</span><span>01 / 03</span></div></div>
+          <div class="hero-bubble bubble-top"><span>✦</span> Open call</div>
+          <div class="hero-bubble bubble-bottom">#AyoIkut <span>↗</span></div>
+        </div>
+      </div>
+      <div class="hero-footer wrap"><span>BUAT KAMU YANG MAU COBA HAL BARU</span><span>JELAJAHI POSTERNYA <b>↓</b></span></div>
+    </section>
+
+    <section class="catalog-section" id="katalog" aria-labelledby="catalog-title">
+      <div class="wrap">
+        <div class="section-intro"><div><span class="overline">EXPLORE / LOMBA</span><h2 id="catalog-title">Lagi cari lomba?<br><em>Mulai dari sini.</em></h2></div><p>Geser pilihan, cari bidangmu, dan lihat mana yang masih bisa didaftar. Semuanya ada di satu tempat.</p></div>
+        <div class="demo-note"><span class="note-icon" aria-hidden="true">i</span><p><strong>Pratinjau sistem.</strong> Kartu di bawah adalah contoh tampilan, bukan pengumuman lomba resmi. Poster, tanggal, dan tautan asli akan dimasukkan saat kurasi lomba dimulai.</p></div>
+        <div class="quick-filters" aria-label="Pilihan cepat bidang lomba"><button type="button" class="quick-filter active" data-category="all" aria-pressed="true">Semua ✳</button><button type="button" class="quick-filter" data-category="Esai & Riset" aria-pressed="false">Esai & riset</button><button type="button" class="quick-filter" data-category="Bisnis & Inovasi" aria-pressed="false">Bisnis & inovasi</button><button type="button" class="quick-filter" data-category="Desain & Media" aria-pressed="false">Desain & media</button><button type="button" class="quick-filter" data-category="Debat & Public Speaking" aria-pressed="false">Debat & public speaking</button></div>
+        <div class="toolbar" role="search">
+          <label class="search-box"><span class="sr-only">Cari nama atau penyelenggara lomba</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="Cari nama lomba atau penyelenggara…" autocomplete="off"></label>
+          <label class="select-wrap"><span class="sr-only">Filter bidang</span><select id="category"><option value="all">Semua bidang</option><option value="Esai & Riset">Esai & Riset</option><option value="Bisnis & Inovasi">Bisnis & Inovasi</option><option value="Desain & Media">Desain & Media</option><option value="Debat & Public Speaking">Debat & Public Speaking</option></select></label>
+          <label class="select-wrap"><span class="sr-only">Filter status</span><select id="status"><option value="all">Semua status</option><option value="open">Masih dibuka</option><option value="closed">Sudah ditutup</option></select></label>
+        </div>
+        <div class="results-line"><span id="result-count" aria-live="polite"></span><span>URUTAN: TENGGAT TERDEKAT</span></div>
+        <div class="competition-grid" id="competition-grid"></div>
+        <div class="empty-state" id="empty-state" hidden><span>↗</span><h3>Belum ada yang cocok.</h3><p>Coba kata kunci atau filter lain untuk menemukan lomba yang kamu cari.</p><button id="reset-filter" type="button">Atur ulang filter</button></div>
+      </div>
+    </section>
+
+    <section class="how" id="cara-pakai" aria-labelledby="how-title"><div class="wrap how-inner"><div><span class="overline">GAMPANG BANGET</span><h2 id="how-title">Dari lihat poster<br><em>jadi daftar.</em></h2></div><div class="how-steps"><div><span>01</span><strong>Pilih yang menarik</strong><p>Jelajahi poster berdasarkan bidang dan status pendaftaran.</p></div><div><span>02</span><strong>Cek infonya</strong><p>Lihat penyelenggara, biaya, dan tenggat dalam satu klik.</p></div><div><span>03</span><strong>Lanjut daftar</strong><p>Masuk ke tautan resmi penyelenggara setelah informasinya tersedia.</p></div></div></div></section>
+  </main>
+  <footer><div class="wrap footer-inner"><div><strong>CSSMoRA <i>UNAIR</i><span>.</span></strong><p>Ruang untuk bertemu kesempatan dan bertumbuh bersama.</p></div><div class="footer-partners"><img src="./assets/kemenag-lpdp-logo.png" alt="Kementerian Agama dan LPDP" width="228" height="80"><span>© 2026/2027 · DIBUAT UNTUK LANGKAH BERIKUTNYA</span></div></div></footer>
+
+  <dialog id="detail-dialog" aria-labelledby="detail-title"><div class="dialog-shell"><button class="dialog-close" id="close-dialog" type="button" aria-label="Tutup detail lomba">×</button><div id="detail-content"></div></div></dialog>
+  <div class="studio-scrim" id="studio-scrim" hidden></div>
+  <aside class="studio-panel" id="studio-panel" role="dialog" aria-labelledby="studio-title" aria-modal="false" hidden>
+    <div class="studio-header"><div><span class="studio-kicker">CSSMoRA / DESIGN STUDIO</span><h2 id="studio-title">Bikin jadi <em>punyamu.</em></h2><p>Ubah warna, lihat hasilnya langsung di halaman ini.</p></div><button type="button" id="studio-close" aria-label="Tutup studio desain">×</button></div>
+    <div class="studio-scroll">
+      <section class="studio-group" aria-labelledby="preset-heading"><div class="studio-group-heading"><h3 id="preset-heading">Mulai dari palet</h3><span>01 / 02</span></div><div class="studio-presets" id="studio-presets"><button type="button" data-preset="aurora" aria-pressed="true"><span class="preset-dots"><i style="background:#544bd5"></i><i style="background:#ec5a88"></i><i style="background:#c6f3ee"></i></span><strong>Aurora</strong><small>Palet utama</small></button><button type="button" data-preset="ocean" aria-pressed="false"><span class="preset-dots"><i style="background:#1267dc"></i><i style="background:#ff9f5a"></i><i style="background:#aee9f5"></i></span><strong>Ocean</strong><small>Cerah & tenang</small></button><button type="button" data-preset="berry" aria-pressed="false"><span class="preset-dots"><i style="background:#993eb8"></i><i style="background:#f26e8f"></i><i style="background:#f8dff0"></i></span><strong>Berry</strong><small>Berani & playful</small></button><button type="button" data-preset="forest" aria-pressed="false"><span class="preset-dots"><i style="background:#26715c"></i><i style="background:#e88054"></i><i style="background:#caecda"></i></span><strong>Forest</strong><small>Segar & hangat</small></button></div></section>
+      <section class="studio-group" aria-labelledby="color-heading"><div class="studio-group-heading"><h3 id="color-heading">Atau racik sendiri</h3><span>02 / 02</span></div><div class="studio-colors"><label for="color-brand"><span><strong>Warna utama</strong><small>Tombol, filter, aksen judul</small></span><span class="color-well"><input id="color-brand" type="color" value="#544bd5" data-theme="brand"><output for="color-brand" id="value-brand">#544BD5</output></span></label><label for="color-accent"><span><strong>Warna aksen</strong><small>Detail kecil dan penanda</small></span><span class="color-well"><input id="color-accent" type="color" value="#ec5a88" data-theme="accent"><output for="color-accent" id="value-accent">#EC5A88</output></span></label><label for="color-hero-a"><span><strong>Hero kiri</strong><small>Awal gradasi sampul</small></span><span class="color-well"><input id="color-hero-a" type="color" value="#e7e6ff" data-theme="heroA"><output for="color-hero-a" id="value-hero-a">#E7E6FF</output></span></label><label for="color-hero-b"><span><strong>Hero kanan</strong><small>Akhir gradasi sampul</small></span><span class="color-well"><input id="color-hero-b" type="color" value="#d9d7ff" data-theme="heroB"><output for="color-hero-b" id="value-hero-b">#D9D7FF</output></span></label><label for="color-bg"><span><strong>Latar halaman</strong><small>Di belakang kartu lomba</small></span><span class="color-well"><input id="color-bg" type="color" value="#f5f6fb" data-theme="bg"><output for="color-bg" id="value-bg">#F5F6FB</output></span></label></div></section>
+      <div class="studio-note"><strong>Pratinjau personal</strong><p>Pilihan warna tersimpan di browser ini. Salin tautan tema untuk membagikan tampilannya. Mengubah desain bawaan semua pengunjung perlu pembaruan situs.</p></div>
+    </div>
+    <div class="studio-footer"><button type="button" id="studio-reset">Kembali ke awal</button><button type="button" id="studio-share">Salin tautan tema ↗</button><label class="studio-share-fallback" id="studio-share-fallback" hidden>Salin tautan ini<input id="studio-share-url" type="text" readonly aria-label="Tautan tema yang bisa disalin"></label><p id="studio-feedback" role="status" aria-live="polite"></p></div>
+  </aside>
+</body>
+</html>
