@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#087443">
   <meta name="robots" content="noindex, nofollow">
-  <title>Absensi Kegiatan · CSSMoRA UNAIR</title>
+  <title>Absensi Anggota · CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./absen.css?v=20261021-code1">
+  <link rel="stylesheet" href="./absen.css?v=20261021-code30">
   <script src="./supabase-config.js" defer></script>
-  <script src="./absen.js?v=20261021-code1" defer></script>
+  <script src="./absen.js?v=20261021-code30" defer></script>
 </head>
 <body class="checkin-page">
   <header class="site-header"><div class="wrap header-inner">
@@ -18,25 +18,29 @@
       <img class="brand-logo" src="./assets/cssmora-logo.png" alt="" width="52" height="52">
       <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong></span>
     </a>
-    <span class="checkin-label">ABSENSI KEGIATAN</span>
+    <span class="checkin-label">ABSENSI ANGGOTA</span>
   </div></header>
   <main class="checkin-wrap">
-    <section class="checkin-card">
+    <section class="checkin-card" aria-labelledby="checkin-title">
       <span class="admin-kicker">CSSMoRA UNAIR</span>
-      <h1 id="event-title">Memuat kegiatan…</h1>
+      <h1 id="checkin-title">Absensi anggota</h1>
       <p id="event-meta" class="checkin-meta"></p>
+      <label id="event-picker-label" for="event-select" hidden>Kegiatan aktif</label>
+      <select id="event-select" hidden aria-label="Pilih kegiatan aktif"></select>
+      <p class="form-message" id="checkin-message" role="status" aria-live="polite">Memeriksa kegiatan aktif…</p>
       <form id="checkin-form" hidden>
-        <label for="checkin-nia">NIA</label>
-        <input id="checkin-nia" name="nia" maxlength="40" autocomplete="off" required>
-        <label for="checkin-name">Nama lengkap sesuai data anggota</label>
-        <input id="checkin-name" name="full_name" maxlength="140" autocomplete="name" required>
-        <label for="checkin-code">Kode check-in (8 digit)</label>
-        <input id="checkin-code" name="checkin_code" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="one-time-code" required aria-describedby="checkin-code-hint">
-        <small class="checkin-code-hint" id="checkin-code-hint">Masukkan kode terbaru yang ditampilkan pengurus di lokasi kegiatan.</small>
+        <label for="checkin-cohort">Angkatan</label>
+        <select id="checkin-cohort" name="cohort" required disabled><option value="">Pilih angkatan</option></select>
+        <label for="checkin-program">Program studi</label>
+        <select id="checkin-program" name="study_program" required disabled><option value="">Pilih prodi</option></select>
+        <label for="checkin-member">Nama</label>
+        <select id="checkin-member" name="member_id" required disabled><option value="">Pilih nama</option></select>
+        <label for="checkin-code">Kode absensi · 4 digit</label>
+        <input id="checkin-code" name="checkin_code" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required aria-describedby="checkin-code-hint">
+        <small class="checkin-code-hint" id="checkin-code-hint">Kode ditampilkan pengurus di lokasi dan berganti setiap 30 detik.</small>
         <button class="admin-button" id="checkin-submit" type="submit">Catat kehadiran <span aria-hidden="true">↗</span></button>
       </form>
-      <p class="form-message" id="checkin-message" role="status" aria-live="polite"></p>
-      <p class="checkin-footnote">Tautan ini hanya aktif pada tanggal kegiatan. Jika data tidak cocok, hubungi sekretaris.</p>
+      <p class="checkin-footnote">Tanpa unggah foto. Absensi tersedia saat pengurus membuka kegiatan hari ini.</p>
     </section>
   </main>
 </body>

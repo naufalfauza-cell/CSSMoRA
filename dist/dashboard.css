@@ -407,3 +407,5 @@
 /* Increase text contrast with a localized fade at the bottom of each agenda photo */
 .agenda-videotron .event-content{background:linear-gradient(180deg,rgba(0,0,0,0) 43%,rgba(0,0,0,.16) 57%,rgba(0,0,0,.68) 82%,rgba(0,0,0,.92) 100%)}
 .agenda-videotron .event-date,.agenda-videotron .event-when,.agenda-videotron .event-body strong,.agenda-videotron .event-body p{text-shadow:0 1px 4px rgba(0,0,0,.8),0 2px 12px rgba(0,0,0,.55)}
+
+.attendance-entry[hidden]{display:none!important}

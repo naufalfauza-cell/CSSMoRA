@@ -878,7 +878,7 @@ async function loadAttendanceCode(eventId){
   attendanceCodeEventId=eventId;
   const panel=$('#attendance-code-panel');
   panel.hidden=false;
-  $('#attendance-code-value').textContent='••••••••';
+  $('#attendance-code-value').textContent='••••';
   $('#attendance-code-countdown').textContent='Memuat kode…';
   try{
     const result=await requestAttendanceCode(eventId);

@@ -17,3 +17,10 @@
 
 .checkin-code-hint{display:block;margin:-3px 0 4px;color:var(--muted);font-size:.76rem;line-height:1.45}
 #checkin-code{font-variant-numeric:tabular-nums;letter-spacing:.12em}
+
+#event-select{width:100%;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+#event-picker-label{display:block;margin:10px 0 7px;font-size:.82rem;font-weight:800}
+.checkin-card select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+.checkin-card select:disabled{background:#f5f7f4;color:#87948a}
+.checkin-card select:focus,#event-select:focus{outline:2px solid var(--green);outline-offset:1px}
+#checkin-code{font-variant-numeric:tabular-nums;letter-spacing:.22em}
