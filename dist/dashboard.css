@@ -11,3 +11,101 @@
 @media(max-width:760px){.campus-stage{height:auto;min-height:100svh;overflow:hidden;padding:82px 14px 18px;background-position:50% 46%}.brand-chip{top:12px;left:14px;padding:5px 11px 5px 5px;font-size:10px}.brand-chip img{width:34px;height:34px}.agenda-videotron{position:relative;left:auto;top:auto;width:min(100%,440px);margin:4px auto 15px;transform:none}.videotron-screen{min-height:205px}.sign-pillar{position:relative;top:auto;right:auto;width:min(100%,440px);height:auto;min-height:0;margin:0 auto;padding:8px;background:#d7d5d1;border-radius:4px}.sign-board{height:auto;min-height:0;padding:11px;border-width:5px}.sign-header{padding-bottom:9px}.sign-nav{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;padding:6px 0}.sign-link{min-height:48px;grid-template-columns:19px 1fr 12px;padding:6px 2px}.sign-copy strong{font-size:9px}.sign-footer{padding-top:7px}.scene-caption{position:relative;left:auto;right:auto;bottom:auto;width:min(100%,440px);margin:15px auto 0;font-size:6px}.screen-caption{right:7px}.info-dialog{padding:24px}}
 @media(max-width:390px){.campus-stage{padding-left:10px;padding-right:10px}.sign-board{padding:8px}.sign-nav{gap:0 6px}.sign-link{min-height:45px;grid-template-columns:17px 1fr 10px;gap:5px}.sign-number,.sign-copy small{font-size:5px}.sign-copy strong{font-size:8px}.scene-caption span:last-child{font-size:5px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+/* Softer campus-stage proportions and grounded videotron */
+@media (min-width:761px){
+  .campus-stage{
+    background-size:cover,cover,max(104vw,156vh) auto;
+    background-position:center,center,center bottom;
+  }
+  .agenda-videotron{
+    left:4.6%;
+    top:27%;
+    width:clamp(380px,31vw,540px);
+    padding:10px 10px 22px;
+    border-radius:16px;
+    box-shadow:0 25px 40px #06140c85,0 7px 0 #090e0c;
+    transform:perspective(1200px) rotateY(3.2deg) rotateZ(-.45deg);
+  }
+  .agenda-videotron::before{
+    content:"";
+    position:absolute;
+    z-index:-1;
+    left:50%;
+    top:calc(100% - 4px);
+    width:22px;
+    height:19vh;
+    transform:translateX(-50%);
+    background:linear-gradient(90deg,#242a26 0%,#888b80 28%,#c6c8bb 52%,#686d63 78%,#1b211d 100%);
+    box-shadow:4px 8px 14px #07150d58;
+  }
+  .agenda-videotron::after{
+    content:"";
+    position:absolute;
+    z-index:-1;
+    left:50%;
+    top:calc(100% + 19vh - 8px);
+    width:86px;
+    height:12px;
+    transform:translateX(-50%);
+    border-radius:50%;
+    background:linear-gradient(180deg,#b9bcb0,#343a34);
+    box-shadow:0 7px 12px #07150d69;
+  }
+  .videotron-bezel{
+    padding:8px;
+    border-radius:9px;
+    background:linear-gradient(145deg,#0c120f,#050907 70%,#202522);
+  }
+  .videotron-screen{
+    min-height:clamp(230px,25vh,285px);
+    padding:15px 18px 13px;
+    border-radius:5px;
+    box-shadow:inset 0 0 22px #06180f45,0 0 0 1px #ffffff1c;
+  }
+  .screen-header{padding-bottom:11px}
+  .screen-brand{font-size:10px}
+  .screen-status{font-size:7px}
+  .screen-main{padding:19px 0 16px}
+  .screen-kicker{font-size:8px}
+  .event-empty{border-radius:11px;padding:11px 13px}
+  .event-empty strong{font-size:10px}
+  .event-empty p{font-size:8px}
+  .screen-footer{font-size:7px}
+  .screen-caption{
+    right:22px;
+    bottom:5px;
+    padding:4px 8px;
+    border-radius:0 0 5px 5px;
+    background:#111714;
+    font-size:6px;
+    letter-spacing:.1em;
+  }
+  .sign-pillar{
+    top:9.5%;
+    right:6.2%;
+    width:clamp(240px,18vw,330px);
+    height:80%;
+    min-height:560px;
+    padding:7% 10px 5%;
+    border-radius:25px 25px 20px 20px;
+    transform:perspective(1100px) rotateY(-1.2deg) rotateZ(.3deg);
+  }
+  .sign-board{
+    padding:15px 16px 12px;
+    border-width:5px;
+    border-radius:14px;
+  }
+  .sign-link{min-height:50px;border-radius:9px}
+}
+@media(max-width:760px){
+  .agenda-videotron{
+    width:min(100%,520px);
+    padding:9px 9px 18px;
+    border-radius:15px;
+  }
+  .videotron-bezel{padding:7px;border-radius:8px}
+  .videotron-screen{min-height:225px;border-radius:4px}
+  .sign-pillar{border-radius:22px}
+  .sign-board{border-radius:12px}
+  .sign-link{border-radius:8px}
+}
