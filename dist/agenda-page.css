@@ -102,3 +102,16 @@
  .calendar-card{padding:10px}
 }
 @media(prefers-reduced-motion:reduce){.agenda-event-card,.calendar-day{transition:none}}
+
+
+/* Arrange monthly agendas as responsive photo cards. */
+.agenda-event-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.agenda-event-card{display:flex;flex-direction:column;min-height:100%;border-radius:22px}
+.agenda-card-photo{flex:0 0 auto;height:clamp(170px,16vw,240px);min-height:0}
+.agenda-card-body{flex:1;padding:18px 19px}
+.agenda-card-top{align-items:flex-start;flex-direction:column;justify-content:flex-start;gap:10px;margin-bottom:12px}
+.agenda-countdowns{justify-content:flex-start}
+.agenda-card-body h3{font-size:clamp(18px,1.55vw,22px)}
+.agenda-event-meta{margin-top:auto;padding-top:12px}
+@media(max-width:1100px){.agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr))}.agenda-card-photo{height:clamp(175px,25vw,230px)}}
+@media(max-width:680px){.agenda-event-list{grid-template-columns:1fr}.agenda-event-card{min-height:0}.agenda-card-photo{height:clamp(190px,48vw,260px)}.agenda-card-body{padding:16px}.agenda-card-top{gap:8px}.agenda-event-meta{margin-top:12px;padding-top:0}}
