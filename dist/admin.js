@@ -413,6 +413,7 @@ document.querySelectorAll('.agenda-admin-tab').forEach(tab=>tab.addEventListener
   document.querySelectorAll('.agenda-admin-subpanel').forEach(panel=>{
     panel.hidden=panel.id!==tab.getAttribute('aria-controls');
   });
+  $('#dashboard-title').textContent='Kegiatan · '+tab.textContent.replace(/^\d+\s*·\s*/,'').trim();
 }));
 document.querySelector('[data-open-schedule]').addEventListener('click',()=>$('#tab-schedule').click());
 
@@ -462,6 +463,39 @@ function clearAgendaEditor() {
   showMessage('#agenda-editor-message','');
 }
 
+const adminShell=document.querySelector('.admin-app-shell');
+const sidebarToggle=$('#sidebar-toggle');
+const sidebarScrim=$('#sidebar-scrim');
+const isNarrowAdmin=()=>window.matchMedia('(max-width:900px)').matches;
+sidebarToggle.setAttribute('aria-expanded',String(!isNarrowAdmin()));
+window.addEventListener('resize',()=>{
+  if(isNarrowAdmin()){
+    adminShell.classList.remove('is-sidebar-collapsed');
+    sidebarToggle.setAttribute('aria-expanded',String(adminShell.classList.contains('is-sidebar-open')));
+  }else{
+    adminShell.classList.remove('is-sidebar-open');
+    sidebarToggle.setAttribute('aria-expanded',String(!adminShell.classList.contains('is-sidebar-collapsed')));
+  }
+});
+sidebarToggle.addEventListener('click',()=>{
+  if(isNarrowAdmin()){
+    const open=adminShell.classList.toggle('is-sidebar-open');
+    sidebarToggle.setAttribute('aria-expanded',String(open));
+  }else{
+    const collapsed=adminShell.classList.toggle('is-sidebar-collapsed');
+    sidebarToggle.setAttribute('aria-expanded',String(!collapsed));
+  }
+});
+const closeMobileSidebar=()=>{
+  if(!isNarrowAdmin())return;
+  adminShell.classList.remove('is-sidebar-open');
+  sidebarToggle.setAttribute('aria-expanded','false');
+};
+sidebarScrim.addEventListener('click',closeMobileSidebar);
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape')closeMobileSidebar();
+});
+
 document.querySelectorAll('.admin-tab').forEach(tab=>tab.addEventListener('click',()=>{
   document.querySelectorAll('.admin-tab').forEach(item=>{
     const selected=item===tab;
@@ -471,6 +505,9 @@ document.querySelectorAll('.admin-tab').forEach(tab=>tab.addEventListener('click
   document.querySelectorAll('.management-panel').forEach(panel=>{
     panel.hidden=panel.id!==tab.getAttribute('aria-controls');
   });
+  const label=tab.querySelector('.module-copy strong')?.textContent.trim();
+  if(label)$('#dashboard-title').textContent=label;
+  closeMobileSidebar();
   const activePanel=document.getElementById(tab.getAttribute('aria-controls'));
   if(activePanel)void loadAdminPanel(activePanel.id);
 }));
@@ -619,6 +656,7 @@ async function loadSecretarySection(tab){
 }
 document.querySelectorAll('.secretariat-tab').forEach(tab=>tab.addEventListener('click',()=>{
   showSecretaryTab(tab);
+  $('#dashboard-title').textContent='Sekretaris · '+tab.textContent.trim();
   void loadSecretarySection(tab);
 }));
 async function loadMembers(){
