@@ -1789,3 +1789,46 @@
  .admin-page .admin-sidebar{width:min(292px,86vw);max-width:none;min-width:0}
  .admin-page .admin-content-area{padding:20px 16px 30px}
 }
+
+/* Keep the navigation track and the sidebar itself on one shared width. */
+.admin-page .admin-workspace-shell.admin-app-shell{
+  --admin-sidebar-width:240px;
+  display:grid;
+  grid-template-columns:var(--admin-sidebar-width) minmax(0,1fr);
+  gap:0;
+  width:100%;
+  max-width:none;
+}
+.admin-page .admin-workspace-shell.admin-app-shell:not(.is-sidebar-collapsed)>.admin-sidebar{
+  width:100%;
+  min-width:0;
+  max-width:none;
+  box-sizing:border-box;
+}
+.admin-page .admin-workspace-shell.admin-app-shell.is-sidebar-collapsed{
+  --admin-sidebar-width:82px;
+  grid-template-columns:82px minmax(0,1fr);
+}
+.admin-page .admin-workspace-shell.admin-app-shell.is-sidebar-collapsed>.admin-sidebar{
+  width:82px;
+  min-width:82px;
+  max-width:82px;
+  box-sizing:border-box;
+}
+.admin-page .admin-workspace-content,.admin-page .admin-content-area,.admin-page .management-panel,.admin-page .admin-columns>*{min-width:0}
+.admin-page .editor-heading h3,.admin-page .member-table-heading h3,.admin-page .secretariat-intro h3,.admin-page .program-library-heading h3,.admin-page .module-placeholder-card h3{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px;
+  font-weight:600;
+  line-height:1.4;
+  letter-spacing:0;
+}
+@media(max-width:1200px){
+  .admin-page .admin-workspace-shell.admin-app-shell{--admin-sidebar-width:220px;grid-template-columns:220px minmax(0,1fr)}
+  .admin-page .admin-workspace-shell.admin-app-shell:not(.is-sidebar-collapsed)>.admin-sidebar{width:100%;max-width:none}
+  .admin-page .admin-workspace-shell.admin-app-shell.is-sidebar-collapsed{grid-template-columns:82px minmax(0,1fr)}
+}
+@media(max-width:900px){
+  .admin-page .admin-workspace-shell.admin-app-shell{display:block;width:100%}
+  .admin-page .admin-workspace-shell.admin-app-shell>.admin-sidebar{width:min(292px,86vw);min-width:0;max-width:none}
+}
