@@ -12,3 +12,5 @@
 .checkin-card .form-message{margin:16px 0 0}
 .checkin-footnote{margin:12px 0 0;color:var(--muted);font-size:.75rem;line-height:1.5}
 @media(max-width:560px){.checkin-label{font-size:.63rem}.checkin-card{border-radius:18px}}
+
+#checkin-form[hidden]{display:none!important}
