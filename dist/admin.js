@@ -164,8 +164,28 @@ function renderRecords(){
   </article>`).join('');
 }
 
+function clearPosterPreview(){
+  const preview=$('#poster-preview');
+  const name=$('#poster-upload-name');
+  preview.removeAttribute('src');
+  preview.hidden=true;
+  name.textContent='';
+}
+function showPosterPreview(url,label=''){
+  const preview=$('#poster-preview');
+  const name=$('#poster-upload-name');
+  if(url){preview.src=url;preview.hidden=false;}else{preview.removeAttribute('src');preview.hidden=true;}
+  name.textContent=label;
+}
+$('#poster-file').addEventListener('change',()=>{
+  const file=$('#poster-file').files[0];
+  if(!file){clearPosterPreview();return;}
+  const localUrl=URL.createObjectURL(file);
+  showPosterPreview(localUrl,file.name);
+});
 function clearEditor(){
   competitionForm.reset();
+  clearPosterPreview();
   $('#record-id').value='';
   $('#editor-title').textContent='Tambah lomba';
   $('#save-competition').innerHTML='Simpan lomba <span aria-hidden="true">↗</span>';
@@ -186,7 +206,10 @@ recordList.addEventListener('click',async event=>{
     competitionForm.elements.organizer.value=item.organizer||'';
     competitionForm.elements.deadline.value=new Date(item.deadline).toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'});
     competitionForm.elements.fee.value=item.fee||'Gratis';
-    competitionForm.elements.poster.value=item.posterImage||'';
+    const posterPath=competitionPosterPath(item.posterImage||'');
+    competitionForm.elements.poster.value=posterPath?'':(item.posterImage||'');
+    $('#poster-file').value='';
+    showPosterPreview(item.posterImage||'',item.posterImage?'Poster tersimpan':'');
     competitionForm.elements.registration.value=item.registrationUrl||'';
     competitionForm.elements.description.value=item.description||'';
     competitionForm.elements.published.checked=item.status==='published';
@@ -199,6 +222,8 @@ recordList.addEventListener('click',async event=>{
     button.disabled=true;
     try{
       await api(`competitions?id=eq.${encodeURIComponent(item.id)}`,{method:'DELETE'});
+      const oldPosterPath=competitionPosterPath(item.posterImage||'');
+      if(oldPosterPath)try{await deleteProgramPhoto(oldPosterPath);}catch(error){console.warn('Poster lomba lama belum terhapus dari Storage.',error);}
       competitions=competitions.filter(row=>row.id!==item.id);
       renderRecords();
       if($('#record-id').value===item.id)clearEditor();
@@ -212,10 +237,17 @@ competitionForm.addEventListener('submit',async event=>{
   const title=competitionForm.elements.title.value.trim();
   const deadline=competitionForm.elements.deadline.value;
   const poster=competitionForm.elements.poster.value.trim();
+  const posterFile=$('#poster-file').files[0]||null;
   const registration=competitionForm.elements.registration.value.trim();
   if((poster&&!poster.startsWith('https://'))||(registration&&!registration.startsWith('https://'))){showMessage('#editor-message','Tautan poster dan pendaftaran harus memakai https://.','error');return;}
-  const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
+  if(posterFile){
+    const allowedTypes=['image/jpeg','image/png','image/webp'];
+    if(!allowedTypes.includes(posterFile.type)){showMessage('#editor-message','Poster harus berupa JPG, PNG, atau WebP.','error');return;}
+    if(posterFile.size>8*1024*1024){showMessage('#editor-message','Ukuran poster maksimal 8 MB.','error');return;}
+  }
+  const slug=title.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
   const existingId=$('#record-id').value;
+  const existing=competitions.find(row=>row.id===existingId);
   const payload={
     id:existingId||`${slug}-${Date.now()}`,
     title,
@@ -225,17 +257,26 @@ competitionForm.addEventListener('submit',async event=>{
     deadline:`${deadline}T23:59:00+07:00`,
     fee:competitionForm.elements.fee.value.trim(),
     palette:'purple',
-    mark:title.split(/\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase(),
+    mark:title.split(/\\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase(),
     year:deadline.slice(0,4),
-    posterImage:poster,
+    posterImage:poster||existing?.posterImage||'',
     registrationUrl:registration,
     description:competitionForm.elements.description.value.trim(),
     status:competitionForm.elements.published.checked?'published':'draft',
     updatedAt:new Date().toISOString()
   };
   submit.disabled=true;
-  showMessage('#editor-message','Menyimpan…');
+  let uploadedPath='';
+  showMessage('#editor-message',posterFile?'Mengunggah poster…':'Menyimpan…');
   try{
+    if(posterFile){
+      const extension=posterFile.type==='image/jpeg'?'jpg':posterFile.type.split('/')[1];
+      const safeId=payload.id.replace(/[^a-zA-Z0-9_-]/g,'-');
+      uploadedPath=`competitions/${safeId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${extension}`;
+      await uploadProgramPhoto(posterFile,uploadedPath);
+      payload.posterImage=objectUrl(uploadedPath);
+      showMessage('#editor-message','Poster terunggah, menyimpan lomba…');
+    }
     if(existingId){
       await api(`competitions?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
       showMessage('#editor-message','Perubahan berhasil disimpan.','success');
@@ -243,12 +284,15 @@ competitionForm.addEventListener('submit',async event=>{
       await api('competitions',{method:'POST',body:payload});
       showMessage('#editor-message','Lomba berhasil ditambahkan.','success');
     }
+    const oldPosterPath=competitionPosterPath(existing?.posterImage||'');
+    if(oldPosterPath&&oldPosterPath!==uploadedPath)try{await deleteProgramPhoto(oldPosterPath);}catch(error){console.warn('Poster lomba lama belum terhapus dari Storage.',error);}
     await loadRecords();
     clearEditor();
-  }catch(error){showMessage('#editor-message',error.message,'error');}
-  finally{submit.disabled=false;}
+  }catch(error){
+    if(uploadedPath)try{await deleteProgramPhoto(uploadedPath);}catch(cleanupError){console.warn('Unggahan poster yang gagal belum terhapus.',cleanupError);}
+    showMessage('#editor-message',error.message,'error');
+  }finally{submit.disabled=false;}
 });
-
 
 const programBucket='cssmora-agenda-programs';
 const storageHeaders=contentType=>({
@@ -257,6 +301,12 @@ const storageHeaders=contentType=>({
   ...(contentType?{'Content-Type':contentType}:{})
 });
 const objectUrl=path=>`${config.url}/storage/v1/object/public/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`;
+function competitionPosterPath(url){
+  const prefix=`${config.url}/storage/v1/object/public/${programBucket}/`;
+  if(!url||!url.startsWith(prefix))return '';
+  const path=url.slice(prefix.length).split('?')[0].split('/').map(part=>{try{return decodeURIComponent(part);}catch{return part;}}).join('/');
+  return path.startsWith('competitions/')?path:'';
+}
 
 async function uploadProgramPhoto(file,path) {
   const response=await fetch(`${config.url}/storage/v1/object/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{
