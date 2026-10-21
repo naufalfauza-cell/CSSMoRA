@@ -9,11 +9,11 @@
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261022-outfit-fonts">
+  <link rel="stylesheet" href="./admin.css?v=20261022-achievement-review-v1">
   <script src="./supabase-config.js" defer></script>
-  <script src="./admin.js?v=20261022-poster-upload" defer></script>
+  <script src="./admin.js?v=20261022-achievement-review-v1" defer></script>
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -68,7 +68,7 @@
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 5 20m10-16-2 16M3 9h17M2 15h17"/><path d="M18 4h3v16h-4"/></svg></span><span class="module-copy"><strong>Sekretaris</strong><small>Anggota, absensi, dan persuratan</small></span><span class="module-state is-ready">Aktif</span>
         </button>
         <button class="admin-tab" id="tab-achievements" type="button" role="tab" aria-selected="false" aria-controls="achievements-panel">
-          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.9L12 3Z"/><path d="m9.5 20-1 2m6-2 1 2"/></svg></span><span class="module-copy"><strong>Prestasi</strong><small>Rekap capaian dan apresiasi</small></span><span class="module-state">Disiapkan</span>
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.9L12 3Z"/><path d="m9.5 20-1 2m6-2 1 2"/></svg></span><span class="module-copy"><strong>Prestasi</strong><small>Pengajuan biaya &amp; persetujuan</small></span><span class="module-state is-ready">Aktif</span>
         </button>
           </nav>
         </aside>
@@ -93,17 +93,10 @@
           <form id="competition-form">
             <input id="record-id" name="recordId" type="hidden">
             <label for="title">Nama lomba</label><input id="title" name="title" maxlength="120" required>
-            <label for="organizer">Penyelenggara</label><input id="organizer" name="organizer" maxlength="160" required>
-            <label for="category">Bidang</label><select id="category" name="category" required><option>Esai &amp; Riset</option><option>Bisnis &amp; Inovasi</option><option>Desain &amp; Media</option><option>Debat &amp; Public Speaking</option></select>
+            <label for="subtitle">Nama program / subjudul</label><input id="subtitle" name="subtitle" maxlength="160">
+            <div class="form-two"><div><label for="category">Bidang</label><select id="category" name="category" required><option>Esai &amp; Riset</option><option>Bisnis &amp; Inovasi</option><option>Desain &amp; Media</option><option>Debat &amp; Public Speaking</option></select></div><div><label for="organizer">Penyelenggara</label><input id="organizer" name="organizer" maxlength="160" required></div></div>
             <div class="form-two"><div><label for="deadline">Batas pendaftaran</label><input id="deadline" name="deadline" type="date" required></div><div><label for="fee">Biaya pendaftaran</label><input id="fee" name="fee" placeholder="Gratis / Rp50.000 per tim" maxlength="80" required></div></div>
-            <label for="poster-file">Poster lomba</label>
-            <div class="poster-upload-field">
-              <label class="poster-upload-control" for="poster-file"><span class="poster-upload-icon" aria-hidden="true">↥</span><span><strong>Pilih poster</strong><small>JPG, PNG, atau WebP · maks. 8 MB</small></span><span class="poster-upload-cta">Pilih file</span></label>
-              <input id="poster-file" name="posterFile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-              <img id="poster-preview" class="poster-upload-preview" alt="Pratinjau poster lomba" hidden>
-              <p id="poster-upload-name" class="poster-upload-name" aria-live="polite"></p>
-            </div>
-            <small class="poster-upload-help">Poster wajib diunggah saat menambahkan lomba. JPG, PNG, atau WebP maksimal 8 MB.</small>
+            <label for="poster">Tautan poster (opsional)</label><input id="poster" name="poster" type="url" placeholder="https://…">
             <label for="registration">Tautan pendaftaran resmi</label><input id="registration" name="registration" type="url" placeholder="https://…">
             <label for="description">Deskripsi dan catatan</label><textarea id="description" name="description" rows="4" maxlength="1200"></textarea>
             <label class="publish-toggle"><input id="published" name="published" type="checkbox"><span><strong>Terbitkan sekarang</strong><small>Lomba berstatus draft hanya terlihat oleh admin.</small></span></label>
@@ -305,8 +298,14 @@
           </div>
         </section>
       </section>
-      <section class="management-panel module-placeholder" id="achievements-panel" role="tabpanel" aria-labelledby="tab-achievements" hidden>
-        <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">★</span><div><span class="admin-kicker">MODUL PRESTASI</span><h3>Pengelolaan prestasi</h3><p>Ruang untuk rekap capaian, KPI prestasi, dan apresiasi anggota sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
+      <section class="management-panel achievement-admin-panel" id="achievements-panel" role="tabpanel" aria-labelledby="tab-achievements" hidden>
+        <div class="achievement-admin-heading"><div><span class="admin-kicker">PENGAJUAN BANTUAN LOMBA</span><h3>Peninjauan prestasi</h3><p>Setiap pengajuan disetujui Bendahara terlebih dahulu, lalu Ketua.</p></div><button class="member-option-button" id="achievement-refresh" type="button">↻ Muat ulang</button></div>
+        <p class="form-message achievement-action-message" id="achievement-action-message" role="status" aria-live="polite"></p>
+        <div class="achievement-admin-toolbar"><div class="achievement-admin-filters" role="group" aria-label="Filter status pengajuan"><button type="button" class="achievement-filter is-active" data-achievement-filter="all">Semua</button><button type="button" class="achievement-filter" data-achievement-filter="pending_bendahara">Menunggu Bendahara</button><button type="button" class="achievement-filter" data-achievement-filter="pending_ketua">Menunggu Ketua</button><button type="button" class="achievement-filter" data-achievement-filter="approved">Disetujui</button><button type="button" class="achievement-filter" data-achievement-filter="rejected">Ditolak</button></div><span class="record-count" id="achievement-count">—</span></div>
+        <div class="achievement-admin-layout">
+          <div class="achievement-application-list" id="achievement-application-list"><p class="records-empty">Masuk ke sistem untuk memuat pengajuan.</p></div>
+          <aside class="achievement-reviewer-aside" id="achievement-reviewer-aside" hidden><section class="records-card"><div class="editor-heading"><div><span class="admin-kicker">AKSES PENINJAU</span><h3>Penugasan Bendahara</h3></div></div><p class="admin-muted">Ketua dapat menambahkan email akun pengurus Bendahara agar bisa meninjau tahap pertama.</p><form id="achievement-reviewer-form"><label for="achievement-reviewer-email">Email akun pengurus</label><input id="achievement-reviewer-email" type="email" required placeholder="bendahara@email.com"><button class="admin-button" type="submit">Tambahkan Bendahara <span aria-hidden="true">↗</span></button><p class="form-message" id="achievement-reviewer-message" role="status" aria-live="polite"></p></form><div class="achievement-reviewer-list" id="achievement-reviewer-list"></div></section></aside>
+        </div>
       </section>
           </div>
         </div>
