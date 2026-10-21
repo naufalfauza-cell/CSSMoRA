@@ -1,30 +1,14 @@
-// Contoh data tampilan. Ganti dengan entri terverifikasi sebelum dibuka untuk publik.
-// posterImage dan registrationUrl dapat diisi dengan URL resmi ketika tersedia.
-const competitions = [
-  {id:'cakrawala-riset',title:'Cakrawala Riset',subtitle:'National Research Challenge',category:'Esai & Riset',organizer:'Penyelenggara contoh A',deadline:'2026-11-18',fee:'Gratis',palette:'lime',mark:'CR',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh katalog lomba riset untuk memperlihatkan informasi yang akan dilihat pengunjung.'},
-  {id:'ide-berdampak',title:'Ide Berdampak',subtitle:'Social Innovation Competition',category:'Bisnis & Inovasi',organizer:'Penyelenggara contoh B',deadline:'2026-11-02',fee:'Rp50.000 / tim',palette:'coral',mark:'IB',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh kompetisi inovasi sosial dengan informasi biaya dan tenggat.'},
-  {id:'suara-muda',title:'Suara Muda',subtitle:'University Debate Open',category:'Debat & Public Speaking',organizer:'Penyelenggara contoh C',deadline:'2026-12-08',fee:'Gratis',palette:'purple',mark:'SM',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh kompetisi debat bagi mahasiswa.'},
-  {id:'ruang-visual',title:'Ruang Visual',subtitle:'Creative Poster Festival',category:'Desain & Media',organizer:'Penyelenggara contoh D',deadline:'2026-10-31',fee:'Rp25.000',palette:'blue',mark:'RV',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh lomba desain poster dan komunikasi visual.'},
-  {id:'future-finance',title:'Future Finance',subtitle:'Accounting Case Challenge',category:'Bisnis & Inovasi',organizer:'Penyelenggara contoh E',deadline:'2026-11-25',fee:'Rp75.000 / tim',palette:'yellow',mark:'FF',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh kompetisi studi kasus keuangan dan bisnis.'},
-  {id:'nalar-hijau',title:'Nalar Hijau',subtitle:'Sustainability Essay',category:'Esai & Riset',organizer:'Penyelenggara contoh F',deadline:'2026-12-15',fee:'Gratis',palette:'forest',mark:'NH',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh lomba esai bertema keberlanjutan.'},
-  {id:'panggung-kata',title:'Panggung Kata',subtitle:'Public Speaking Festival',category:'Debat & Public Speaking',organizer:'Penyelenggara contoh G',deadline:'2026-09-30',fee:'Rp30.000',palette:'pink',mark:'PK',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh lomba public speaking dengan pendaftaran yang sudah berakhir.'},
-  {id:'lensa-kota',title:'Lensa Kota',subtitle:'Photography Challenge',category:'Desain & Media',organizer:'Penyelenggara contoh H',deadline:'2026-10-10',fee:'Gratis',palette:'ink',mark:'LK',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh lomba fotografi dengan pendaftaran yang sudah berakhir.'},
-  {id:'peta-perubahan',title:'Peta Perubahan',subtitle:'Policy Paper Competition',category:'Esai & Riset',organizer:'Penyelenggara contoh I',deadline:'2026-11-12',fee:'Rp40.000 / tim',palette:'sky',mark:'PP',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh kompetisi policy paper untuk mahasiswa.'},
-  {id:'usaha-bersama',title:'Usaha Bersama',subtitle:'Business Plan Competition',category:'Bisnis & Inovasi',organizer:'Penyelenggara contoh J',deadline:'2026-09-16',fee:'Rp60.000 / tim',palette:'orange',mark:'UB',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh kompetisi rencana bisnis dengan pendaftaran yang telah ditutup.'},
-  {id:'aksara-digital',title:'Aksara Digital',subtitle:'Digital Campaign Challenge',category:'Desain & Media',organizer:'Penyelenggara contoh K',deadline:'2026-11-05',fee:'Gratis',palette:'mint',mark:'AD',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh tantangan kampanye digital.'},
-  {id:'argumen-baru',title:'Argumen Baru',subtitle:'National Speech Contest',category:'Debat & Public Speaking',organizer:'Penyelenggara contoh L',deadline:'2026-10-04',fee:'Rp35.000',palette:'red',mark:'AB',year:'2026',posterImage:'',registrationUrl:'',description:'Contoh lomba pidato dengan masa pendaftaran yang telah usai.'},
-];
+let competitions = [];
 
 const $ = selector => document.querySelector(selector);
 const grid = $('#competition-grid');
 const dialog = $('#detail-dialog');
-const jakartaToday = () => new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const isOpen = item => item.deadline >= jakartaToday();
-const formatDate = date => new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
+const isOpen = item => new Date(item.deadline) >= new Date();
+const formatDate = date => new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Jakarta'}).format(new Date(date));
 const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const poster = item => item.posterImage
   ? `<img class="poster-image" src="${escapeHTML(item.posterImage)}" alt="Poster ${escapeHTML(item.title)}" loading="lazy">`
-  : `<div class="poster-design palette-${item.palette}" role="img" aria-label="Poster contoh ${escapeHTML(item.title)}"><div class="design-top"><span>CSSMoRA / EXPLORE</span><span>✳</span></div><div class="design-symbol">${escapeHTML(item.mark)}</div><div class="design-main"><span>${escapeHTML(item.subtitle)}</span><strong>${escapeHTML(item.title)}</strong></div><div class="design-bottom"><span>OPEN CALL • ${escapeHTML(item.year)}</span><span>↗</span></div></div>`;
+  : `<div class="poster-design palette-${item.palette}" role="img" aria-label="Poster lomba ${escapeHTML(item.title)}"><div class="design-top"><span>CSSMoRA / EXPLORE</span><span>✳</span></div><div class="design-symbol">${escapeHTML(item.mark)}</div><div class="design-main"><span>${escapeHTML(item.subtitle)}</span><strong>${escapeHTML(item.title)}</strong></div><div class="design-bottom"><span>OPEN CALL • ${escapeHTML(item.year)}</span><span>↗</span></div></div>`;
 
 function render() {
   const query = $('#search').value.trim().toLocaleLowerCase('id');
@@ -36,7 +20,7 @@ function render() {
   }).sort((a,b) => Number(isOpen(b))-Number(isOpen(a)) || (isOpen(a)?a.deadline.localeCompare(b.deadline):b.deadline.localeCompare(a.deadline)));
   grid.innerHTML = items.map(item => `<button class="competition-card" type="button" data-id="${item.id}" aria-label="Lihat detail ${escapeHTML(item.title)}">
     <div class="card-poster">${poster(item)}<span class="status-badge ${isOpen(item)?'is-open':'is-closed'}">${isOpen(item)?'● Masih dibuka':'● Sudah ditutup'}</span></div>
-    <div class="card-meta"><span>${escapeHTML(item.category)}</span><span>CONTOH</span></div>
+    <div class="card-meta"><span>${escapeHTML(item.category)}</span><span>CSSMoRA UNAIR</span></div>
     <div class="card-title-row"><h3>${escapeHTML(item.title)}</h3><span aria-hidden="true">↗</span></div>
     <p>${escapeHTML(item.organizer)}</p><div class="card-bottom"><span>Batas pendaftaran</span><strong>${formatDate(item.deadline)}</strong></div>
   </button>`).join('');
@@ -53,13 +37,13 @@ function detail(item, updateURL=true) {
   const open = isOpen(item);
   const url = /^https:\/\//i.test(item.registrationUrl) ? item.registrationUrl : '';
   $('#detail-content').innerHTML = `<div class="detail-poster">${poster(item)}</div><div class="detail-info">
-    <span class="overline">INFO LOMBA / CONTOH TAMPILAN</span>
+    <span class="overline">INFO LOMBA</span>
     <span class="detail-status ${open?'is-open':'is-closed'}">● ${open?'Masih dibuka':'Sudah ditutup'}</span>
     <h2 id="detail-title">${escapeHTML(item.title)}</h2><p class="detail-subtitle">${escapeHTML(item.subtitle)}</p>
     <p class="detail-description">${escapeHTML(item.description)}</p>
     <dl class="detail-facts"><div><dt>Batas pendaftaran</dt><dd>${formatDate(item.deadline)}<small>23.59 WIB</small></dd></div><div><dt>Biaya pendaftaran</dt><dd>${escapeHTML(item.fee)}</dd></div><div><dt>Penyelenggara</dt><dd>${escapeHTML(item.organizer)}</dd></div><div><dt>Bidang</dt><dd>${escapeHTML(item.category)}</dd></div></dl>
     ${open&&url?`<a class="register-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Buka pendaftaran resmi <span aria-hidden="true">↗</span></a>`:`<span class="register-button disabled" aria-disabled="true">${open?'Tautan pendaftaran belum tersedia':'Pendaftaran telah ditutup'}</span>`}
-    <p class="detail-caution">Ini data contoh untuk pratinjau. Pastikan informasi dari penyelenggara sebelum mendaftar.</p>
+    <p class="detail-caution">Pastikan kembali detail dan persyaratan pada laman resmi penyelenggara sebelum mendaftar.</p>
   </div>`;
   if (!dialog.open) dialog.showModal();
   if (updateURL) { const u = new URL(location.href); u.searchParams.set('lomba',item.id); history.pushState({lomba:item.id},'',u); }
@@ -79,8 +63,42 @@ window.addEventListener('popstate',()=>{const id=new URL(location.href).searchPa
 document.querySelectorAll('.quick-filter').forEach(button=>button.addEventListener('click',()=>{$('#category').value=button.dataset.category;render();}));
 $('#reset-filter').addEventListener('click',()=>{$('#search').value='';$('#category').value='all';$('#status').value='all';render();$('#search').focus();});
 render();
-const initial=competitions.find(x=>x.id===new URL(location.href).searchParams.get('lomba'));
-if(initial)detail(initial,false);
+
+async function loadCompetitions() {
+  const status = $('#data-status');
+  const statusMessage = status.querySelector('p');
+  const config = window.CSSMORA_SUPABASE;
+  if (!config?.url || !config?.publishableKey) {
+    statusMessage.innerHTML = '<strong>Konfigurasi katalog belum tersedia.</strong> Hubungi pengurus CSSMoRA.';
+    return;
+  }
+  statusMessage.innerHTML = '<strong>Mengambil daftar lomba…</strong> Data katalog sedang diperbarui.';
+  const params = new URLSearchParams({
+    select: 'id,title,subtitle,category,organizer,deadline,fee,palette,mark,year,posterImage,registrationUrl,description',
+    status: 'eq.published',
+    order: 'deadline.asc'
+  });
+  try {
+    const response = await fetch(`${config.url}/rest/v1/competitions?${params}`, {
+      headers: {
+        apikey: config.publishableKey,
+        Authorization: `Bearer ${config.publishableKey}`
+      }
+    });
+    if (!response.ok) throw new Error(`Supabase request failed: ${response.status}`);
+    competitions = await response.json();
+    render();
+    statusMessage.innerHTML = `<strong>Katalog terhubung.</strong> Menampilkan ${competitions.length} lomba terverifikasi CSSMoRA.`;
+    const initial = competitions.find(item => item.id === new URL(location.href).searchParams.get('lomba'));
+    if (initial) detail(initial, false);
+  } catch (error) {
+    console.error('Gagal memuat katalog lomba:', error);
+    competitions = [];
+    render();
+    statusMessage.innerHTML = '<strong>Katalog belum dapat dimuat.</strong> Coba muat ulang halaman beberapa saat lagi.';
+  }
+}
+loadCompetitions();
 
 // Design Studio: per-browser preview, with a shareable URL for the palette.
 const themeDefaults = {brand:'#544bd5',accent:'#ec5a88',heroA:'#e7e6ff',heroB:'#d9d7ff',bg:'#f5f6fb'};

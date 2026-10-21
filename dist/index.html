@@ -8,6 +8,7 @@
   <title>Jelajah Lomba — CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
+  <script src="./supabase-config.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -47,7 +48,7 @@
     <section class="catalog-section" id="katalog" aria-labelledby="catalog-title">
       <div class="wrap">
         <div class="section-intro"><div><span class="overline">EXPLORE / LOMBA</span><h2 id="catalog-title">Lagi cari lomba?<br><em>Mulai dari sini.</em></h2></div><p>Geser pilihan, cari bidangmu, dan lihat mana yang masih bisa didaftar. Semuanya ada di satu tempat.</p></div>
-        <div class="demo-note"><span class="note-icon" aria-hidden="true">i</span><p><strong>Pratinjau sistem.</strong> Kartu di bawah adalah contoh tampilan, bukan pengumuman lomba resmi. Poster, tanggal, dan tautan asli akan dimasukkan saat kurasi lomba dimulai.</p></div>
+        <div class="demo-note" id="data-status" role="status" aria-live="polite"><span class="note-icon" aria-hidden="true">i</span><p><strong>Menghubungkan katalog…</strong> Memuat data lomba CSSMoRA.</p></div>
         <div class="quick-filters" aria-label="Pilihan cepat bidang lomba"><button type="button" class="quick-filter active" data-category="all" aria-pressed="true">Semua ✳</button><button type="button" class="quick-filter" data-category="Esai & Riset" aria-pressed="false">Esai & riset</button><button type="button" class="quick-filter" data-category="Bisnis & Inovasi" aria-pressed="false">Bisnis & inovasi</button><button type="button" class="quick-filter" data-category="Desain & Media" aria-pressed="false">Desain & media</button><button type="button" class="quick-filter" data-category="Debat & Public Speaking" aria-pressed="false">Debat & public speaking</button></div>
         <div class="toolbar" role="search">
           <label class="search-box"><span class="sr-only">Cari nama atau penyelenggara lomba</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="Cari nama lomba atau penyelenggara…" autocomplete="off"></label>
