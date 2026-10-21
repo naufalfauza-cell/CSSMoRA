@@ -1867,3 +1867,27 @@
   .admin-page .admin-content-area{padding-inline:12px}
   .admin-page .secretariat-workspace,.admin-page .member-workspace{grid-template-columns:minmax(0,1fr)}
 }
+
+/* The desktop sidebar background must cover the viewport, even when its menu is short. */
+@media(min-width:901px){
+  .admin-page .admin-workspace-shell.admin-app-shell{min-height:100vh;min-height:100dvh}
+  .admin-page .admin-sidebar{
+    position:sticky;
+    top:0;
+    height:100vh!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    max-height:none!important;
+    isolation:isolate;
+  }
+  .admin-page .admin-sidebar::before{
+    content:"";
+    position:fixed;
+    z-index:-1;
+    inset:0 auto 0 0;
+    width:var(--admin-sidebar-width,240px);
+    background:#244d3f;
+    pointer-events:none;
+  }
+  .admin-page .admin-workspace-shell.admin-app-shell.is-sidebar-collapsed .admin-sidebar::before{width:82px}
+}
