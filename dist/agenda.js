@@ -39,7 +39,7 @@
       const program=event.program||null;
       const photo=program?.photo_url||'./assets/cssmora-logo.png';
       const photoName=program?.name||'CSSMoRA UNAIR';
-      return '<article class="event-item'+(index===0?' on':'')+'" role="group" aria-roledescription="slide" aria-label="Agenda '+(index+1)+' dari '+items.length+'"><img class="event-photo" src="'+esc(photo)+'" alt="Foto '+esc(photoName)+'"><div class="event-content">'+date+'<div class="event-body"><span class="event-when">'+esc(eventTime(event))+'</span><strong>'+esc(event.title)+'</strong><p>'+esc(event.location||'CSSMoRA UNAIR')+'</p></div></div></article>';
+      return '<article class="event-item'+(index===0?' on':'')+'" role="group" aria-roledescription="slide" aria-label="Agenda '+(index+1)+' dari '+items.length+'"><img class="event-photo" src="'+esc(photo)+'" alt="Foto '+esc(photoName)+'" loading="eager" decoding="async" fetchpriority="'+(index===0?'high':'auto')+'"><div class="event-content">'+date+'<div class="event-body"><span class="event-when">'+esc(eventTime(event))+'</span><strong>'+esc(event.title)+'</strong><p>'+esc(event.location||'CSSMoRA UNAIR')+'</p></div></div></article>';
     }).join('') + (items.length>1 ? '<div class="event-carousel-tools"><button type="button" class="event-arrow" data-step="-1" aria-label="Agenda sebelumnya">‹</button><span class="event-position" aria-live="polite">1 dari '+items.length+' · '+esc(month)+'</span><button type="button" class="event-arrow" data-step="1" aria-label="Agenda berikutnya">›</button></div><div class="event-dots" aria-label="Pilih agenda">'+items.map((_,index)=>'<button type="button" data-slide="'+index+'" aria-label="Tampilkan agenda '+(index+1)+'"'+(index===0?' class="on" aria-current="true"':'')+'></button>').join('')+'</div>' : '');
     box.querySelectorAll('.event-photo').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
     if(items.length<2) return;
@@ -47,8 +47,7 @@
     const slides = Array.from(box.querySelectorAll('.event-item'));
     const dots = Array.from(box.querySelectorAll('[data-slide]'));
     const position = box.querySelector('.event-position');
-    let index = 0, timer = null, pointerStart = null;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let index = 0, pointerStart = null;
     const show = next => {
       index = (next+slides.length)%slides.length;
       slides.forEach((slide,i)=>slide.classList.toggle('on',i===index));
@@ -58,27 +57,16 @@
       });
       position.textContent=(index+1)+' dari '+slides.length+' · '+month;
     };
-    const stop = () => {if(timer){clearInterval(timer);timer=null;}};
-    const start = () => {
-      stop();
-      if(!reducedMotion.matches&&!document.hidden)timer=setInterval(()=>show(index+1),2000);
-    };
-    box.querySelectorAll('.event-arrow').forEach(button=>button.addEventListener('click',()=>{show(index+Number(button.dataset.step));start();}));
-    dots.forEach((button,i)=>button.addEventListener('click',()=>{show(i);start();}));
-    box.addEventListener('mouseenter',stop);
-    box.addEventListener('mouseleave',start);
-    box.addEventListener('focusin',stop);
-    box.addEventListener('focusout',event=>{if(!box.contains(event.relatedTarget))start();});
-    document.addEventListener('visibilitychange',()=>document.hidden?stop():start());
-    reducedMotion.addEventListener?.('change',start);
+    box.querySelectorAll('.event-arrow').forEach(button=>button.addEventListener('click',()=>show(index+Number(button.dataset.step))));
+    dots.forEach((button,i)=>button.addEventListener('click',()=>show(i)));
     box.addEventListener('pointerdown',event=>{if(event.pointerType==='touch')pointerStart=event.clientX;},{passive:true});
     box.addEventListener('pointerup',event=>{
       if(pointerStart===null)return;
       const distance=event.clientX-pointerStart;pointerStart=null;
-      if(Math.abs(distance)>42){show(index+(distance<0?1:-1));start();}
+      if(Math.abs(distance)>42)show(index+(distance<0?1:-1));
     },{passive:true});
     box.addEventListener('pointercancel',()=>{pointerStart=null;},{passive:true});
-    start();
+    setInterval(()=>show(index+1),3000);
   };
 
   (async()=>{
