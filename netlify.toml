@@ -1,0 +1,8 @@
+[build]
+  publish = "dist"
+
+[context.deploy-preview]
+  publish = "dist"
+
+[context.branch-deploy]
+  publish = "dist"
