@@ -205,13 +205,10 @@ recordList.addEventListener('click',async event=>{
   if(button.dataset.action==='edit'){
     $('#record-id').value=item.id;
     competitionForm.elements.title.value=item.title||'';
-    competitionForm.elements.subtitle.value=item.subtitle||'';
+    competitionForm.elements.organizer.value=item.organizer||item.subtitle||'';
     competitionForm.elements.category.value=item.category||'Esai & Riset';
-    competitionForm.elements.organizer.value=item.organizer||'';
     competitionForm.elements.deadline.value=new Date(item.deadline).toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'});
     competitionForm.elements.fee.value=item.fee||'Gratis';
-    const posterPath=competitionPosterPath(item.posterImage||'');
-    competitionForm.elements.poster.value=posterPath?'':(item.posterImage||'');
     $('#poster-file').value='';
     showPosterPreview(item.posterImage||'',item.posterImage?'Poster tersimpan':'');
     competitionForm.elements.registration.value=item.registrationUrl||'';
@@ -240,30 +237,30 @@ competitionForm.addEventListener('submit',async event=>{
   const submit=$('#save-competition');
   const title=competitionForm.elements.title.value.trim();
   const deadline=competitionForm.elements.deadline.value;
-  const poster=competitionForm.elements.poster.value.trim();
   const posterFile=$('#poster-file').files[0]||null;
   const registration=competitionForm.elements.registration.value.trim();
-  if((poster&&!poster.startsWith('https://'))||(registration&&!registration.startsWith('https://'))){showMessage('#editor-message','Tautan poster dan pendaftaran harus memakai https://.','error');return;}
+  const existingId=$('#record-id').value;
+  const existing=competitions.find(row=>row.id===existingId);
+  if(registration&&!registration.startsWith('https://')){showMessage('#editor-message','Tautan pendaftaran harus memakai https://.','error');return;}
+  if(!posterFile&&!existing?.posterImage){showMessage('#editor-message','Unggah poster lomba sebelum menyimpan.','error');return;}
   if(posterFile){
     const allowedTypes=['image/jpeg','image/png','image/webp'];
     if(!allowedTypes.includes(posterFile.type)){showMessage('#editor-message','Poster harus berupa JPG, PNG, atau WebP.','error');return;}
     if(posterFile.size>8*1024*1024){showMessage('#editor-message','Ukuran poster maksimal 8 MB.','error');return;}
   }
-  const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
-  const existingId=$('#record-id').value;
-  const existing=competitions.find(row=>row.id===existingId);
+  const slug=title.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
   const payload={
     id:existingId||`${slug}-${Date.now()}`,
     title,
-    subtitle:competitionForm.elements.subtitle.value.trim(),
+    subtitle:'',
     category:competitionForm.elements.category.value,
     organizer:competitionForm.elements.organizer.value.trim(),
     deadline:`${deadline}T23:59:00+07:00`,
     fee:competitionForm.elements.fee.value.trim(),
     palette:'purple',
-    mark:title.split(/\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase(),
+    mark:title.split(/\\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase(),
     year:deadline.slice(0,4),
-    posterImage:poster||existing?.posterImage||'',
+    posterImage:existing?.posterImage||'',
     registrationUrl:registration,
     description:competitionForm.elements.description.value.trim(),
     status:competitionForm.elements.published.checked?'published':'draft',
