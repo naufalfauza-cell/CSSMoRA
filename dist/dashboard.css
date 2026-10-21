@@ -26,31 +26,6 @@
     box-shadow:0 25px 40px #06140c85,0 7px 0 #090e0c;
     transform:perspective(1200px) rotateY(3.2deg) rotateZ(-.45deg);
   }
-  .agenda-videotron::before{
-    content:"";
-    position:absolute;
-    z-index:-1;
-    left:50%;
-    top:calc(100% - 4px);
-    width:22px;
-    height:19vh;
-    transform:translateX(-50%);
-    background:linear-gradient(90deg,#242a26 0%,#888b80 28%,#c6c8bb 52%,#686d63 78%,#1b211d 100%);
-    box-shadow:4px 8px 14px #07150d58;
-  }
-  .agenda-videotron::after{
-    content:"";
-    position:absolute;
-    z-index:-1;
-    left:50%;
-    top:calc(100% + 19vh - 8px);
-    width:86px;
-    height:12px;
-    transform:translateX(-50%);
-    border-radius:50%;
-    background:linear-gradient(180deg,#b9bcb0,#343a34);
-    box-shadow:0 7px 12px #07150d69;
-  }
   .videotron-bezel{
     padding:8px;
     border-radius:9px;
@@ -136,3 +111,48 @@
 .background-motion-toggle[data-paused="true"] .motion-play{display:block}
 .background-motion-toggle:hover{background:#fff}
 @media(max-width:760px){.background-motion-toggle{top:12px;right:14px;width:36px;height:36px;padding:8px}}
+
+/* Floating information panels: no simulated monitor or support poles. */
+.agenda-videotron{padding:0;border:1px solid #ffffff70;border-radius:28px;background:#0c4b32f2;box-shadow:0 22px 65px #0b291c35;transform:none;overflow:hidden;backdrop-filter:blur(12px)}
+.agenda-videotron::before,.agenda-videotron::after{content:none}
+.videotron-bezel{padding:0;border-radius:inherit;background:transparent}
+.videotron-screen{padding:24px 28px 20px;border-radius:inherit;background:linear-gradient(125deg,#0b5439ed,#124c35f2);box-shadow:none}
+.videotron-screen::before{content:none}
+.screen-header{padding-bottom:16px;border-color:#ffffff24}
+.screen-brand{font-size:12px;gap:8px}.screen-brand img{width:28px;height:28px}
+.screen-status{font-size:9px;letter-spacing:.09em}
+.screen-main{padding:24px 0 22px}.screen-kicker{font-size:10px;color:#d7e9df}
+.screen-main h1{margin:7px 0 18px;font-size:clamp(25px,2.5vw,36px);font-weight:600;letter-spacing:-.045em}
+.event-empty,.event-item{border-color:#ffffff25;border-radius:16px;background:#ffffff0c;padding:15px}
+.event-empty{grid-template-columns:34px 1fr;gap:12px}.event-empty strong{font-size:13px}.event-empty p{font-size:11px;line-height:1.6}
+.event-icon{width:34px;height:34px;border-radius:10px;background:#ffffff13}
+.screen-footer{font-size:9px;padding-top:14px;border-color:#ffffff24}
+.sign-pillar{padding:0;border:0;background:transparent;border-radius:28px;box-shadow:0 22px 65px #0b291c30;transform:none;height:auto;min-height:0;overflow:hidden}
+.sign-board{height:auto;padding:24px;border:1px solid #ffffff70;border-radius:28px;background:#f8fcf7f2;box-shadow:none;color:#123e2b;backdrop-filter:blur(12px)}
+.sign-header{gap:10px;padding-bottom:18px;border-color:#19452c20}.sign-header strong i{color:#087443}.sign-header span{font-size:9px;line-height:1.5;color:#526e5e;letter-spacing:.06em}
+.sign-nav{padding:12px 0;gap:4px}.sign-link{min-height:58px;padding:10px 0;border-color:#19452c15;color:#103e2b;grid-template-columns:22px 1fr 14px;border-radius:10px}
+.sign-number{color:#31734e;font-size:10px}.sign-copy small{color:#637c6b;font-size:9px;letter-spacing:.08em}.sign-copy strong{font-size:13px;margin-top:4px}.sign-link>b{color:#087443}
+.sign-link:hover,.sign-link:focus-visible{background:#0874430a;padding-left:8px}.sign-footer{padding-top:14px;border-color:#19452c20;color:#52705d;font-size:8px;gap:12px;line-height:1.5}
+@media(min-width:761px){
+ .agenda-videotron{left:4.5%;top:33%;width:clamp(380px,43vw,640px)}
+ .videotron-screen{min-height:290px}
+ .sign-pillar{top:24%;right:4.5%;width:clamp(245px,21vw,295px)}
+ /* Contain the original frame instead of stretching a crop to fill taller screens. */
+ .campus-background-video{object-fit:contain;object-position:center top}
+ .campus-stage{background-color:#123f2b}
+ .campus-stage:after{background:linear-gradient(180deg,transparent 50%,#123f2b44 74%,#123f2b 98%)}
+}
+@media(max-width:1000px) and (min-width:761px){.agenda-videotron{left:3%;width:49%}.sign-pillar{right:3%;width:30%}.videotron-screen{padding:20px}.sign-board{padding:18px}.screen-status{font-size:8px}}
+@media(max-width:760px){
+ .campus-stage{padding:clamp(210px,54vw,340px) 14px 22px;background-color:#123f2b}
+ .campus-background-video{height:auto;aspect-ratio:16/9;object-fit:contain;object-position:center top}
+ .campus-stage:after{background:linear-gradient(180deg,transparent 90px,#123f2b 360px);}
+ .agenda-videotron{width:min(100%,520px);margin:0 auto 14px;border-radius:23px}
+ .videotron-screen{min-height:250px;padding:20px}
+ .sign-pillar{width:min(100%,520px);border-radius:23px;margin:0 auto}
+ .sign-board{padding:19px;border-radius:23px}
+ .sign-nav{gap:0 12px}.sign-link{min-height:61px;grid-template-columns:18px 1fr 12px;gap:6px}
+ .sign-copy strong{font-size:12px}.sign-copy small{font-size:8px}
+ .scene-caption{width:min(100%,520px);font-size:8px;line-height:1.6;gap:12px}.scene-caption span:last-child{font-size:8px}
+ .screen-footer{font-size:8px}.screen-status{font-size:8px}
+}
