@@ -49,7 +49,7 @@
         <nav class="sign-nav" aria-label="Pilih informasi">
           <a class="sign-link" href="./lomba.html"><span class="sign-number">01</span><span class="sign-copy"><small>PELUANG</small><strong>Info lomba</strong></span><b aria-hidden="true">↗</b></a>
           <a class="sign-link" href="./agenda.html"><span class="sign-number">02</span><span class="sign-copy"><small>JADWAL</small><strong>Kalender agenda</strong></span><b aria-hidden="true">↗</b></a>
-          <a class="sign-link attendance-entry" id="attendance-entry" href="./absen.html" hidden><span class="sign-number">03</span><span class="sign-copy"><small id="attendance-entry-meta">HARI INI</small><strong>Absensi anggota</strong></span><b aria-hidden="true">↗</b></a>
+          <a class="sign-link attendance-entry" id="attendance-entry" href="./absen.html"><span class="sign-number">03</span><span class="sign-copy"><small id="attendance-entry-meta">CEK STATUS</small><strong>Absensi anggota</strong></span><b aria-hidden="true">↗</b></a>
           <button class="sign-link" type="button" data-dialog="about-dialog"><span class="sign-number">03</span><span class="sign-copy"><small>ORGANISASI</small><strong>Tentang CSSMoRA</strong></span><b aria-hidden="true">↗</b></button>
           <button class="sign-link" type="button" data-dialog="program-dialog"><span class="sign-number">04</span><span class="sign-copy"><small>KABAR ANGGOTA</small><strong>Program &amp; prestasi</strong></span><b aria-hidden="true">↗</b></button>
           <a class="sign-link" href="./admin.html"><span class="sign-number">05</span><span class="sign-copy"><small>AKSES INTERNAL</small><strong>Masuk pengurus</strong></span><b aria-hidden="true">↗</b></a>
@@ -76,7 +76,7 @@
 
   <script src="./supabase-config.js"></script>
   <script src="./agenda.js"></script>
-  <script src="./attendance-dashboard.js?v=20261021-code30"></script>
+  <script src="./attendance-dashboard.js?v=20261022-visible"></script>
   <script>
     document.querySelectorAll('[data-dialog]').forEach(button => {
       button.addEventListener('click', () => document.getElementById(button.dataset.dialog)?.showModal());
