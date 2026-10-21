@@ -316,3 +316,64 @@
 }
 
 /* Keep every admin workspace on the shared 1440px page canvas. */
+
+
+/* Members: full register table with an adjacent compact entry and options rail. */
+.member-workspace{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) minmax(260px,300px);
+ align-items:start;
+ gap:14px;
+}
+.member-table-card{min-width:0;padding:18px;border-radius:18px}
+.member-table-heading{align-items:center}
+.member-tools{margin:12px 0 11px}
+.member-tools input[type=search]{
+ width:100%;min-height:40px;padding:9px 12px;
+ border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);
+}
+.member-tools input[type=search]:focus{
+ outline:0;border-color:var(--green);
+ box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 13%,transparent);
+}
+.member-side-rail{display:grid;gap:10px;min-width:0}
+.member-editor-card,.member-options-card{min-width:0;padding:16px;border-radius:18px}
+.member-editor-card .editor-heading,.member-options-card .editor-heading{margin-bottom:7px}
+.member-editor-card .editor-heading h3,.member-options-card .editor-heading h3{
+ font-size:1.08rem;letter-spacing:-.035em;
+}
+.member-editor-card .editor-heading .text-button{font-size:.7rem}
+.member-editor-card form{gap:7px;margin-top:11px}
+.member-editor-card form>label:not(.publish-toggle){margin-top:3px;font-size:.73rem}
+.member-editor-card .form-two{gap:8px}
+.member-editor-card .form-two>div{gap:6px}
+.member-editor-card input:not([type=checkbox]){
+ min-height:37px;padding:8px 9px;border-radius:9px;font-size:.75rem;
+}
+.member-editor-card .publish-toggle{gap:8px;margin-top:3px;padding:9px;border-radius:11px}
+.member-editor-card .publish-toggle input{width:15px;height:15px}
+.member-editor-card .publish-toggle strong{font-size:.72rem}
+.member-editor-card .publish-toggle small{font-size:.64rem;line-height:1.4}
+.member-editor-card .admin-button{
+ min-height:40px;margin-top:4px;padding:10px 12px;border-radius:11px;font-size:.76rem;
+}
+.member-editor-card .form-message,.member-options-card .field-hint{font-size:.68rem}
+.member-option-list{display:grid;gap:6px}
+.member-option-button{
+ display:flex;align-items:center;gap:9px;width:100%;min-height:36px;padding:7px 10px;
+ border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--green);
+ text-align:left;font-size:.72rem;font-weight:800;text-decoration:none;cursor:pointer;
+}
+.member-option-button>span{display:grid;place-items:center;width:20px;height:20px;border-radius:7px;background:#eaf3e8;font-size:.85rem}
+.member-option-button:hover{border-color:#b7cfb8;background:#f7fbf5}
+.member-options-card .field-hint{margin-top:9px;line-height:1.45}
+@media(max-width:950px){
+ .member-workspace{grid-template-columns:1fr}
+ .member-side-rail{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+}
+@media(max-width:680px){
+ .member-side-rail{grid-template-columns:1fr}
+ .member-table-card,.member-editor-card,.member-options-card{padding:14px}
+ .member-tools{margin:10px 0}
+ .member-editor-card .form-two{grid-template-columns:1fr 1fr}
+}
