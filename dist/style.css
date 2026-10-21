@@ -201,3 +201,14 @@ body{font-size:14px}
 }
 @media(max-width:390px){.portal-nav a{padding:7px 8px;font-size:10px}.portal-nav{gap:1px}.portal-nav-admin span{display:none}.catalog-controls{padding-left:9px;padding-right:9px}.card-title-row h3{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.portal-nav a,.competition-card,.card-title-row>span{transition:none}}
+
+
+/* Compact the secondary pages while leaving the public dashboard untouched. */
+@media(min-width:1000px){
+ .agenda-page,.admin-page,.catalog-page{zoom:.8}
+ .agenda-page .wrap,.admin-page .wrap,.catalog-page .wrap{width:min(1800px,calc(100% - 64px))}
+ .admin-page .admin-dashboard{max-width:none}
+ .admin-page .admin-columns,.admin-page .program-library-grid{grid-template-columns:minmax(0,1fr)}
+ .admin-page .record-list,.admin-page .program-record-list{max-height:none;overflow:visible}
+ .admin-page .editor-card form>*:not([type=hidden]){max-width:1120px}
+}
