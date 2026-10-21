@@ -143,3 +143,35 @@ body.catalog-page,body.agenda-page{
   :is(.catalog-page,.agenda-page) *::before,
   :is(.catalog-page,.agenda-page) *::after{transition:none!important}
 }
+
+/* Competition details use a dedicated, readable page instead of a clipped modal. */
+.competition-detail-page[hidden]{display:none!important}
+.competition-detail-page{padding-top:25px;padding-bottom:60px}
+.detail-back{display:inline-flex;align-items:center;gap:8px;margin-bottom:17px;padding:9px 13px;border:1px solid #dce7dc;border-radius:999px;background:#fffefa;color:#2b6542;font-size:12px;font-weight:700}
+.detail-back:hover{background:#eaf3e8}
+.detail-page-grid{display:grid;grid-template-columns:minmax(280px,.82fr) minmax(0,1fr);overflow:hidden;border:1px solid #e0e8dd;border-radius:22px;background:#fffefa;box-shadow:0 10px 28px #21442d0b}
+.detail-poster{min-height:620px;background:#f0f4ed}
+.detail-poster .poster-image{width:100%;height:100%;min-height:620px;object-fit:contain;background:#f0f4ed}
+.detail-poster .poster-missing{height:100%;min-height:620px}
+.detail-info{align-self:start;padding:30px 36px 34px;overflow:visible}
+.detail-info h1{max-width:780px;margin:12px 0 16px;color:#193d2b;font:600 clamp(28px,3vw,42px)/1.08 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:-.035em}
+.detail-organizer{margin:0 0 16px;padding:12px 14px;border-left:3px solid #6b9b78;border-radius:0 12px 12px 0;background:#f1f6ef}
+.detail-organizer small,.detail-organizer strong{display:block}
+.detail-organizer small{margin-bottom:4px;color:#708174;font-size:9px;font-weight:800;letter-spacing:.1em}
+.detail-organizer strong{color:#315a3e;font-size:13px}
+.detail-description{white-space:pre-line}
+.detail-facts{margin:17px 0 18px}
+.detail-facts>div{padding:10px 0}
+.register-button{border-radius:12px}
+.poster-missing{display:grid;place-content:center;justify-items:center;gap:9px;padding:20px;background:#eef4eb;color:#67806a;text-align:center}
+.poster-missing span{font-size:42px;color:#82a384}
+.poster-missing strong{font-size:12px}
+@media(max-width:760px){
+ .competition-detail-page{padding-top:17px;padding-bottom:36px}
+ .detail-page-grid{grid-template-columns:1fr;border-radius:18px}
+ .detail-poster,.detail-poster .poster-image,.detail-poster .poster-missing{min-height:0;height:auto;max-height:none}
+ .detail-poster .poster-image{aspect-ratio:4/5;object-fit:contain}
+ .detail-poster .poster-missing{aspect-ratio:4/5}
+ .detail-info{padding:22px 19px 24px}
+ .detail-info h1{font-size:30px}
+}
