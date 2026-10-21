@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 23196)
-Total output lines: 1990
+Warning: truncated output (original token count: 8360)
+Total output lines: 500
 
 .admin-page{min-height:100vh}.admin-main{padding-top:64px;padding-bottom:96px}.admin-heading{max-width:700px;margin:0 auto 32px}.admin-heading h1{font-size:clamp(2.7rem,7vw,5.4rem);line-height:.98;margin:16px 0}.admin-heading h1 em{font-family:var(--display);font-weight:500;color:var(--orange)}.admin-heading>p{max-width:560px;color:var(--muted);font-size:1.08rem}.auth-card,.editor-card,.records-card{border:1px solid var(--line);border-radius:26px;background:var(--paper);box-shadow:0 18px 50px #1728200a}.auth-card{max-width:520px;margin:auto;padding:32px}.admin-card-top,.editor-heading,.dashboard-top{display:flex;align-items:center;justify-content:space-between;gap:16px}.admin-card-top{color:var(--muted);font-size:.72rem;font-weight:900;letter-spacing:.12em}.admin-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:var(--lime);color:var(--green);font-size:1.2rem}.auth-card h2{font-size:2rem;margin:20px 0 4px}.auth-help,.auth-footnote{color:var(--muted);font-size:.9rem}.auth-card form,.editor-card form{display:grid;gap:9px;margin-top:24px}.auth-card label,.editor-card label{font-size:.84rem;font-weight:800}.auth-card input,.editor-card input,.editor-card select,.editor-card textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--ink)}.auth-card input:focus,.editor-card input:focus,.editor-card select:focus,.editor-card textarea:focus{outline:2px solid var(--green);outline-offset:1px}.admin-button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;margin-top:10px;padding:14px 17px;border:0;border-radius:15px;background:var(--green);color:white;font-weight:900}.admin-button:disabled{opacity:.55;cursor:wait}.text-button{padding:8px 0;border:0;background:transparent;color:var(--green);font-weight:900;text-decoration:underline;text-underline-offset:3px}.auth-card>.text-button{margin-top:13px}.auth-footnote{margin-top:18px;font-size:.79rem}.form-message{min-height:1.3em;color:var(--muted);font-size:.84rem}.form-message[data-kind=error]{color:#b43c29}.form-message[data-kind=success]{color:#27634b}.admin-dashboard{margin-top:72px}.dashboard-top{align-items:flex-end;margin-bottom:22px}.dashboard-top h2{font-size:2.4rem}.dashboard-top p{color:var(--muted);font-size:.85rem}.admin-columns{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(380px,1.1fr);align-items:start;gap:18px}.editor-card,.records-card{padding:24px}.editor-heading{align-items:flex-start;margin-bottom:14px}.admin-kicker{font-size:.68rem;color:var(--muted);font-weight:900;letter-spacing:.12em}.editor-heading h3{font-size:1.55rem;margin-top:4px}.editor-card form{margin-top:18px}.editor-card label:not(.publish-toggle){margin-top:6px}.form-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-two>div{display:grid;align-content:start;gap:8px}.publish-toggle{display:flex;gap:11px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:14px;background:#faf9f3;margin-top:8px}.publish-toggle input{width:18px;height:18px;accent-color:var(--green)}.publish-toggle span{display:grid;gap:3px}.publish-toggle small{color:var(--muted);font-weight:500}.record-count{padding:6px 10px;border-radius:999px;background:var(--lime);font-size:.75rem;font-weight:900}.record-list{display:grid;gap:10px;max-height:920px;overflow:auto}.record-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff}.record-row h4{font:700 1rem/1.25 var(--display);letter-spacing:-.03em}.record-row p{margin-top:4px;color:var(--muted);font-size:.78rem}.record-status{display:inline-flex;margin-top:8px;padding:4px 8px;border-radius:999px;background:#f1f1e8;color:#657064;font-size:.67rem;font-weight:900}.record-status.published{background:#e3f3df;color:#287146}.record-actions{display:flex;align-items:flex-start;gap:6px}.record-actions button{padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--green);font-size:.75rem;font-weight:800}.record-actions button.delete{color:#aa3f32}.records-empty{padding:24px 12px;text-align:center;color:var(--muted);font-size:.9rem}[hidden]{display:none!important}@media(max-width:900px){.admin-columns{grid-template-columns:1fr}.record-list{max-height:none}}@media(max-width:600px){.admin-main{padding-top:40px}.auth-card,.editor-card,.records-card{padding:20px;border-radius:20px}.form-two{grid-template-columns:1fr;gap:4px}.dashboard-top{align-items:flex-start}.dashboard-top h2{font-size:2rem}}
 
@@ -136,90 +136,7 @@ Total output lines: 1990
 .field-hint{margin:-3px 0 5px;color:var(--muted);font-size:.75rem;line-height:1.5}
 .program-photo-preview{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);border-radius:13px;background:var(--bg);color:var(--muted);font-size:.75rem}
 .program-photo-preview[hidden]{display:none}
-.program-photo-preview img{width:76px;height:64px;flex:0 0 auto;object-fit:cover;border-radius:9px;background:#e7eee3}
-.program-record-list{display:grid;gap:9px;max-height:510px;overflow:auto}
-.program-record{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:11px;padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff}
-.program-record>img{width:64px;height:58px;object-fit:cover;border-radius:9px;background:var(--bg)}
-.program-record-copy{display:grid;gap:5px;min-width:0}
-.program-record-copy>strong{overflow-wrap:anywhere;font:700 .88rem/1.25 var(--display);letter-spacing:-.02em}
-.program-record-copy .record-status{width:max-content;margin:0}
-.program-record-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}
-.program-record-actions button{padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--green);font-size:.7rem;font-weight:800;cursor:pointer}
-.program-record-actions button:hover{background:var(--bg)}
-.agenda-next-step{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;margin:18px 0 8px;padding:15px 17px;border:1px solid #dbe5d7;border-radius:15px;background:#f2f7ef}
-.agenda-next-step>span{color:#68806c;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-.agenda-next-step>strong{font-size:.82rem;line-height:1.45}
-.agenda-next-step>button{padding:9px 12px;border:0;border-radius:999px;background:var(--green);color:#fff;font-size:.73rem;font-weight:800;cursor:pointer}
-.agenda-next-step>button b{margin-left:7px}
-#agenda-program:disabled{background:#f0f1ec;color:#818981}
-@media(max-width:900px){.program-library-grid{grid-template-columns:1fr}}
-@media(max-width:600px){
- .agenda-admin-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr;border-radius:14px}
- .agenda-admin-tab{padding:0 8px;font-size:.7rem}
- .program-record{grid-template-columns:54px minmax(0,1fr);gap:9px}
- .program-record>img{width:54px;height:52px}
- .program-record-actions{grid-column:1/-1}
- .agenda-next-step{grid-template-columns:1fr;gap:7px}
- .agenda-next-step>button{justify-self:start;margin-top:3px}
-}
-
-
-/* Management area chooser for the signed-in admin workspace. */
-.module-picker-heading{margin:21px 0 10px}
-.module-picker-heading h3{margin-top:4px;font-size:1.3rem;letter-spacing:-.04em}
-.admin-tabs.module-grid{display:grid;width:100%;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px;padding:0;border:0;border-radius:0;background:transparent}
-.admin-tabs.module-grid .admin-tab{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:auto auto;align-content:start;align-items:center;gap:8px 10px;min-height:104px;padding:13px;border:1px solid var(--line);border-radius:16px;background:var(--paper);color:var(--ink);text-align:left;white-space:normal;box-shadow:0 4px 14px #17282006;transition:border-color .16s,background .16s,transform .16s,box-shadow .16s}
-.admin-tabs.module-grid .admin-tab:hover{transform:translateY(-2px);border-color:#a9c8ae;background:#fff;box-shadow:0 9px 20px #1728200d}
-.admin-tabs.module-grid .admin-tab.is-active{border-color:var(--green);background:#f1f7f1;color:var(--ink);box-shadow:0 0 0 2px #08744312}
-.module-icon{display:grid;place-items:center;width:36px;height:36px;grid-row:1/3;border-radius:12px;background:#eaf3e8;color:var(--green);font-size:16px;font-weight:800}
-.module-copy{display:grid;gap:3px;min-width:0}
-.module-copy strong{font-size:13px;line-height:1.25;letter-spacing:-.02em}
-.module-copy small{color:var(--muted);font-size:10px;line-height:1.4;font-weight:500}
-.module-state{display:inline-flex;align-items:center;justify-self:start;padding:4px 7px;border:1px solid var(--line);border-radius:999px;background:#f3f4ed;color:#738076;font-size:9px;font-weight:800;line-height:1}
-.module-state.is-ready{border-color:#d2e7d2;background:#e9f5e8;color:#287146}
-.module-placeholder{margin-top:8px}
-.module-placeholder-card{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--paper);box-shadow:0 8px 24px #17282008}
-.module-placeholder-card>.module-icon{width:42px;height:42px}
-.module-placeholder-card h3{margin-top:4px;font-size:1.35rem;letter-spacing:-.04em}
-.module-placeholder-card p{margin-top:5px;color:var(--muted);font-size:.86rem;line-height:1.5}
-.module-placeholder-card>.module-state{justify-self:end}
-@media(max-width:1050px){.admin-tabs.module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:760px){
- .admin-tabs.module-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
- .admin-tabs.module-grid .admin-tab{min-height:98px;padding:11px;border-radius:14px;grid-template-columns:32px minmax(0,1fr);gap:7px}
- .module-icon{width:31px;height:31px;border-radius:10px}
- .module-copy strong{font-size:12px}
- .module-copy small{font-size:9px}
- .module-placeholder-card{grid-template-columns:38px minmax(0,1fr);padding:15px;gap:10px}
- .module-placeholder-card>.module-state{grid-column:2;justify-self:start}
- .module-placeholder-card>.module-icon{width:36px;height:36px}
-}
-@media(max-width:390px){.module-copy small{font-size:8px}.admin-tabs.module-grid .admin-tab{padding:9px;min-height:92px}}
-
-
-/* Secretary workspace: shared member register, attendance recap, and outgoing letters. */
-.secretariat-management{margin-top:12px}
-.secretariat-tabs{display:flex;gap:6px;width:max-content;max-width:100%;margin:0 0 16px;padding:5px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
-.secretariat-tab{min-height:36px;padding:0 16px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:.77rem;font-weight:800;cursor:pointer}
-.secretariat-tab:hover{background:var(--bg);color:var(--green)}
-.secretariat-tab.is-active{background:var(--green);color:#fff}
-.secretariat-tab:focus-visible{outline:3px solid var(--green);outline-offset:2px}
-.secretariat-subpanel[hidden]{display:none!important}
-.secretariat-intro{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:18px 0 14px}
-.secretariat-intro h3{margin-top:4px;font-size:1.45rem;letter-spacing:-.04em}
-.secretariat-intro p,.admin-muted{margin-top:5px;color:var(--muted);font-size:.82rem;line-height:1.5}
-.secretariat-management .admin-columns{grid-template-columns:minmax(280px,.76fr) minmax(420px,1.24fr);gap:14px}
-.secretariat-management .editor-card,.secretariat-management .records-card{padding:18px;border-radius:18px}
-.secretariat-management .editor-heading{margin-bottom:8px}
-.secretariat-management .editor-heading h3{font-size:1.2rem}
-.member-tools{display:flex;align-items:center;gap:10px;margin:13px 0 7px}
-.member-tools input[type=search]{min-width:130px;flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)}
-.member-tools input:focus{outline:2px solid var(--green);outline-offset:1px}
-.file-import-button{flex:0 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--green);font-size:.72rem;font-weight:800;cursor:pointer}
-.secretariat-table-wrap{max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:13px}
-.secretariat-table{width:100%;border-collapse:collapse;text-align:left;font-size:.76rem}
-.secretariat-table th{position:sticky;top:0;padding:10px 11px;background:#f2f6ef;color:#617265;font-size:.66rem;letter-spacing:.04em;white-space:nowrap}
-.secretariat-table td{padding:9px 11px;border-top:1px solid #edf0e9;vertical-align:middle}
+.program-photo-preview img{width:76px;height:64px;flex:0 0 auto;object-fit:cover;border-radius:9px…1860 tokens truncated…retariat-table td{padding:9px 11px;border-top:1px solid #edf0e9;vertical-align:middle}
 .secretariat-table td strong,.secretariat-table td small{display:block}
 .secretariat-table td strong{font-size:.78rem}
 .secretariat-table td small{margin-top:3px;color:var(--muted);font-size:.67rem}
@@ -1014,7 +931,241 @@ Total output lines: 1990
   width:100%;
   min-width:0;
   min-height:48px;
-  align-items:…1196 tokens truncated…form:translateX(0);
+  align-items:center;
+  gap:12px;
+  padding:6px 10px;
+  border:1px solid transparent;
+  border-radius:11px;
+  background:transparent;
+  color:#47534b;
+  text-align:left;
+  box-shadow:none;
+  transform:none;
+}
+.admin-sidebar .admin-tab:hover{
+  border-color:#e7ece6;
+  background:#f7f9f7;
+  box-shadow:none;
+  transform:none;
+}
+.admin-sidebar .admin-tab.is-active{
+  border-color:#e1ebe2;
+  background:#edf4ee;
+  color:var(--green);
+  box-shadow:inset 3px 0 0 var(--green);
+}
+.admin-sidebar .module-icon{
+  display:grid;
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  place-items:center;
+  border-radius:9px;
+  background:transparent;
+  color:currentColor;
+  font-size:16px;
+  font-weight:750;
+}
+.admin-sidebar .module-copy{
+  display:block;
+  min-width:0;
+}
+.admin-sidebar .module-copy strong{
+  display:block;
+  font-size:13px;
+  font-weight:650;
+  line-height:1.25;
+}
+.admin-sidebar .module-copy small{
+  display:none;
+}
+.admin-sidebar .module-state{
+  display:none;
+}
+.admin-sidebar .admin-tab:focus-visible,
+.sidebar-toggle:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--green) 32%,transparent);
+  outline-offset:2px;
+}
+.admin-sidebar-scrim{
+  display:none;
+}
+.admin-workspace-content{
+  display:flex;
+  min-width:0;
+  min-height:100vh;
+  flex-direction:column;
+  background:#f5f7fa;
+}
+.admin-topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  display:flex;
+  min-height:72px;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:0 32px;
+  border-bottom:1px solid #e7eaee;
+  background:#fff;
+}
+.admin-topbar-leading,
+.admin-topbar-user{
+  display:flex;
+  align-items:center;
+}
+.admin-topbar-leading{
+  gap:12px;
+}
+.admin-topbar-leading h2{
+  margin:0;
+  color:#202b24;
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:-.025em;
+}
+.sidebar-toggle{
+  display:grid;
+  width:38px;
+  height:38px;
+  place-items:center;
+  border:1px solid #e5eaf0;
+  border-radius:10px;
+  background:#f8fafb;
+  color:#34443a;
+  font-size:17px;
+  cursor:pointer;
+}
+.sidebar-toggle:hover{
+  border-color:#d5e2d7;
+  background:#f1f6f1;
+}
+.admin-topbar-user{
+  gap:14px;
+}
+.admin-user-copy{
+  display:grid;
+  gap:3px;
+  text-align:right;
+}
+.admin-user-copy span{
+  color:#849087;
+  font-size:8px;
+  font-weight:850;
+  letter-spacing:.1em;
+}
+.admin-user-copy strong{
+  max-width:260px;
+  overflow:hidden;
+  color:#344239;
+  font-size:11px;
+  font-weight:600;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.admin-user-avatar{
+  display:grid;
+  flex:0 0 38px;
+  width:38px;
+  height:38px;
+  place-items:center;
+  border:2px solid #e3eee4;
+  border-radius:50%;
+  background:#edf5ed;
+  color:var(--green);
+  font-size:10px;
+  font-weight:900;
+}
+.admin-topbar-user #logout{
+  padding:8px 10px;
+  border:1px solid #e6e9ed;
+  border-radius:9px;
+  background:#fff;
+  color:#57645b;
+  font-size:10px;
+  text-decoration:none;
+}
+.admin-topbar-user #logout:hover{
+  border-color:#d3dfd4;
+  background:#f7faf7;
+}
+.admin-content-area{
+  width:100%;
+  min-width:0;
+  flex:1;
+  padding:24px 32px 40px;
+}
+.admin-content-area>.management-panel{
+  width:100%;
+  max-width:none;
+  margin:0;
+}
+.admin-content-area>.management-panel[hidden]{
+  display:none!important;
+}
+.admin-content-area>.management-panel>.admin-columns{
+  margin-top:0;
+}
+.admin-content-area .secretariat-tabs{
+  margin-top:0;
+}
+.admin-content-area .secretariat-intro{
+  margin-top:12px;
+}
+.admin-app-shell.is-sidebar-collapsed{
+  grid-template-columns:82px minmax(0,1fr);
+}
+.admin-app-shell.is-sidebar-collapsed .admin-sidebar{
+  width:82px;
+  padding-inline:10px;
+}
+.admin-app-shell.is-sidebar-collapsed .app-sidebar-brand{
+  justify-content:center;
+  padding-inline:0;
+}
+.admin-app-shell.is-sidebar-collapsed .app-sidebar-brand>span,
+.admin-app-shell.is-sidebar-collapsed .sidebar-account-copy,
+.admin-app-shell.is-sidebar-collapsed .sidebar-account-arrow,
+.admin-app-shell.is-sidebar-collapsed .sidebar-nav-label,
+.admin-app-shell.is-sidebar-collapsed .admin-sidebar .module-copy{
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+}
+.admin-app-shell.is-sidebar-collapsed .sidebar-account-card{
+  justify-content:center;
+  padding:7px 0;
+  border-color:transparent;
+  background:transparent;
+}
+.admin-app-shell.is-sidebar-collapsed .admin-sidebar .admin-tab{
+  justify-content:center;
+  padding:5px;
+}
+.admin-app-shell.is-sidebar-collapsed .admin-sidebar .module-icon{
+  flex-basis:38px;
+  width:38px;
+  height:38px;
+}
+@media(max-width:900px){
+  .admin-app-shell{
+    display:block;
+  }
+  .admin-sidebar{
+    position:fixed;
+    inset:0 auto 0 0;
+    width:min(292px,86vw);
+    height:100dvh;
+    transform:translateX(-102%);
+    box-shadow:12px 0 36px #101b1925;
+    transition:transform .22s ease;
+  }
+  .admin-app-shell.is-sidebar-open .admin-sidebar{
+    transform:translateX(0);
   }
   .admin-app-shell.is-sidebar-open .admin-sidebar-scrim{
     position:fixed;
@@ -1267,6 +1418,9 @@ Total output lines: 1990
   border-radius:8px;
   background:#fff;
   color:var(--ink);
+Warning: truncated output (original token count: 9406)
+Total output lines: 490
+
   font:inherit;
   font-size:10px;
   font-weight:500;
@@ -1401,142 +1555,7 @@ Total output lines: 1990
 .admin-page .record-row h4,.admin-page .program-record-copy>strong{font:600 13px/1.35 'Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
 .admin-page .record-row p,.admin-page .record-row p strong{margin-top:3px;color:#5b6f89;font:400 11px/1.5 'Plus Jakarta Sans',sans-serif}
 .admin-page .record-status{margin-top:6px;padding:3px 7px;border-radius:5px;background:#edf1f6;color:#5b6f89;font:600 9px/1.35 'Plus Jakarta Sans',sans-serif;letter-spacing:.02em}
-.admin-page .record-status.published{background:#e7f2e7;color:#2f6c43}
-.admin-page .record-actions{gap:5px}
-.admin-page .record-actions button,.admin-page .program-record-actions button{min-height:28px;padding:5px 9px;border:1px solid #e6edf5;border-radius:7px;background:#fff;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
-.admin-page .record-actions button:hover,.admin-page .program-record-actions button:hover{border-color:#c4d7c7;background:#f6faf6}
-.admin-page .record-actions button.delete{color:#a23e38}
-.admin-page .records-empty{padding:24px 12px;border:1px dashed #d8e1eb;border-radius:9px;background:#f8fafc;color:#687e97;font-size:12px}
-.admin-page .form-message{min-height:0;margin:4px 0 0;font-size:11px;line-height:1.45}
-.admin-page .form-message:empty{display:none}
-.admin-page .agenda-next-step{margin:14px 0 0;padding:12px 14px;border:1px solid #dce7dc;border-radius:9px;background:#f5f9f4}
-.admin-page .agenda-next-step>span{font-size:9px}
-.admin-page .agenda-next-step>strong{font-size:11px}
-.admin-page .agenda-next-step>button{padding:8px 11px;border-radius:7px;font:600 11px 'Plus Jakarta Sans',sans-serif}
-
-/* Secretary screens: filters beside the full table; compact entry and history panes. */
-.admin-page .member-workspace{grid-template-columns:minmax(0,1fr) 270px;gap:14px;font-size:13px}
-.admin-page .member-table-card,.admin-page .member-editor-card{padding:16px;border-radius:12px}
-.admin-page .member-table-heading{margin-bottom:10px}
-.admin-page .member-table-heading h3{font:400 17px/1.3 'DM Serif Display',Georgia,serif}
-.admin-page .member-tools{gap:8px;margin:0 0 10px}
-.admin-page .member-tools input[type=search]{flex:1 1 190px;min-height:36px;font-size:12px}
-.admin-page .member-data-actions{gap:5px}
-.admin-page .member-data-button{min-height:32px;padding:6px 9px;border:1px solid #e6edf5;border-radius:7px;background:#fff;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
-.admin-page .member-data-button:hover{border-color:#c4d7c7;background:#f6faf6}
-.admin-page .member-filter-label{margin:0 0 4px;color:#5b6f89;font-size:10px;font-weight:600;letter-spacing:0;text-transform:none}
-.admin-page .member-column-filter{min-width:110px;min-height:31px;padding:6px 22px 6px 8px;font-size:10px}
-.admin-page .member-table-card .member-data-table{min-width:700px}
-.admin-page .member-table-card .secretariat-table{font-size:12px}
-.admin-page .member-table-card .secretariat-table th{padding:9px 10px;background:#f1f5fb;color:#5b6f89;font-size:9px;letter-spacing:.04em}
-.admin-page .member-table-card .secretariat-table td{padding:9px 10px;border-color:#e6edf5;font-size:11px}
-.admin-page .member-table-card .secretariat-table td strong{font-size:12px;line-height:1.35}
-.admin-page .member-table-card .secretariat-table td small{font-size:10px;line-height:1.35}
-.admin-page .member-table-card .secretariat-table .record-status{font-size:9px}
-.admin-page .member-editor-card .editor-heading h3{font-size:16px}
-.admin-page .member-editor-card form{gap:6px;margin-top:10px}
-.admin-page .member-editor-card form>label:not(.publish-toggle){margin-top:2px;font-size:10px}
-.admin-page .member-editor-card :is(input:not([type=checkbox]),select){min-height:34px;padding:7px 9px;border-radius:7px;font-size:11px}
-.admin-page .member-editor-card .form-two{gap:7px}
-.admin-page .member-editor-card .publish-toggle{padding:8px}
-.admin-page .member-editor-card .publish-toggle strong{font-size:10px}
-.admin-page .member-editor-card .publish-toggle small{font-size:9px}
-.admin-page .member-editor-card .admin-button{min-height:36px;font-size:11px}
-.admin-page .member-options-card{padding:14px!important;border-radius:12px!important}
-.admin-page .member-option-label{margin:9px 0 5px;color:#5b6f89;font-size:10px}
-.admin-page .member-status-filter{min-height:34px;border-color:#cad6e5;border-radius:7px;font:400 11px 'Plus Jakarta Sans',sans-serif}
-.admin-page .member-stats>div{padding:8px;border-color:#e6edf5;border-radius:8px;background:#f8fafc}
-.admin-page .member-stats span{font-size:9px}
-.admin-page .member-stats strong{font:500 15px 'DM Mono',monospace;color:#244d3f}
-.admin-page .member-option-button{min-height:32px;padding:6px 8px;border-color:#e6edf5;border-radius:7px;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
-.admin-page .member-option-button>span{width:20px;height:20px;border-radius:6px;background:#e8f1e9}
-
-.admin-page .secretariat-workspace{grid-template-columns:168px minmax(0,1fr) 280px;gap:12px}
-.admin-page .secretariat-options-card,.admin-page .attendance-events-card,.admin-page .letter-register-card,.admin-page .attendance-editor-card,.admin-page .letter-editor-card{padding:14px!important;border-radius:12px!important}
-.admin-page .secretariat-options-card .editor-heading h3,.admin-page .attendance-events-card .editor-heading h3,.admin-page .letter-register-card .editor-heading h3,.admin-page .attendance-editor-card .editor-heading h3,.admin-page .letter-editor-card .editor-heading h3{font-size:15px!important}
-.admin-page .attendance-events-card .secretariat-record-list,.admin-page .letter-register-card .secretariat-record-list{max-height:calc(100vh - 290px);min-height:160px}
-.admin-page .attendance-event-card{grid-template-columns:minmax(0,1fr) auto;padding:9px}
-.admin-page .attendance-event-card .secretariat-record-select strong{font-size:11px}
-.admin-page .attendance-event-card .secretariat-record-select small{font-size:10px}
-.admin-page .attendance-event-actions button{padding:5px 8px;font-size:9px}
-.admin-page .attendance-editor-card form,.admin-page .letter-editor-card form{gap:7px;margin-top:10px}
-.admin-page .attendance-editor-card form>label:not(.publish-toggle),.admin-page .letter-editor-card form>label:not(.publish-toggle){font-size:10px}
-.admin-page .attendance-editor-card :is(input,select),.admin-page .letter-editor-card :is(input,select){min-height:34px;padding:7px 8px;font-size:11px}
-.admin-page .attendance-editor-card .admin-button,.admin-page .letter-editor-card .admin-button{min-height:36px;padding:8px 10px;font-size:11px}
-.admin-page .letter-total{font:500 17px 'DM Mono',monospace;color:#244d3f}
-.admin-page .letter-record{gap:5px;padding:9px}
-.admin-page .letter-record-heading>strong{font:600 11px 'DM Mono',monospace}
-.admin-page .letter-record>p{margin:1px 0;font:600 11px/1.4 'Plus Jakarta Sans',sans-serif}
-.admin-page .letter-record>small{font-size:10px;line-height:1.4}
-.admin-page .letter-archive-form{grid-template-columns:minmax(0,1fr) minmax(110px,auto);gap:5px;margin-top:5px}
-.admin-page .letter-archive-form input,.admin-page .letter-archive-form select{min-height:32px;padding:6px 7px;font-size:10px}
-.admin-page .letter-archive-form button{grid-column:1/-1;justify-self:start;padding:6px 9px;border-radius:7px;background:#e8f1e9;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
-.admin-page .attendance-roster-panel{margin-top:12px!important;padding:16px!important;border-radius:12px!important}
-.admin-page .attendance-summary{gap:7px;margin:10px 0}
-.admin-page .attendance-summary span{padding:6px 10px;border-color:#e6edf5;border-radius:7px;background:#f1f5fb;font-size:10px}
-.admin-page .attendance-summary strong{font:500 12px 'DM Mono',monospace;color:#244d3f}
-.admin-page .secretariat-table-wrap{border-color:#e6edf5;border-radius:9px}
-.admin-page .secretariat-table{font:400 12px 'Plus Jakarta Sans',sans-serif}
-.admin-page .secretariat-table th{padding:9px 10px;background:#f1f5fb;color:#5b6f89;font-size:9px;letter-spacing:.04em}
-.admin-page .secretariat-table td{padding:9px 10px;border-color:#e6edf5;font-size:11px}
-.admin-page .secretariat-table td strong{font-size:12px}
-.admin-page .secretariat-table td small{font-size:10px}
-.admin-page .secretariat-table td :is(select,input){min-height:31px;padding:6px 8px;font-size:11px}
-.admin-page .attendance-proof-button{padding:5px 8px;border-radius:7px;background:#e8f1e9;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
-.admin-page .module-placeholder-card{grid-template-columns:40px minmax(0,1fr) auto;padding:18px}
-.admin-page .module-placeholder-card>.module-icon{width:36px;height:36px;border-radius:8px;background:#e8f1e9;color:#244d3f}
-.admin-page .module-placeholder-card p{margin-top:4px;color:#5b6f89;font-size:12px}
-.admin-page .module-placeholder-card>.module-state{padding:4px 8px;border-radius:6px;font-size:10px}
-
-@media(max-width:1200px){
- .admin-page .member-workspace{grid-template-columns:minmax(0,1fr) 250px}
- .admin-page .secretariat-workspace{grid-template-columns:150px minmax(0,1fr) 250px;gap:9px}
- .admin-page .admin-content-area{padding:22px 20px 32px}
- .admin-page .admin-topbar{padding-inline:20px}
-}
-@media(max-width:1000px){
- .admin-page .member-workspace{grid-template-columns:minmax(0,1fr)}
- .admin-page .member-table-card,.admin-page .member-entry-rail{grid-column:1;grid-row:auto}
- .admin-page .member-entry-rail{justify-self:end;width:min(100%,380px)}
- .admin-page .secretariat-workspace{grid-template-columns:160px minmax(0,1fr)}
- .admin-page .secretariat-workspace>.editor-card{grid-column:2}
- .admin-page .admin-columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-}
-@media(max-width:900px){
- .admin-page:has(#admin-view:not([hidden]))>.admin-main.wrap{padding:0}
- .admin-page .admin-workspace-shell{display:block;min-height:100vh}
- .admin-page .admin-sidebar{position:fixed;inset:0 auto 0 0;z-index:40;width:min(292px,86vw);height:100dvh;padding:20px 14px;transform:translateX(-102%);transition:transform .22s ease;box-shadow:12px 0 36px #10201935}
- .admin-page .admin-app-shell.is-sidebar-open .admin-sidebar{transform:translateX(0)}
- .admin-page .admin-app-shell.is-sidebar-open .admin-sidebar-scrim{position:fixed;inset:0;z-index:39;display:block;width:100%;height:100%;border:0;background:#10201966}
- .admin-page .admin-workspace-content{min-height:100vh}
- .admin-page .admin-topbar{min-height:58px;padding-inline:16px}
- .admin-page .admin-content-area{padding:20px 16px 30px}
-}
-@media(max-width:700px){
- .admin-page .admin-columns,.admin-page .secretariat-workspace{grid-template-columns:minmax(0,1fr)}
- .admin-page .secretariat-workspace>.editor-card{grid-column:1}
- .admin-page .member-entry-rail{justify-self:stretch;width:100%}
- .admin-page .secretariat-options-rail,.admin-page .secretariat-workspace>.records-card,.admin-page .secretariat-workspace>.editor-card{grid-column:1}
- .admin-page .admin-topbar{gap:8px;padding-inline:12px}
- .admin-page .admin-topbar-leading{gap:8px}
- .admin-page .admin-topbar-leading h2{font-size:17px}
- .admin-page .admin-topbar-user{gap:6px}
- .admin-page .admin-user-copy span{display:none}
- .admin-page .admin-user-copy strong{max-width:100px;font-size:9px}
- .admin-page .admin-user-avatar{width:28px;height:28px;flex-basis:28px}
- .admin-page .admin-topbar-user #logout{padding:6px 8px;font-size:10px}
- .admin-page .admin-content-area{padding:16px 12px 24px}
- .admin-page .secretariat-tabs,.admin-page .agenda-admin-tabs{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:8px}
- .admin-page .agenda-admin-tabs{grid-template-columns:1fr 1fr}
- .admin-page .secretariat-tab,.admin-page .agenda-admin-tab{padding-inline:5px;font-size:10px}
- .admin-page .member-entry-rail{width:100%}
- .admin-page .module-placeholder-card{grid-template-columns:36px minmax(0,1fr)}
- .admin-page .module-placeholder-card>.module-state{grid-column:2;justify-self:start}
-}
-
-/* Final alignment pass from the supplied desktop screenshot. */
-.admin-page .admin-workspace-shell{grid-template-columns:240px minmax(0,1fr)}
-.admin-page .admin-sidebar{width:240px;min-width:0;max-width:240px;box-sizing:border-box;overflow-x:hidden}
+.admin-page .record-st…2906 tokens truncated…den}
 .admin-page .app-sidebar-brand,.admin-page .sidebar-account-card{min-width:0}
 .admin-page .app-sidebar-brand>span,.admin-page .sidebar-account-copy{min-width:0;flex:1}
 .admin-page .app-sidebar-brand strong{color:#fff;font:700 14px/1.2 'Plus Jakarta Sans',sans-serif;white-space:nowrap}
