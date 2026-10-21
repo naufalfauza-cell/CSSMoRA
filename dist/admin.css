@@ -1946,3 +1946,20 @@
   color:#fff;
   background:#ffffff20;
 }
+
+/* Direct poster upload for competition records */
+.admin-page .poster-upload-field{display:grid;gap:8px}
+.admin-page .poster-upload-control{
+  display:flex;align-items:center;gap:11px;width:100%;padding:11px 12px;
+  border:1px dashed #b9cdbb;border-radius:12px;background:#f7faf5;cursor:pointer;
+  transition:border-color .18s ease,background .18s ease,transform .18s ease
+}
+.admin-page .poster-upload-control:hover{border-color:#4f9568;background:#f0f7ef;transform:translateY(-1px)}
+.admin-page .poster-upload-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#e4efe3;color:#2c7147;font-size:19px}
+.admin-page .poster-upload-control strong,.admin-page .poster-upload-control small{display:block}
+.admin-page .poster-upload-control strong{font-size:11px;color:#294a35}
+.admin-page .poster-upload-control small{margin-top:2px;font-size:9px;font-weight:500;color:#748176}
+.admin-page .poster-upload-cta{margin-left:auto;padding:6px 10px;border-radius:999px;background:#e7f0e4;color:#2e6845;font-size:10px;font-weight:700}
+.admin-page .poster-upload-preview{width:112px;max-height:145px;object-fit:cover;border:1px solid #e1e9df;border-radius:11px;background:#fff}
+.admin-page .poster-upload-name,.admin-page .poster-upload-help{font-size:10px;line-height:1.45;color:#718075}
+.admin-page .poster-upload-help{margin-top:-5px}
