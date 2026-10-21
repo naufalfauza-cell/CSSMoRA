@@ -305,3 +305,43 @@
  .calendar-day small{position:static;min-width:11px;height:11px;padding:0 2px}
 }
 @media(prefers-reduced-motion:reduce){.calendar-day{transition:none}}
+
+/* Monthly agenda carousel in the public videotron */
+.event-item{grid-template-columns:110px minmax(0,1fr);gap:14px;align-items:stretch;touch-action:pan-y}
+.event-photo{width:110px;height:100%;min-height:96px;object-fit:cover;border-radius:10px;background:#fff}
+.event-content{display:grid;grid-template-columns:54px minmax(0,1fr);gap:12px;align-items:center;min-width:0}
+.event-when{display:block;margin-bottom:4px;color:#d5e7d8;font-size:10px;line-height:1.45}
+.event-body{min-width:0}
+.event-body strong{font-size:15px;line-height:1.3}
+.event-body p{margin-top:4px;color:#d8e8db;font-size:10px;line-height:1.45}
+.event-carousel-tools{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px}
+.event-arrow{display:grid;place-items:center;width:28px;height:28px;padding:0;border:1px solid #ffffff38;border-radius:50%;background:#ffffff12;color:#fff;font-size:19px;line-height:1;cursor:pointer}
+.event-arrow:hover{background:#ffffff26}
+.event-position{color:#d8e8db;font-size:10px;font-weight:600;line-height:1.3;text-align:center}
+.event-dots{gap:6px;margin-top:8px}
+.event-dots button{width:9px;height:7px;border:0;border-radius:8px;background:#ffffff55;transition:width .2s,background .2s}
+.event-dots button.on{width:20px;background:#f0d06b}
+.event-arrow:focus-visible,.event-dots button:focus-visible{outline:2px solid #f0d06b;outline-offset:3px}
+@media(max-width:760px){
+ .event-item{grid-template-columns:82px minmax(0,1fr);gap:9px;padding:10px}
+ .event-photo{width:82px;min-height:82px;border-radius:9px}
+ .event-content{grid-template-columns:34px minmax(0,1fr);gap:8px}
+ .event-date b{font-size:18px}.event-date span{font-size:9px}
+ .event-when{font-size:9px;margin-bottom:3px}
+ .event-body strong{font-size:12px}
+ .event-body p{font-size:9px}
+ .event-carousel-tools{gap:9px;margin-top:8px}
+ .event-arrow{width:25px;height:25px;font-size:17px}
+ .event-position{font-size:9px}
+}
+@media(max-width:370px){
+ .event-item{grid-template-columns:68px minmax(0,1fr);gap:7px;padding:8px}
+ .event-photo{width:68px;min-height:72px}
+ .event-content{grid-template-columns:30px minmax(0,1fr);gap:6px}
+ .event-date b{font-size:16px}
+ .event-when{font-size:8px}
+ .event-body strong{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .event-dots button{transition:none}
+}
