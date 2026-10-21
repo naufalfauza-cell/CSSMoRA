@@ -94,12 +94,15 @@
     const offset=(monthStart+6)%7;
     const count=new Date(viewYear,viewMonth+1,0).getDate();
     const today=dayKey(new Date());
-    const eventDates=new Set();
+    const eventsByDay=new Map();
     eventsInView().forEach(event=>{
       const start=dayKey(new Date(event.starts_at)),end=dayKey(eventEnd(event));
       for(let day=1;day<=count;day++){
         const key=keyOf(viewYear,viewMonth,day);
-        if(start<=key&&end>=key)eventDates.add(key);
+        if(start<=key&&end>=key){
+          if(!eventsByDay.has(key))eventsByDay.set(key,[]);
+          eventsByDay.get(key).push(event);
+        }
       }
     });
     monthLabel.textContent=monthFormat.format(new Date(Date.UTC(viewYear,viewMonth,15,12)));
@@ -108,11 +111,15 @@
     for(let cell=0;cell<42;cell++){
       const day=cell-offset+1;
       if(day<1||day>count){cells.push('<span class="calendar-day calendar-day-outside" aria-hidden="true"></span>');continue;}
-      const key=keyOf(viewYear,viewMonth,day),has=eventDates.has(key);
+      const key=keyOf(viewYear,viewMonth,day),dayEvents=eventsByDay.get(key)||[];
       const classes=['calendar-day'];
       if(key===today)classes.push('is-today');
       if(key===selectedDay)classes.push('is-selected');
-      cells.push(`<button type="button" class="${classes.join(' ')}" data-date="${key}" aria-label="${esc(fullDate.format(dateFromKey(key)))}${has?', ada agenda':''}" aria-pressed="${key===selectedDay}"><span>${day}</span>${has?'<i aria-hidden="true"></i>':''}</button>`);
+      const eventNames=dayEvents.map(item=>item.title);
+      const visibleEvents=dayEvents.slice(0,2).map(item=>`<span class="calendar-event-chip" title="${esc(item.title)}">${esc(item.title)}</span>`).join('');
+      const moreEvents=dayEvents.length>2?`<span class="calendar-event-more">+${dayEvents.length-2} lainnya</span>`:'';
+      const accessibleEvents=eventNames.length?`, agenda: ${eventNames.join(', ')}`:'';
+      cells.push(`<button type="button" class="${classes.join(' ')}" data-date="${key}" aria-label="${esc(fullDate.format(dateFromKey(key)))}${esc(accessibleEvents)}" aria-pressed="${key===selectedDay}"><span class="calendar-day-number">${day}</span><span class="calendar-day-events">${visibleEvents}${moreEvents}</span></button>`);
     }
     grid.innerHTML=cells.join('');
   };
