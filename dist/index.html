@@ -22,10 +22,6 @@
       <img class="brand-chip-partners" src="./assets/kemenag-lpdp-logo.png" width="84" height="24" alt="Logo Kementerian Agama dan LPDP">
     </a>
 
-    <button class="background-motion-toggle" type="button" aria-label="Jeda video latar" title="Jeda video latar" data-paused="false" hidden>
-      <svg class="motion-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-      <svg class="motion-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l12-7z"/></svg>
-    </button>
 
     <section class="agenda-videotron" id="agenda" aria-labelledby="agenda-title">
       <div class="videotron-bezel">
@@ -79,7 +75,6 @@
 
   <script src="./supabase-config.js"></script>
   <script src="./agenda.js"></script>
-  <script src="./background-video.js"></script>
   <script>
     document.querySelectorAll('[data-dialog]').forEach(button => {
       button.addEventListener('click', () => document.getElementById(button.dataset.dialog)?.showModal());
