@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#087443">
   <meta name="robots" content="noindex, nofollow">
-  <title>Admin Lomba — CSSMoRA UNAIR</title>
+  <title>Admin CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./admin.css">
@@ -73,25 +73,56 @@
       </div>
       </div>
       <section class="management-panel agenda-management" id="agenda-panel" role="tabpanel" aria-labelledby="tab-agenda" hidden>
-        <div class="admin-columns">
-          <section class="editor-card" aria-labelledby="agenda-editor-title">
-            <div class="editor-heading"><div><span class="admin-kicker">FORM AGENDA</span><h3 id="agenda-editor-title">Tambah agenda</h3></div><button class="text-button" id="agenda-form-reset" type="button">Kosongkan</button></div>
-            <form id="agenda-form">
-              <input id="agenda-record-id" name="recordId" type="hidden">
-              <label for="agenda-title-input">Nama agenda</label><input id="agenda-title-input" name="title" maxlength="140" required>
-              <div class="form-two"><div><label for="agenda-starts">Mulai (WIB)</label><input id="agenda-starts" name="startsAt" type="datetime-local" required></div><div><label for="agenda-ends">Selesai (opsional)</label><input id="agenda-ends" name="endsAt" type="datetime-local"></div></div>
-              <label for="agenda-location">Lokasi</label><input id="agenda-location" name="location" maxlength="180" placeholder="Contoh: Ruang rapat CSSMoRA">
-              <label for="agenda-description">Keterangan</label><textarea id="agenda-description" name="description" rows="4" maxlength="1500"></textarea>
-              <label class="publish-toggle"><input id="agenda-published" name="published" type="checkbox"><span><strong>Terbitkan agenda</strong><small>Agenda terbit akan muncul di kalender publik.</small></span></label>
-              <button class="admin-button" id="save-agenda" type="submit">Simpan agenda <span aria-hidden="true">↗</span></button>
-              <p class="form-message" id="agenda-editor-message" role="status" aria-live="polite"></p>
-            </form>
-          </section>
-          <section class="records-card" aria-labelledby="agenda-records-title">
-            <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="agenda-records-title">Agenda tersimpan</h3></div><div class="agenda-record-tools"><span class="record-count" id="agenda-record-count">—</span><button class="text-button" id="agenda-refresh" type="button">Muat ulang</button></div></div>
-            <div class="record-list" id="agenda-record-list"><p class="records-empty">Memuat data…</p></div>
-          </section>
-        </div>
+        <nav class="agenda-admin-tabs" role="tablist" aria-label="Kelola proker dan agenda">
+          <button class="agenda-admin-tab is-active" id="tab-programs" type="button" role="tab" aria-selected="true" aria-controls="programs-panel">1 · Daftar proker &amp; foto</button>
+          <button class="agenda-admin-tab" id="tab-schedule" type="button" role="tab" aria-selected="false" aria-controls="schedule-panel">2 · Jadwal agenda</button>
+        </nav>
+        <section class="agenda-admin-subpanel" id="programs-panel" role="tabpanel" aria-labelledby="tab-programs">
+          <div class="editor-heading program-library-heading"><div><span class="admin-kicker">PERPUSTAKAAN PROKER</span><h3>Program kerja dan fotonya</h3><p class="admin-muted">Tambahkan foto proker sekali. Pengurus dapat memilih proker yang sama saat membuat agenda baru.</p></div></div>
+          <div class="admin-columns program-library-grid">
+            <section class="editor-card" aria-labelledby="program-editor-title">
+              <div class="editor-heading"><div><span class="admin-kicker">DATA PROKER</span><h3 id="program-editor-title">Tambah proker</h3></div><button class="text-button" id="program-form-reset" type="button">Kosongkan</button></div>
+              <form id="program-form">
+                <input id="program-record-id" name="recordId" type="hidden">
+                <label for="program-name">Nama proker</label><input id="program-name" name="name" maxlength="100" placeholder="Contoh: CSS Sport" required>
+                <label for="program-photo">Foto kegiatan</label><input id="program-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required>
+                <p class="field-hint">Format JPG, PNG, atau WebP. Maksimal 8 MB.</p>
+                <div class="program-photo-preview" id="program-photo-preview" hidden><img id="program-photo-preview-image" alt="Pratinjau foto proker"><span id="program-photo-preview-label"></span></div>
+                <label class="publish-toggle"><input id="program-active" name="active" type="checkbox" checked><span><strong>Aktif untuk agenda baru</strong><small>Proker nonaktif tetap menyimpan foto pada agenda sebelumnya.</small></span></label>
+                <button class="admin-button" id="save-program" type="submit">Simpan proker <span aria-hidden="true">↗</span></button>
+                <p class="form-message" id="program-editor-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
+            <section class="records-card" aria-labelledby="program-records-title">
+              <div class="editor-heading"><div><span class="admin-kicker">PERPUSTAKAAN</span><h3 id="program-records-title">Proker tersimpan</h3></div><div class="agenda-record-tools"><span class="record-count" id="program-record-count">—</span><button class="text-button" id="program-refresh" type="button">Muat ulang</button></div></div>
+              <div class="program-record-list" id="program-record-list"><p class="records-empty">Memuat proker…</p></div>
+            </section>
+          </div>
+          <div class="agenda-next-step"><span>Langkah berikutnya</span><strong>Pilih tab “Jadwal agenda” untuk memasukkan tanggal dan memilih foto prokernya.</strong><button type="button" data-open-schedule>Lanjut ke jadwal <b aria-hidden="true">→</b></button></div>
+        </section>
+        <section class="agenda-admin-subpanel" id="schedule-panel" role="tabpanel" aria-labelledby="tab-schedule" hidden>
+          <div class="editor-heading program-library-heading"><div><span class="admin-kicker">JADWAL KEGIATAN</span><h3>Agenda dan hitung mundur</h3><p class="admin-muted">Pilih proker dari daftar di atas. Foto yang sudah diunggah akan otomatis dipakai di agenda publik.</p></div></div>
+          <div class="admin-columns">
+            <section class="editor-card" aria-labelledby="agenda-editor-title">
+              <div class="editor-heading"><div><span class="admin-kicker">FORM AGENDA</span><h3 id="agenda-editor-title">Tambah agenda</h3></div><button class="text-button" id="agenda-form-reset" type="button">Kosongkan</button></div>
+              <form id="agenda-form">
+                <input id="agenda-record-id" name="recordId" type="hidden">
+                <label for="agenda-program">Program kerja</label><select id="agenda-program" name="programId" required><option value="">Pilih proker aktif…</option></select>
+                <label for="agenda-title-input">Nama kegiatan</label><input id="agenda-title-input" name="title" maxlength="140" required>
+                <div class="form-two"><div><label for="agenda-starts">Mulai (WIB)</label><input id="agenda-starts" name="startsAt" type="datetime-local" required></div><div><label for="agenda-ends">Selesai (opsional)</label><input id="agenda-ends" name="endsAt" type="datetime-local"></div></div>
+                <label for="agenda-location">Lokasi</label><input id="agenda-location" name="location" maxlength="180" placeholder="Contoh: Ruang rapat CSSMoRA">
+                <label for="agenda-description">Keterangan</label><textarea id="agenda-description" name="description" rows="4" maxlength="1500"></textarea>
+                <label class="publish-toggle"><input id="agenda-published" name="published" type="checkbox"><span><strong>Terbitkan agenda</strong><small>Agenda terbit akan muncul di daftar bulanan dan kalender publik.</small></span></label>
+                <button class="admin-button" id="save-agenda" type="submit">Simpan agenda <span aria-hidden="true">↗</span></button>
+                <p class="form-message" id="agenda-editor-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
+            <section class="records-card" aria-labelledby="agenda-records-title">
+              <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="agenda-records-title">Agenda tersimpan</h3></div><div class="agenda-record-tools"><span class="record-count" id="agenda-record-count">—</span><button class="text-button" id="agenda-refresh" type="button">Muat ulang</button></div></div>
+              <div class="record-list" id="agenda-record-list"><p class="records-empty">Memuat data…</p></div>
+            </section>
+          </div>
+        </section>
       </section>
     </section>
   </main>
