@@ -46,7 +46,7 @@ function detail(item, updateURL=true) {
     <span class="detail-status ${open?'is-open':'is-closed'}">${open?'● Masih dibuka':'● Sudah ditutup'}</span>
     <h1 id="detail-title">${escapeHTML(item.title)}</h1>
     <div class="detail-organizer"><small>PENYELENGGARA</small><strong>${escapeHTML(item.organizer||item.subtitle||'Belum dicantumkan')}</strong></div>
-    <p class="detail-description">${escapeHTML(item.description||'Informasi dan persyaratan lomba dapat dilihat pada laman resmi penyelenggara.')}</p>
+    ${item.description?`<p class="detail-description">${escapeHTML(item.description)}</p>`:''}
     <dl class="detail-facts"><div><dt>Batas pendaftaran</dt><dd>${formatDate(item.deadline)}<small>23.59 WIB</small></dd></div><div><dt>Biaya pendaftaran</dt><dd>${escapeHTML(item.fee||'Belum dicantumkan')}</dd></div><div><dt>Bidang</dt><dd>${escapeHTML(item.category)}</dd></div></dl>
     ${open&&url?`<a class="register-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Buka pendaftaran resmi <span aria-hidden="true">↗</span></a>`:`<span class="register-button disabled" aria-disabled="true">${open?'Tautan pendaftaran belum tersedia':'Pendaftaran telah ditutup'}</span>`}
     <p class="detail-caution">Pastikan kembali persyaratan pada laman resmi penyelenggara sebelum mendaftar.</p>
