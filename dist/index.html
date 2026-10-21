@@ -35,9 +35,9 @@
           <label class="select-wrap"><span class="sr-only">Filter bidang</span><select id="category"><option value="all">Semua bidang</option><option value="Esai & Riset">Esai & Riset</option><option value="Bisnis & Inovasi">Bisnis & Inovasi</option><option value="Desain & Media">Desain & Media</option><option value="Debat & Public Speaking">Debat & Public Speaking</option></select></label>
           <label class="select-wrap"><span class="sr-only">Filter status</span><select id="status"><option value="all">Semua status</option><option value="open">Masih dibuka</option><option value="closed">Sudah ditutup</option></select></label>
         </div>
-        <div class="results-line"><span id="result-count" aria-live="polite"></span><span>URUTAN: TENGGAT TERDEKAT</span></div>
+        <div class="results-line"><span id="result-count" aria-live="polite"></span></div>
         <div class="competition-grid" id="competition-grid"></div>
-        <div class="empty-state" id="empty-state" hidden><span>↗</span><h3>Belum ada yang cocok.</h3><p>Coba kata kunci atau filter lain untuk menemukan lomba yang kamu cari.</p><button id="reset-filter" type="button">Atur ulang filter</button></div>
+        <div class="empty-state" id="empty-state" hidden><span aria-hidden="true">↗</span><h3 id="empty-title">Belum ada lomba</h3><p id="empty-hint" hidden>Coba kata kunci atau filter lain.</p><button id="reset-filter" type="button">Atur ulang</button></div>
       </div>
     </section>
 
