@@ -6,6 +6,11 @@ const authForm = $('#auth-form');
 const competitionForm = $('#competition-form');
 const recordList = $('#record-list');
 let session = null;
+let isCompetitionAdmin = false;
+let achievementRoles = [];
+let achievementApplications = [];
+let achievementMembers = [];
+let achievementFilter = 'all';
 let competitions = [];
 let agendas = [];
 let programs = [];
@@ -96,18 +101,31 @@ async function loadAdminPanel(panelId) {
     initializeSecretaryForms();
     const selected=document.querySelector('.secretariat-tab.is-active')||document.querySelector('.secretariat-tab');
     await loadSecretarySection(selected);
+    return;
+  }
+  if(panelId==='achievements-panel') {
+    await loadAchievementDashboard();
   }
 }
 
 async function checkAdmin() {
   const user=session?.user;
   if(!user?.email)throw new Error('Akun tidak memiliki alamat email yang terverifikasi.');
-  const rows=await api(`competition_admins?select=email&email=eq.${encodeURIComponent(user.email.toLowerCase())}`);
-  if(!rows?.length)throw new Error('Akun ini belum diberi akses admin CSSMoRA. Hubungi pengurus utama.');
+  const email=user.email.toLowerCase();
+  const [admins,roles]=await Promise.all([
+    api(`competition_admins?select=email&email=eq.${encodeURIComponent(email)}`).catch(()=>[]),
+    api(`cssmora_achievement_reviewers?select=role&email=eq.${encodeURIComponent(email)}&is_active=eq.true`).catch(()=>[])
+  ]);
+  isCompetitionAdmin=Boolean(admins?.length);
+  achievementRoles=(roles||[]).map(row=>row.role);
+  if(!isCompetitionAdmin&&!achievementRoles.length)throw new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.');
   $('#signed-in-as').textContent=user.email;
   authView.hidden=true;
   adminView.hidden=false;
-  void loadAdminPanel('competitions-panel');
+  if(!isCompetitionAdmin){
+    document.querySelectorAll('.admin-tab:not(#tab-achievements)').forEach(tab=>tab.hidden=true);
+    document.querySelector('#tab-achievements').click();
+  }else void loadAdminPanel('competitions-panel');
 }
 
 async function signIn(email,password) {
@@ -164,32 +182,8 @@ function renderRecords(){
   </article>`).join('');
 }
 
-function clearPosterPreview(){
-  const preview=$('#poster-preview');
-  const name=$('#poster-upload-name');
-  const oldUrl=preview.getAttribute('src');
-  if(oldUrl?.startsWith('blob:'))URL.revokeObjectURL(oldUrl);
-  preview.removeAttribute('src');
-  preview.hidden=true;
-  name.textContent='';
-}
-function showPosterPreview(url,label=''){
-  const preview=$('#poster-preview');
-  const name=$('#poster-upload-name');
-  const oldUrl=preview.getAttribute('src');
-  if(oldUrl?.startsWith('blob:'))URL.revokeObjectURL(oldUrl);
-  if(url){preview.src=url;preview.hidden=false;}else{preview.removeAttribute('src');preview.hidden=true;}
-  name.textContent=label;
-}
-$('#poster-file').addEventListener('change',()=>{
-  const file=$('#poster-file').files[0];
-  if(!file){clearPosterPreview();return;}
-  const localUrl=URL.createObjectURL(file);
-  showPosterPreview(localUrl,file.name);
-});
 function clearEditor(){
   competitionForm.reset();
-  clearPosterPreview();
   $('#record-id').value='';
   $('#editor-title').textContent='Tambah lomba';
   $('#save-competition').innerHTML='Simpan lomba <span aria-hidden="true">↗</span>';
@@ -205,12 +199,12 @@ recordList.addEventListener('click',async event=>{
   if(button.dataset.action==='edit'){
     $('#record-id').value=item.id;
     competitionForm.elements.title.value=item.title||'';
-    competitionForm.elements.organizer.value=item.organizer||item.subtitle||'';
+    competitionForm.elements.subtitle.value=item.subtitle||'';
     competitionForm.elements.category.value=item.category||'Esai & Riset';
+    competitionForm.elements.organizer.value=item.organizer||'';
     competitionForm.elements.deadline.value=new Date(item.deadline).toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'});
     competitionForm.elements.fee.value=item.fee||'Gratis';
-    $('#poster-file').value='';
-    showPosterPreview(item.posterImage||'',item.posterImage?'Poster tersimpan':'');
+    competitionForm.elements.poster.value=item.posterImage||'';
     competitionForm.elements.registration.value=item.registrationUrl||'';
     competitionForm.elements.description.value=item.description||'';
     competitionForm.elements.published.checked=item.status==='published';
@@ -223,8 +217,6 @@ recordList.addEventListener('click',async event=>{
     button.disabled=true;
     try{
       await api(`competitions?id=eq.${encodeURIComponent(item.id)}`,{method:'DELETE'});
-      const oldPosterPath=competitionPosterPath(item.posterImage||'');
-      if(oldPosterPath)try{await deleteProgramPhoto(oldPosterPath);}catch(error){console.warn('Poster lomba lama belum terhapus dari Storage.',error);}
       competitions=competitions.filter(row=>row.id!==item.id);
       renderRecords();
       if($('#record-id').value===item.id)clearEditor();
@@ -237,47 +229,31 @@ competitionForm.addEventListener('submit',async event=>{
   const submit=$('#save-competition');
   const title=competitionForm.elements.title.value.trim();
   const deadline=competitionForm.elements.deadline.value;
-  const posterFile=$('#poster-file').files[0]||null;
+  const poster=competitionForm.elements.poster.value.trim();
   const registration=competitionForm.elements.registration.value.trim();
+  if((poster&&!poster.startsWith('https://'))||(registration&&!registration.startsWith('https://'))){showMessage('#editor-message','Tautan poster dan pendaftaran harus memakai https://.','error');return;}
+  const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
   const existingId=$('#record-id').value;
-  const existing=competitions.find(row=>row.id===existingId);
-  if(registration&&!registration.startsWith('https://')){showMessage('#editor-message','Tautan pendaftaran harus memakai https://.','error');return;}
-  if(!posterFile&&!existing?.posterImage){showMessage('#editor-message','Unggah poster lomba sebelum menyimpan.','error');return;}
-  if(posterFile){
-    const allowedTypes=['image/jpeg','image/png','image/webp'];
-    if(!allowedTypes.includes(posterFile.type)){showMessage('#editor-message','Poster harus berupa JPG, PNG, atau WebP.','error');return;}
-    if(posterFile.size>8*1024*1024){showMessage('#editor-message','Ukuran poster maksimal 8 MB.','error');return;}
-  }
-  const slug=title.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
   const payload={
     id:existingId||`${slug}-${Date.now()}`,
     title,
-    subtitle:'',
+    subtitle:competitionForm.elements.subtitle.value.trim(),
     category:competitionForm.elements.category.value,
     organizer:competitionForm.elements.organizer.value.trim(),
     deadline:`${deadline}T23:59:00+07:00`,
     fee:competitionForm.elements.fee.value.trim(),
     palette:'purple',
-    mark:title.split(/\\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase(),
+    mark:title.split(/\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase(),
     year:deadline.slice(0,4),
-    posterImage:existing?.posterImage||'',
+    posterImage:poster,
     registrationUrl:registration,
     description:competitionForm.elements.description.value.trim(),
     status:competitionForm.elements.published.checked?'published':'draft',
     updatedAt:new Date().toISOString()
   };
   submit.disabled=true;
-  let uploadedPath='';
-  showMessage('#editor-message',posterFile?'Mengunggah poster…':'Menyimpan…');
+  showMessage('#editor-message','Menyimpan…');
   try{
-    if(posterFile){
-      const extension=posterFile.type==='image/jpeg'?'jpg':posterFile.type.split('/')[1];
-      const safeId=payload.id.replace(/[^a-zA-Z0-9_-]/g,'-');
-      uploadedPath=`competitions/${safeId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${extension}`;
-      await uploadProgramPhoto(posterFile,uploadedPath);
-      payload.posterImage=objectUrl(uploadedPath);
-      showMessage('#editor-message','Poster terunggah, menyimpan lomba…');
-    }
     if(existingId){
       await api(`competitions?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
       showMessage('#editor-message','Perubahan berhasil disimpan.','success');
@@ -285,15 +261,12 @@ competitionForm.addEventListener('submit',async event=>{
       await api('competitions',{method:'POST',body:payload});
       showMessage('#editor-message','Lomba berhasil ditambahkan.','success');
     }
-    const oldPosterPath=competitionPosterPath(existing?.posterImage||'');
-    if(oldPosterPath&&oldPosterPath!==uploadedPath)try{await deleteProgramPhoto(oldPosterPath);}catch(error){console.warn('Poster lomba lama belum terhapus dari Storage.',error);}
     await loadRecords();
     clearEditor();
-  }catch(error){
-    if(uploadedPath)try{await deleteProgramPhoto(uploadedPath);}catch(cleanupError){console.warn('Unggahan poster yang gagal belum terhapus.',cleanupError);}
-    showMessage('#editor-message',error.message,'error');
-  }finally{submit.disabled=false;}
+  }catch(error){showMessage('#editor-message',error.message,'error');}
+  finally{submit.disabled=false;}
 });
+
 
 const programBucket='cssmora-agenda-programs';
 const storageHeaders=contentType=>({
@@ -302,12 +275,6 @@ const storageHeaders=contentType=>({
   ...(contentType?{'Content-Type':contentType}:{})
 });
 const objectUrl=path=>`${config.url}/storage/v1/object/public/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`;
-function competitionPosterPath(url){
-  const prefix=`${config.url}/storage/v1/object/public/${programBucket}/`;
-  if(!url||!url.startsWith(prefix))return '';
-  const path=url.slice(prefix.length).split('?')[0].split('/').map(part=>{try{return decodeURIComponent(part);}catch{return part;}}).join('/');
-  return path.startsWith('competitions/')?path:'';
-}
 
 async function uploadProgramPhoto(file,path) {
   const response=await fetch(`${config.url}/storage/v1/object/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{
@@ -315,7 +282,7 @@ async function uploadProgramPhoto(file,path) {
   });
   if(!response.ok) {
     const data=await response.json().catch(()=>({}));
-    throw new Error(data.message||data.error||'File gagal diunggah ke penyimpanan CSSMoRA.');
+    throw new Error(data.message||data.error||'Foto proker gagal diunggah.');
   }
 }
 async function deleteProgramPhoto(path) {
@@ -673,7 +640,7 @@ function parseCSV(text){
   if(cell||row.length){row.push(cell);if(row.some(v=>v.trim()))rows.push(row);}
   return rows;
 }
-const normHeader=value=>String(value||'').replace(/^\\uFEFF/,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+const normHeader=value=>String(value||'').replace(/^\\uFEFF/,'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toLowerCase();
 function showSecretaryTab(tab){
   document.querySelectorAll('.secretariat-tab').forEach(item=>{
     const selected=item===tab;
@@ -1011,6 +978,98 @@ $('#letter-record-list').addEventListener('submit',async event=>{
     await api('secretariat_letters?id=eq.'+encodeURIComponent(form.dataset.letterId),{method:'PATCH',body:{archive_url:url,archive_status:status}});
     await loadLetters();showMessage('#letter-message','Status dan tautan arsip diperbarui.','success');
   }catch(error){showMessage('#letter-message',error.message,'error');button.disabled=false;}
+});
+
+const achievementList=$('#achievement-application-list');
+const achievementStatusLabels={pending_bendahara:'Menunggu Bendahara',pending_ketua:'Menunggu Ketua',approved:'Disetujui',rejected:'Ditolak'};
+const hasAchievementRole=role=>achievementRoles.includes(role);
+const achievementMoney=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
+function renderAchievementApplications(){
+  const rows=achievementFilter==='all'?achievementApplications:achievementApplications.filter(row=>row.status===achievementFilter);
+  $('#achievement-count').textContent=rows.length+' pengajuan';
+  if(!rows.length){achievementList.innerHTML='<p class="records-empty">'+(achievementApplications.length?'Tidak ada pengajuan pada status ini.':'Belum ada pengajuan biaya lomba.')+'</p>';return;}
+  achievementList.innerHTML=rows.map(app=>{
+    const team=achievementMembers.filter(m=>m.application_id===app.id);
+    const role=app.status==='pending_bendahara'&&hasAchievementRole('bendahara')?'bendahara':app.status==='pending_ketua'&&hasAchievementRole('ketua')?'ketua':'';
+    const canReview=Boolean(role)&&(role!=='ketua'||app.treasurer_email!==session?.user?.email?.toLowerCase());
+    const phone=String(app.leader_phone||'').replace(/\D/g,'').replace(/^0/,'62');
+    const waText=encodeURIComponent(`Halo ${app.leader_name}, pengajuan bantuan biaya lomba “${app.competition_name}” telah disetujui CSSMoRA UNAIR. Nilai subsidi: ${achievementMoney(app.requested_amount)}. Silakan koordinasikan pencairannya dengan Bendahara.`);
+    return `<article class="achievement-application-card" data-application-id="${escapeHTML(app.id)}">
+      <header class="achievement-application-head"><div><span class="achievement-request-number">CSS-PR-${escapeHTML(new Date(app.created_at).toLocaleDateString('id-ID',{year:'2-digit',month:'2-digit'}))}-${escapeHTML(app.id.replaceAll('-','').slice(0,8).toUpperCase())}</span><h4>${escapeHTML(app.competition_name)}</h4><small>${escapeHTML(app.competition_type)} · ${app.participation_type==='tim'?'Tim':'Individu'} · ${escapeHTML(new Date(app.created_at).toLocaleString('id-ID'))}</small></div><span class="record-status achievement-status ${escapeHTML(app.status)}">${achievementStatusLabels[app.status]||escapeHTML(app.status)}</span></header>
+      <div class="achievement-application-grid"><div><small>Ketua / peserta</small><strong>${escapeHTML(app.leader_name)}</strong></div><div><small>Kontak &amp; email resmi</small><strong>${escapeHTML(app.leader_phone)} · ${escapeHTML(app.official_email)}</strong></div><div><small>Biaya lomba</small><strong>${achievementMoney(app.fee_amount)}</strong></div><div><small>Subsidi ${Math.round(Number(app.subsidy_rate)*100)}%</small><strong>${achievementMoney(app.requested_amount)}</strong></div><div><small>Rekening pencairan</small><strong>${escapeHTML(app.bank_name)} · ${escapeHTML(app.account_number)} · ${escapeHTML(app.account_name)}</strong></div><div><small>Pengembalian hadiah</small><strong>Setuju 5% ke kas CSSMoRA</strong></div></div>
+      ${app.participation_type==='tim'?`<div class="achievement-team-row"><small>Anggota tim</small><span>${team.map(m=>`${escapeHTML(m.member_name)} · ${escapeHTML(m.cohort)}`).join(' &nbsp;·&nbsp; ')}</span></div>`:''}
+      <div class="achievement-application-links"><a href="${escapeHTML(app.information_url)}" target="_blank" rel="noopener">Buka informasi lomba ↗</a><button type="button" data-achievement-proof="${escapeHTML(app.proof_path)}">Lihat bukti pendaftaran ↗</button></div>
+      <div class="achievement-approval-trail"><span class="${app.treasurer_decision?'is-done':''}"><b>1</b><strong>Bendahara</strong><small>${app.treasurer_decision?`${app.treasurer_decision==='approved'?'Disetujui':'Ditolak'} oleh ${escapeHTML(app.treasurer_email)}${app.treasurer_note?' · '+escapeHTML(app.treasurer_note):''}`:'Menunggu pemeriksaan bukti'}</small></span><span class="${app.chair_decision?'is-done':''}"><b>2</b><strong>Ketua</strong><small>${app.chair_decision?`${app.chair_decision==='approved'?'Disetujui':'Ditolak'} oleh ${escapeHTML(app.chair_email)}${app.chair_note?' · '+escapeHTML(app.chair_note):''}`:app.status==='pending_ketua'?'Menunggu persetujuan Ketua':'Menunggu tahap Bendahara'}</small></span></div>
+      ${canReview?`<div class="achievement-review-controls"><label>Catatan peninjauan <input type="text" maxlength="1000" data-review-note placeholder="Catatan singkat (opsional)"></label><button type="button" data-achievement-decision="rejected" class="achievement-reject">Tolak</button><button type="button" data-achievement-decision="approved" class="achievement-approve">Setujui ${role==='bendahara'?'&amp; teruskan ke Ketua':''}</button></div>`:''}
+      ${app.status==='approved'?`<a class="achievement-wa-link" href="https://wa.me/${phone}?text=${waText}" target="_blank" rel="noopener">Konfirmasi persetujuan lewat WhatsApp ↗</a>`:''}
+    </article>`;
+  }).join('');
+}
+async function loadAchievementDashboard(){
+  achievementList.innerHTML='<p class="records-empty">Memuat pengajuan…</p>';
+  try{
+    achievementApplications=await api('cssmora_achievement_applications?select=*&order=created_at.desc');
+    const ids=achievementApplications.map(row=>row.id);
+    achievementMembers=ids.length?await api('cssmora_achievement_application_members?select=application_id,member_name,cohort,role&application_id=in.('+ids.join(',')+')&order=cohort.desc,member_name.asc'):[];
+    renderAchievementApplications();
+    const reviewerAside=$('#achievement-reviewer-aside');
+    reviewerAside.hidden=!hasAchievementRole('ketua');
+    if(hasAchievementRole('ketua'))await loadAchievementReviewers();
+  }catch(error){achievementList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
+}
+async function loadAchievementReviewers(){
+  const list=$('#achievement-reviewer-list');list.innerHTML='<p class="records-empty">Memuat peninjau…</p>';
+  try{
+    const rows=await api('cssmora_achievement_reviewers?select=email,role,is_active&order=email.asc');
+    const treasurers=rows.filter(row=>row.role==='bendahara');
+    list.innerHTML=treasurers.length?treasurers.map(row=>`<div class="achievement-reviewer-row"><span><strong>${escapeHTML(row.email)}</strong><small>${row.is_active?'Bendahara · dapat meninjau':'Akses dinonaktifkan'}</small></span><button type="button" data-remove-reviewer="${escapeHTML(row.email)}" aria-label="Hapus akses ${escapeHTML(row.email)}">Hapus</button></div>`).join(''):'<p class="records-empty">Belum ada akun Bendahara yang ditugaskan.</p>';
+  }catch(error){list.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
+}
+$('#achievement-refresh').addEventListener('click',loadAchievementDashboard);
+document.querySelectorAll('[data-achievement-filter]').forEach(button=>button.addEventListener('click',()=>{
+  achievementFilter=button.dataset.achievementFilter;
+  document.querySelectorAll('[data-achievement-filter]').forEach(item=>item.classList.toggle('is-active',item===button));
+  renderAchievementApplications();
+}));
+achievementList.addEventListener('click',async event=>{
+  const proof=event.target.closest('[data-achievement-proof]');
+  if(proof){
+    proof.disabled=true;
+    try{
+      const path=proof.dataset.achievementProof.split('/').map(encodeURIComponent).join('/');
+      const response=await fetchTimed(`${config.url}/storage/v1/object/sign/cssmora-prestasi-proofs/${path}`,{method:'POST',headers:{...baseHeaders(),Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({expiresIn:3600})});
+      const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||'Bukti tidak dapat dibuka.');
+      const url=data.signedURL?.startsWith('http')?data.signedURL:`${config.url}/storage/v1${data.signedURL}`;
+      window.open(url,'_blank','noopener');
+    }catch(error){alert(error.message);}finally{proof.disabled=false;}
+    return;
+  }
+  const decision=event.target.closest('[data-achievement-decision]');if(!decision)return;
+  const card=decision.closest('[data-application-id]'),id=card.dataset.applicationId;
+  const controls=card.querySelectorAll('[data-achievement-decision]');controls.forEach(button=>button.disabled=true);
+  try{
+    const result=await api('rpc/review_cssmora_achievement_application',{method:'POST',body:{p_id:id,p_decision:decision.dataset.achievementDecision,p_note:card.querySelector('[data-review-note]')?.value.trim()||null}});
+    showMessage('#achievement-action-message',`Status pengajuan diperbarui: ${achievementStatusLabels[result]||result}.`,'success');
+    await loadAchievementDashboard();
+  }catch(error){alert(error.message);controls.forEach(button=>button.disabled=false);}
+});
+$('#achievement-reviewer-form').addEventListener('submit',async event=>{
+  event.preventDefault();const input=$('#achievement-reviewer-email'),email=input.value.trim().toLowerCase(),button=event.submitter;
+  button.disabled=true;showMessage('#achievement-reviewer-message','Menambahkan akses Bendahara…');
+  try{
+    const existing=await api(`cssmora_achievement_reviewers?select=email&email=eq.${encodeURIComponent(email)}&role=eq.bendahara`);
+    if(existing.length)throw new Error('Email ini sudah memiliki akses Bendahara.');
+    await api('cssmora_achievement_reviewers',{method:'POST',body:{email,role:'bendahara',is_active:true},extraHeaders:{Prefer:'return=minimal'}});
+    input.value='';showMessage('#achievement-reviewer-message','Akses peninjau Bendahara berhasil ditambahkan.','success');await loadAchievementReviewers();
+  }catch(error){showMessage('#achievement-reviewer-message',error.message,'error');}
+  finally{button.disabled=false;}
+});
+$('#achievement-reviewer-list').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-remove-reviewer]');if(!button)return;
+  if(!confirm(`Hapus akses peninjau untuk ${button.dataset.removeReviewer}?`))return;
+  button.disabled=true;
+  try{await api(`cssmora_achievement_reviewers?email=eq.${encodeURIComponent(button.dataset.removeReviewer)}&role=eq.bendahara`,{method:'DELETE'});await loadAchievementReviewers();}
+  catch(error){alert(error.message);button.disabled=false;}
 });
 
 async function initialize(){
