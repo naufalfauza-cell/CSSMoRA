@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f6fb">
+  <meta name="theme-color" content="#087443">
   <meta name="description" content="Jelajahi informasi perlombaan, cek tenggat, dan buka pendaftaran lewat katalog CSSMoRA UNAIR.">
   <title>Jelajah Lomba — CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
@@ -19,7 +19,6 @@
         <img class="brand-logo" src="./assets/cssmora-logo.png" alt="" width="58" height="58">
         <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong></span>
       </a>
-      <button class="studio-launch" id="studio-open" type="button" aria-controls="studio-panel" aria-expanded="false"><span aria-hidden="true">◉</span> Atur desain</button>
       <a class="header-action" href="./admin.html">Admin <span aria-hidden="true">↗</span></a>
     </div>
   </header>
@@ -44,15 +43,5 @@
   </main>
 
   <dialog id="detail-dialog" aria-labelledby="detail-title"><div class="dialog-shell"><button class="dialog-close" id="close-dialog" type="button" aria-label="Tutup detail lomba">×</button><div id="detail-content"></div></div></dialog>
-  <div class="studio-scrim" id="studio-scrim" hidden></div>
-  <aside class="studio-panel" id="studio-panel" role="dialog" aria-labelledby="studio-title" aria-modal="false" hidden>
-    <div class="studio-header"><div><span class="studio-kicker">CSSMoRA / DESIGN STUDIO</span><h2 id="studio-title">Bikin jadi <em>punyamu.</em></h2><p>Ubah warna, lihat hasilnya langsung di halaman ini.</p></div><button type="button" id="studio-close" aria-label="Tutup studio desain">×</button></div>
-    <div class="studio-scroll">
-      <section class="studio-group" aria-labelledby="preset-heading"><div class="studio-group-heading"><h3 id="preset-heading">Mulai dari palet</h3><span>01 / 02</span></div><div class="studio-presets" id="studio-presets"><button type="button" data-preset="aurora" aria-pressed="true"><span class="preset-dots"><i style="background:#544bd5"></i><i style="background:#ec5a88"></i><i style="background:#c6f3ee"></i></span><strong>Aurora</strong><small>Palet utama</small></button><button type="button" data-preset="ocean" aria-pressed="false"><span class="preset-dots"><i style="background:#1267dc"></i><i style="background:#ff9f5a"></i><i style="background:#aee9f5"></i></span><strong>Ocean</strong><small>Cerah & tenang</small></button><button type="button" data-preset="berry" aria-pressed="false"><span class="preset-dots"><i style="background:#993eb8"></i><i style="background:#f26e8f"></i><i style="background:#f8dff0"></i></span><strong>Berry</strong><small>Berani & playful</small></button><button type="button" data-preset="forest" aria-pressed="false"><span class="preset-dots"><i style="background:#26715c"></i><i style="background:#e88054"></i><i style="background:#caecda"></i></span><strong>Forest</strong><small>Segar & hangat</small></button></div></section>
-      <section class="studio-group" aria-labelledby="color-heading"><div class="studio-group-heading"><h3 id="color-heading">Atau racik sendiri</h3><span>02 / 02</span></div><div class="studio-colors"><label for="color-brand"><span><strong>Warna utama</strong><small>Tombol, filter, aksen judul</small></span><span class="color-well"><input id="color-brand" type="color" value="#544bd5" data-theme="brand"><output for="color-brand" id="value-brand">#544BD5</output></span></label><label for="color-accent"><span><strong>Warna aksen</strong><small>Detail kecil dan penanda</small></span><span class="color-well"><input id="color-accent" type="color" value="#ec5a88" data-theme="accent"><output for="color-accent" id="value-accent">#EC5A88</output></span></label><label for="color-hero-a"><span><strong>Hero kiri</strong><small>Awal gradasi sampul</small></span><span class="color-well"><input id="color-hero-a" type="color" value="#e7e6ff" data-theme="heroA"><output for="color-hero-a" id="value-hero-a">#E7E6FF</output></span></label><label for="color-hero-b"><span><strong>Hero kanan</strong><small>Akhir gradasi sampul</small></span><span class="color-well"><input id="color-hero-b" type="color" value="#d9d7ff" data-theme="heroB"><output for="color-hero-b" id="value-hero-b">#D9D7FF</output></span></label><label for="color-bg"><span><strong>Latar halaman</strong><small>Di belakang kartu lomba</small></span><span class="color-well"><input id="color-bg" type="color" value="#f5f6fb" data-theme="bg"><output for="color-bg" id="value-bg">#F5F6FB</output></span></label></div></section>
-      <div class="studio-note"><strong>Pratinjau personal</strong><p>Pilihan warna tersimpan di browser ini. Salin tautan tema untuk membagikan tampilannya. Mengubah desain bawaan semua pengunjung perlu pembaruan situs.</p></div>
-    </div>
-    <div class="studio-footer"><button type="button" id="studio-reset">Kembali ke awal</button><button type="button" id="studio-share">Salin tautan tema ↗</button><label class="studio-share-fallback" id="studio-share-fallback" hidden>Salin tautan ini<input id="studio-share-url" type="text" readonly aria-label="Tautan tema yang bisa disalin"></label><p id="studio-feedback" role="status" aria-live="polite"></p></div>
-  </aside>
 </body>
 </html>
