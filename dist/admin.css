@@ -1832,3 +1832,38 @@
   .admin-page .admin-workspace-shell.admin-app-shell{display:block;width:100%}
   .admin-page .admin-workspace-shell.admin-app-shell>.admin-sidebar{width:min(292px,86vw);min-width:0;max-width:none}
 }
+
+/* Give the secretary workspace room to breathe and keep the green rail full-height. */
+.admin-page .admin-sidebar{
+  align-self:stretch;
+  height:100vh;
+  height:100dvh;
+  min-height:100vh;
+  padding-bottom:max(16px,env(safe-area-inset-bottom));
+}
+.admin-page .admin-content-area{padding-inline:22px}
+.admin-page .secretariat-management,
+.admin-page .secretariat-subpanel,
+.admin-page .secretariat-workspace,
+.admin-page .member-workspace{
+  width:100%;
+  max-width:none;
+}
+.admin-page .secretariat-workspace{
+  grid-template-columns:180px minmax(0,1fr) 320px;
+  gap:14px;
+}
+.admin-page .member-workspace{grid-template-columns:minmax(0,1fr) 280px;gap:16px}
+@media(max-width:1200px){
+  .admin-page .admin-content-area{padding-inline:18px}
+  .admin-page .secretariat-workspace{grid-template-columns:160px minmax(0,1fr) 270px;gap:10px}
+  .admin-page .member-workspace{grid-template-columns:minmax(0,1fr) 250px;gap:12px}
+}
+@media(max-width:1000px){
+  .admin-page .secretariat-workspace{grid-template-columns:150px minmax(0,1fr);gap:10px}
+  .admin-page .member-workspace{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:700px){
+  .admin-page .admin-content-area{padding-inline:12px}
+  .admin-page .secretariat-workspace,.admin-page .member-workspace{grid-template-columns:minmax(0,1fr)}
+}
