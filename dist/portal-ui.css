@@ -1,8 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 /* Public info pages follow the softer CSSMoRA admin surfaces and green palette. */
 :root{
   --font:'Plus Jakarta Sans','Inter',Arial,sans-serif;
-  --display:'DM Serif Display',Georgia,serif;
+  --display:'Outfit','Plus Jakarta Sans',sans-serif;
 }
 body.catalog-page,body.agenda-page{
   background:#f5f7f1;
@@ -12,8 +12,8 @@ body.catalog-page,body.agenda-page{
 }
 :is(.catalog-page,.agenda-page) :is(h1,h2,h3){
   font-family:var(--display);
-  font-weight:400;
-  letter-spacing:-.02em;
+  font-weight:600;
+  letter-spacing:-.025em;
 }
 :is(.catalog-page,.agenda-page) .site-header{
   background:#f5f7f1;
@@ -87,7 +87,7 @@ body.catalog-page,body.agenda-page{
 .catalog-page .card-poster,
 .catalog-page .poster-design{border-radius:15px}
 .catalog-page .status-badge{border-radius:999px}
-.catalog-page .card-title-row h3{font-family:var(--display);font-weight:400}
+.catalog-page .card-title-row h3{font-family:var(--display);font-weight:600}
 .catalog-page .card-title-row>span{color:#398552}
 .catalog-page .empty-state{
   border-color:#e0e8dd;
