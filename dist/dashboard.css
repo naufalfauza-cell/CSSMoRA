@@ -126,3 +126,13 @@
 @media(min-width:761px){.agenda-videotron{width:clamp(420px,44vw,690px)}.videotron-screen{min-height:clamp(240px,19vw,300px)}}
 @media(max-width:760px){.screen-kicker,.screen-status,.screen-footer,.screen-caption,.scene-caption,.dialog-kicker,.sign-number,.sign-copy small,.sign-header span,.sign-footer{font-size:10px}.sign-copy strong{font-size:12px}.event-body strong{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.event-item.on{animation:none}}
+
+/* Animated campus background; the existing photo remains a loading fallback. */
+.campus-background-video{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:center 18%;pointer-events:none}
+.background-motion-toggle{position:absolute;top:3.8%;right:6.2%;z-index:6;display:grid;place-items:center;width:40px;height:40px;padding:10px;border:1px solid #ffffff80;border-radius:50%;background:#ffffffed;color:#103e2b;box-shadow:0 8px 22px #10271e35;cursor:pointer}
+.background-motion-toggle[hidden]{display:none}
+.background-motion-toggle svg{width:18px;height:18px;fill:currentColor}
+.background-motion-toggle .motion-play,.background-motion-toggle[data-paused="true"] .motion-pause{display:none}
+.background-motion-toggle[data-paused="true"] .motion-play{display:block}
+.background-motion-toggle:hover{background:#fff}
+@media(max-width:760px){.background-motion-toggle{top:12px;right:14px;width:36px;height:36px;padding:8px}}
