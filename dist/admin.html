@@ -17,31 +17,22 @@
     <div class="wrap header-inner">
       <a class="brand" href="./" aria-label="Kembali ke Jelajah Lomba CSSMoRA">
         <img class="brand-logo" src="./assets/cssmora-logo.png" alt="" width="58" height="58">
-        <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong><small>Admin Jelajah Lomba</small></span>
+        <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong></span>
       </a>
-      <a class="header-action" href="./">Lihat katalog <span aria-hidden="true">↗</span></a>
+      <a class="header-action" href="./">Katalog <span aria-hidden="true">↗</span></a>
     </div>
   </header>
   <main class="admin-main wrap">
-    <section class="admin-heading">
-      <span class="overline">PANEL PENGURUS / CSSMORA UNAIR</span>
-      <h1>Atur info lomba<br><em>di satu tempat.</em></h1>
-      <p>Masuk dengan akun pengurus untuk menambah, memperbarui, dan menerbitkan informasi lomba.</p>
-    </section>
-
     <section class="auth-card" id="auth-view" aria-labelledby="auth-title">
-      <div class="admin-card-top"><span class="admin-icon">↗</span><span>AKSES PENGURUS</span></div>
-      <h2 id="auth-title">Login admin</h2>
-      <p class="auth-help">Gunakan akun Supabase yang sudah terdaftar sebagai pengurus CSSMoRA.</p>
+      <h1 id="auth-title">Masuk</h1>
       <form id="auth-form">
-        <label for="admin-email">Email pengurus</label>
+        <label for="admin-email">Email</label>
         <input id="admin-email" name="email" type="email" autocomplete="username" required>
         <label for="admin-password">Kata sandi</label>
         <input id="admin-password" name="password" type="password" autocomplete="current-password" minlength="8" required>
-        <button class="admin-button" id="auth-submit" type="submit">Masuk ke panel <span aria-hidden="true">↗</span></button>
+        <button class="admin-button" id="auth-submit" type="submit">Masuk <span aria-hidden="true">↗</span></button>
       </form>
       <p class="form-message" id="auth-message" role="status" aria-live="polite"></p>
-      <p class="auth-footnote">Belum punya akun? Minta pengelola Supabase membuat akun terverifikasi dan mendaftarkan emailmu sebagai admin CSSMoRA.</p>
     </section>
 
     <section class="admin-dashboard" id="admin-view" hidden aria-labelledby="dashboard-title">
