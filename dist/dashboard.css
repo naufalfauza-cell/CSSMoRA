@@ -394,3 +394,19 @@
  .agenda-videotron .event-carousel-tools{right:10px;bottom:9px}
  .agenda-videotron .event-position{font-size:8px}
 }
+
+/* Keep the event copy close to the bottom edge and preserve more of each photo */
+.agenda-videotron .event-content{justify-content:flex-end;gap:4px;padding:12px 18px 13px;background:linear-gradient(180deg,rgba(0,0,0,0) 62%,rgba(0,0,0,.12) 75%,rgba(0,0,0,.78) 100%)}
+.agenda-videotron .event-date{gap:6px}
+.agenda-videotron .event-when{margin-bottom:2px}
+.agenda-videotron .event-body strong{font-size:clamp(20px,2.1vw,29px);line-height:1.04}
+.agenda-videotron .event-body p{margin-top:3px}
+.agenda-videotron .event-carousel-tools{top:10px;right:11px;bottom:auto}
+.agenda-videotron .event-position{display:none}
+.agenda-videotron .event-dots{top:21px;bottom:auto}
+@media(max-width:760px){
+ .agenda-videotron .event-content{padding:10px 14px 11px;gap:3px;background:linear-gradient(180deg,rgba(0,0,0,0) 62%,rgba(0,0,0,.12) 75%,rgba(0,0,0,.8) 100%)}
+ .agenda-videotron .event-body strong{font-size:clamp(20px,5.5vw,26px)}
+ .agenda-videotron .event-carousel-tools{top:9px;right:9px}
+ .agenda-videotron .event-dots{top:18px;left:10px}
+}
