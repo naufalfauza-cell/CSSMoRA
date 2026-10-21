@@ -258,3 +258,15 @@
  .letter-archive-form{grid-template-columns:1fr 1fr}
  .letter-archive-form input{grid-column:1/-1}
 }
+
+
+/* Attendance link controls. */
+.attendance-event-card{padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.attendance-event-card+.attendance-event-card{margin-top:8px}
+.secretariat-record-select{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:3px;border:0;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
+.secretariat-record-select>span:first-child{display:grid;gap:5px}
+.secretariat-record-select strong{font-size:.82rem}
+.secretariat-record-select small{color:var(--muted);font-size:.7rem}
+.attendance-event-actions{display:flex;gap:7px;margin-top:9px}
+.attendance-event-actions button{padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:#f7f8f3;color:var(--green);font-size:.67rem;font-weight:800;cursor:pointer}
+.attendance-event-actions button:hover{background:#eaf3e8}
