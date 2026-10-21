@@ -52,7 +52,7 @@
         </div>
         <nav class="sign-nav" aria-label="Pilih informasi">
           <a class="sign-link" href="./lomba.html"><span class="sign-number">01</span><span class="sign-copy"><small>PELUANG</small><strong>Info lomba</strong></span><b aria-hidden="true">↗</b></a>
-          <button class="sign-link" type="button" data-calendar-open><span class="sign-number">02</span><span class="sign-copy"><small>JADWAL</small><strong>Kalender agenda</strong></span><b aria-hidden="true">↗</b></button>
+          <a class="sign-link" href="./agenda.html"><span class="sign-number">02</span><span class="sign-copy"><small>JADWAL</small><strong>Kalender agenda</strong></span><b aria-hidden="true">↗</b></a>
           <button class="sign-link" type="button" data-dialog="about-dialog"><span class="sign-number">03</span><span class="sign-copy"><small>ORGANISASI</small><strong>Tentang CSSMoRA</strong></span><b aria-hidden="true">↗</b></button>
           <button class="sign-link" type="button" data-dialog="program-dialog"><span class="sign-number">04</span><span class="sign-copy"><small>KABAR ANGGOTA</small><strong>Program &amp; prestasi</strong></span><b aria-hidden="true">↗</b></button>
           <a class="sign-link" href="./admin.html"><span class="sign-number">05</span><span class="sign-copy"><small>AKSES INTERNAL</small><strong>Masuk pengurus</strong></span><b aria-hidden="true">↗</b></a>
@@ -63,39 +63,6 @@
 
     <div class="scene-caption"><span><i></i> CSSMoRA UNIVERSITAS AIRLANGGA</span><span>SURABAYA · INDONESIA</span></div>
   </main>
-
-  <dialog class="calendar-dialog" id="calendar-dialog" aria-labelledby="calendar-title">
-    <div class="calendar-shell">
-      <header class="calendar-header">
-        <div>
-          <p class="calendar-kicker">CSSMoRA / KALENDER KEGIATAN</p>
-          <h2 id="calendar-title">Kalender agenda</h2>
-          <p class="calendar-today" id="calendar-today"></p>
-        </div>
-        <button class="calendar-close" id="calendar-close" type="button" aria-label="Tutup kalender">×</button>
-      </header>
-      <div class="calendar-content">
-        <section class="calendar-month-panel" aria-label="Kalender bulanan">
-          <div class="calendar-month-head">
-            <button class="calendar-arrow" id="calendar-prev" type="button" aria-label="Bulan sebelumnya">‹</button>
-            <h3 id="calendar-month"></h3>
-            <button class="calendar-arrow" id="calendar-next" type="button" aria-label="Bulan berikutnya">›</button>
-            <button class="calendar-today-button" id="calendar-today-button" type="button">Hari ini</button>
-          </div>
-          <div class="calendar-weekdays" aria-hidden="true"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
-          <div class="calendar-grid" id="calendar-grid" role="grid" aria-label="Tanggal pada bulan ini"></div>
-          <div class="calendar-legend"><span><i class="calendar-legend-dot"></i>Ada agenda</span><span><i class="calendar-legend-today"></i>Hari ini</span></div>
-        </section>
-        <aside class="calendar-detail" aria-live="polite" aria-atomic="true">
-          <p class="calendar-detail-label">TANGGAL DIPILIH</p>
-          <h3 id="calendar-selected-date"></h3>
-          <div class="calendar-countdown" id="calendar-countdown"></div>
-          <div class="calendar-events" id="calendar-events"></div>
-        </aside>
-      </div>
-      <p class="calendar-footnote">Waktu agenda mengikuti WIB.</p>
-    </div>
-  </dialog>
 
   <dialog class="info-dialog" id="about-dialog" aria-labelledby="about-title">
     <button class="dialog-close" type="button" aria-label="Tutup">×</button>
@@ -112,7 +79,6 @@
 
   <script src="./supabase-config.js"></script>
   <script src="./agenda.js"></script>
-  <script src="./calendar.js"></script>
   <script src="./background-video.js"></script>
   <script>
     document.querySelectorAll('[data-dialog]').forEach(button => {
