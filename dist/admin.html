@@ -8,7 +8,7 @@
   <title>Admin CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261021-ux4">
+  <link rel="stylesheet" href="./admin.css?v=20261021-ux5">
   <script src="./supabase-config.js" defer></script>
   <script src="./admin.js?v=20261021-ux2" defer></script>
 </head>
@@ -44,10 +44,13 @@
         <div><span class="overline">DASHBOARD PENGURUS</span><h2 id="dashboard-title">Pusat pengelolaan</h2><p id="signed-in-as"></p></div>
         <button class="text-button" id="logout" type="button">Keluar</button>
       </div>
-      <div class="module-picker-heading">
-        <div><span class="admin-kicker">RUANG KERJA PENGURUS</span><h3>Pilih bidang pengelolaan</h3></div>
-      </div>
-      <nav class="admin-tabs module-grid" role="tablist" aria-label="Pilih bidang pengelolaan">
+      <div class="admin-workspace-shell">
+        <aside class="admin-sidebar" aria-label="Pintasan bidang pengelolaan">
+          <div class="module-picker-heading">
+            <span class="admin-kicker">NAVIGASI</span>
+            <h3>Pintasan</h3>
+          </div>
+          <nav class="admin-tabs module-grid" role="tablist" aria-label="Pilih bidang pengelolaan">
         <button class="admin-tab is-active" id="tab-competitions" type="button" role="tab" aria-selected="true" aria-controls="competitions-panel">
           <span class="module-icon" aria-hidden="true">↗</span><span class="module-copy"><strong>Lomba</strong><small>Poster, informasi, dan pendaftaran</small></span><span class="module-state is-ready">Aktif</span>
         </button>
@@ -63,7 +66,9 @@
         <button class="admin-tab" id="tab-achievements" type="button" role="tab" aria-selected="false" aria-controls="achievements-panel">
           <span class="module-icon" aria-hidden="true">★</span><span class="module-copy"><strong>Prestasi</strong><small>Rekap capaian dan apresiasi</small></span><span class="module-state">Disiapkan</span>
         </button>
-      </nav>
+          </nav>
+        </aside>
+        <div class="admin-workspace-content">
       <div class="management-panel" id="competitions-panel" role="tabpanel" aria-labelledby="tab-competitions">
       <div class="admin-columns">
         <section class="editor-card" aria-labelledby="editor-title">
@@ -205,8 +210,21 @@
 
         <section class="secretariat-subpanel" id="attendance-tools-panel" role="tabpanel" aria-labelledby="tab-attendance-tools" hidden>
           <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Buat kegiatan; daftar anggota aktif disalin sebagai roster. Tandai status, lalu rekap persentasenya otomatis.</p></div></div>
-          <div class="admin-columns">
-            <section class="editor-card" aria-labelledby="event-editor-title">
+          <div class="secretariat-workspace attendance-workspace">
+            <aside class="secretariat-options-rail" aria-label="Opsi absensi">
+              <section class="records-card secretariat-options-card">
+                <div class="editor-heading"><div><span class="admin-kicker">PENGATURAN</span><h3>Opsi absensi</h3></div></div>
+                <button class="member-option-button" id="events-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang</button>
+                <div class="member-options-divider"></div>
+                <span class="member-option-label">Alur rekap</span>
+                <ol class="workspace-steps"><li>Pilih kegiatan</li><li>Tandai kehadiran</li><li>Simpan atau ekspor</li></ol>
+              </section>
+            </aside>
+            <section class="records-card attendance-events-card" aria-labelledby="attendance-events-title">
+              <div class="editor-heading"><div><span class="admin-kicker">DAFTAR KEGIATAN</span><h3 id="attendance-events-title">Pilih untuk direkap</h3></div></div>
+              <div class="secretariat-record-list" id="attendance-event-list"><p class="records-empty">Memuat kegiatan…</p></div>
+            </section>
+            <section class="editor-card attendance-editor-card" aria-labelledby="event-editor-title">
               <div class="editor-heading"><div><span class="admin-kicker">KEGIATAN BARU</span><h3 id="event-editor-title">Buat daftar hadir</h3></div><button class="text-button" id="event-form-reset" type="button">Kosongkan</button></div>
               <form id="attendance-event-form">
                 <label for="attendance-event-title">Nama kegiatan</label><input id="attendance-event-title" maxlength="160" required>
@@ -215,10 +233,6 @@
                 <button class="admin-button" id="save-attendance-event" type="submit">Buat daftar hadir <span aria-hidden="true">↗</span></button>
                 <p class="form-message" id="event-message" role="status" aria-live="polite"></p>
               </form>
-            </section>
-            <section class="records-card" aria-labelledby="attendance-events-title">
-              <div class="editor-heading"><div><span class="admin-kicker">DAFTAR KEGIATAN</span><h3 id="attendance-events-title">Pilih untuk direkap</h3></div><button class="text-button" id="events-refresh" type="button">Muat ulang</button></div>
-              <div class="secretariat-record-list" id="attendance-event-list"><p class="records-empty">Memuat kegiatan…</p></div>
             </section>
           </div>
           <section class="records-card attendance-roster-panel" id="attendance-roster-panel" hidden aria-labelledby="attendance-roster-title">
@@ -231,8 +245,23 @@
 
         <section class="secretariat-subpanel" id="letters-panel" role="tabpanel" aria-labelledby="tab-letters" hidden>
           <div class="secretariat-intro"><div><span class="admin-kicker">SURAT KELUAR</span><h3>Nomor surat dan arsip</h3><p>Nomor berikutnya mengikuti buku agenda. Pastikan surat siap diterbitkan; nomor yang dibatalkan tetap tercatat.</p></div></div>
-          <div class="admin-columns">
-            <section class="editor-card" aria-labelledby="letter-editor-title">
+          <div class="secretariat-workspace letters-workspace">
+            <aside class="secretariat-options-rail" aria-label="Opsi persuratan">
+              <section class="records-card secretariat-options-card">
+                <div class="editor-heading"><div><span class="admin-kicker">PENGATURAN</span><h3>Opsi surat</h3></div></div>
+                <span class="member-option-label">Jumlah surat</span>
+                <strong class="letter-total" id="letter-count">0 surat</strong>
+                <button class="member-option-button" id="letters-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang</button>
+                <div class="member-options-divider"></div>
+                <span class="member-option-label">Arsip surat</span>
+                <p class="field-hint">Tambahkan tautan Drive pada baris surat, lalu pilih status arsipnya.</p>
+              </section>
+            </aside>
+            <section class="records-card letter-register-card" aria-labelledby="letter-register-title">
+              <div class="editor-heading"><div><span class="admin-kicker">BUKU AGENDA SURAT KELUAR</span><h3 id="letter-register-title">Surat tersimpan</h3></div></div>
+              <div class="secretariat-record-list" id="letter-record-list"><p class="records-empty">Memuat data…</p></div>
+            </section>
+            <section class="editor-card letter-editor-card" aria-labelledby="letter-editor-title">
               <div class="editor-heading"><div><span class="admin-kicker">PENOMORAN OTOMATIS</span><h3 id="letter-editor-title">Terbitkan nomor surat</h3></div></div>
               <form id="letter-form">
                 <label for="letter-subject">Perihal surat</label><input id="letter-subject" maxlength="240" required>
@@ -244,16 +273,14 @@
                 <p class="form-message" id="letter-message" role="status" aria-live="polite"></p>
               </form>
             </section>
-            <section class="records-card" aria-labelledby="letter-register-title">
-              <div class="editor-heading"><div><span class="admin-kicker">BUKU AGENDA SURAT KELUAR</span><h3 id="letter-register-title">Surat tersimpan</h3><span class="record-count" id="letter-count">0 surat</span></div><button class="text-button" id="letters-refresh" type="button">Muat ulang</button></div>
-              <div class="secretariat-record-list" id="letter-record-list"><p class="records-empty">Memuat data…</p></div>
-            </section>
           </div>
         </section>
       </section>
       <section class="management-panel module-placeholder" id="achievements-panel" role="tabpanel" aria-labelledby="tab-achievements" hidden>
         <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">★</span><div><span class="admin-kicker">MODUL PRESTASI</span><h3>Pengelolaan prestasi</h3><p>Ruang untuk rekap capaian, KPI prestasi, dan apresiasi anggota sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
       </section>
+        </div>
+      </div>
     </section>
   </main>
 </body>
