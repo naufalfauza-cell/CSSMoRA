@@ -1,28 +1,35 @@
 (() => {
   const entry = document.getElementById("attendance-entry");
   const config = window.CSSMORA_SUPABASE;
-  if (!entry || !config?.url || !config?.publishableKey) return;
+  if (!entry) return;
   const renumber = () => {
     document.querySelectorAll(".sign-nav .sign-link:not([hidden]) .sign-number").forEach((node, index) => {
       node.textContent = String(index + 1).padStart(2, "0");
     });
   };
-  let previousActive = false;
+  renumber();
+  const meta = document.getElementById("attendance-entry-meta");
+  if (!config?.url || !config?.publishableKey) {
+    if (meta) meta.textContent = "CEK STATUS";
+    return;
+  }
   async function refreshAttendanceEntry() {
     try {
       const response = await fetch(config.url + "/functions/v1/attendance-checkin?mode=active", {
         headers: { apikey: config.publishableKey }
       });
-      if (!response.ok) return;
+      if (!response.ok) {
+        if (meta) meta.textContent = "CEK STATUS";
+        return;
+      }
       const result = await response.json();
       const active = Array.isArray(result.events) && result.events.length > 0;
-      entry.hidden = !active;
-      previousActive = active;
-      const meta = document.getElementById("attendance-entry-meta");
-      if (meta && active) meta.textContent = result.events.length === 1 ? "KEGIATAN AKTIF" : result.events.length + " KEGIATAN AKTIF";
+      if (meta) meta.textContent = active
+        ? (result.events.length === 1 ? "KEGIATAN AKTIF" : result.events.length + " KEGIATAN AKTIF")
+        : "BELUM ADA KEGIATAN";
       renumber();
     } catch {
-      if (!previousActive) entry.hidden = true;
+      if (meta) meta.textContent = "CEK STATUS";
       renumber();
     }
   }
