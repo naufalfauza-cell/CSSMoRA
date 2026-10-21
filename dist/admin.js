@@ -324,6 +324,7 @@ agendaForm.addEventListener('submit',async event=>{
     }
     await loadAgenda();
     clearAgendaEditor();
+    showMessage('#agenda-editor-message',existingId?'Perubahan agenda berhasil disimpan.':'Agenda berhasil ditambahkan.','success');
   } catch(error) {
     showMessage('#agenda-editor-message',error.message,'error');
   } finally {
