@@ -13,7 +13,7 @@
   <script src="./app.js" defer></script>
 </head>
 <body class="catalog-page">
-  <a class="skip" href="#katalog">Langsung ke katalog lomba</a>
+  <a class="skip" href="#catalog-page">Langsung ke katalog lomba</a>
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="./" aria-label="Beranda CSSMoRA UNAIR">
@@ -29,7 +29,7 @@
   </header>
 
   <main>
-    <section class="catalog-section" id="katalog" aria-labelledby="catalog-title">
+    <section class="catalog-section" id="catalog-page" aria-labelledby="catalog-title">
       <div class="wrap">
         <nav class="page-breadcrumb" aria-label="Breadcrumb"><a href="./">Beranda</a><span aria-hidden="true">/</span><span aria-current="page">Info lomba</span></nav>
         <div class="catalog-heading">
@@ -49,9 +49,11 @@
         <div class="empty-state" id="empty-state" hidden><span aria-hidden="true">✦</span><h3 id="empty-title">Belum ada lomba</h3><p id="empty-hint" hidden>Coba kata kunci atau filter lain.</p><button id="reset-filter" type="button">Atur ulang filter</button></div>
       </div>
     </section>
+    <section class="competition-detail-page wrap" id="competition-detail-page" aria-label="Informasi lomba" hidden>
+      <a class="detail-back" id="detail-back" href="./lomba.html">← Kembali ke semua lomba</a>
+      <div id="detail-content" class="detail-page-grid"></div>
+    </section>
 
   </main>
-
-  <dialog id="detail-dialog" aria-labelledby="detail-title"><div class="dialog-shell"><button class="dialog-close" id="close-dialog" type="button" aria-label="Tutup detail lomba">×</button><div id="detail-content"></div></div></dialog>
 </body>
 </html>
