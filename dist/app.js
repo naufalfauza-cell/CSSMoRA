@@ -26,6 +26,10 @@ function render() {
   </button>`).join('');
   $('#result-count').textContent = `${items.length} lomba ditemukan`;
   $('#empty-state').hidden = items.length !== 0;
+  const noPublishedItems = competitions.length === 0;
+  $('#empty-title').textContent = noPublishedItems ? 'Belum ada lomba' : 'Tidak ada yang cocok';
+  $('#empty-hint').hidden = noPublishedItems;
+  $('#reset-filter').hidden = noPublishedItems;
   document.querySelectorAll('.quick-filter').forEach(button => {
     const active = button.dataset.category === category;
     button.classList.toggle('active', active);
