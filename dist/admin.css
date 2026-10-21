@@ -1384,3 +1384,136 @@
 .admin-sidebar .admin-tabs.module-grid .module-state{
   display:none;
 }
+
+/* Members list: one main table with its filters in the matching column headers. */
+.member-intro{margin-bottom:10px}
+.member-intro h3{margin-bottom:0}
+.member-workspace{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 278px;
+  align-items:start;
+  gap:14px;
+  font-size:12px;
+}
+.member-table-card{grid-column:1;min-width:0;padding:14px;border-radius:16px}
+.member-entry-rail{grid-column:2;grid-row:1;min-width:0}
+.member-editor-card{padding:14px;border-radius:16px}
+.member-table-heading{margin-bottom:12px}
+.member-table-heading h3{font-size:16px}
+.member-tools{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:10px;
+}
+.member-tools input[type=search]{
+  flex:1 1 190px;
+  width:auto;
+  min-width:150px;
+  min-height:34px;
+  padding:7px 10px;
+  border-radius:10px;
+  font-size:11px;
+}
+.member-data-actions{display:flex;align-items:center;gap:5px;margin-left:auto}
+.member-data-button{
+  display:inline-flex;
+  min-height:32px;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:5px 8px;
+  border:1px solid #e2e8e1;
+  border-radius:9px;
+  background:#fff;
+  color:#3b5545;
+  font:inherit;
+  font-size:9px;
+  font-weight:700;
+  line-height:1.1;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.member-data-button>span:first-child{font-size:13px;line-height:1}
+.member-data-button:hover{border-color:#bfd3c0;background:#f5f9f4}
+.member-import-button{font-family:inherit}
+.member-filter-label{display:block;margin:0 0 5px;color:#48594d;font-size:9px;font-weight:800}
+.member-column-filter{
+  display:block;
+  width:100%;
+  min-width:104px;
+  min-height:28px;
+  padding:5px 19px 5px 7px;
+  border:1px solid #e2e9e0;
+  border-radius:8px;
+  background:#fff;
+  color:#35483a;
+  font:inherit;
+  font-size:9px;
+  font-weight:600;
+  line-height:1.2;
+}
+.member-column-filter:focus,
+.member-editor-card select:focus{
+  outline:0;
+  border-color:var(--green);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--green) 12%,transparent);
+}
+.member-table-card .secretariat-table-wrap{overflow-x:auto}
+.member-table-card .member-data-table{
+  min-width:720px;
+  table-layout:fixed;
+}
+.member-data-table th:nth-child(1){width:27%}
+.member-data-table th:nth-child(2){width:13%}
+.member-data-table th:nth-child(3){width:23%}
+.member-data-table th:nth-child(4){width:22%}
+.member-data-table th:nth-child(5){width:15%}
+.member-data-table th{vertical-align:bottom}
+.member-table-card .secretariat-table .record-status{
+  display:inline-flex;
+  max-width:100%;
+  align-items:center;
+  justify-content:center;
+  padding:4px 7px;
+  border-radius:999px;
+  font-size:8px;
+  line-height:1.2;
+  text-align:center;
+  white-space:normal;
+}
+.member-data-table .record-status.study-graduate{background:#eef1f5;color:#59636e}
+.member-data-table .record-status.study-unknown{background:#f5f2e8;color:#7b6b35}
+.member-data-table .record-actions{justify-content:flex-start}
+.member-data-table .record-actions button{min-width:42px}
+.member-editor-card form{gap:7px}
+.member-editor-card form>label:not(.publish-toggle){margin-top:3px;font-size:9px}
+.member-editor-card input:not([type=checkbox]),
+.member-editor-card select{
+  width:100%;
+  min-height:32px;
+  padding:6px 8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  color:var(--ink);
+  font:inherit;
+  font-size:10px;
+  font-weight:500;
+  line-height:1.3;
+}
+.member-editor-card .admin-button{min-height:34px;margin-top:4px;font-size:10px}
+.member-editor-card .form-message{font-size:9px}
+@media(max-width:1120px){
+  .member-workspace{grid-template-columns:minmax(0,1fr);gap:10px}
+  .member-table-card,.member-entry-rail{grid-column:1;grid-row:auto}
+  .member-entry-rail{justify-self:end;width:min(100%,320px)}
+}
+@media(max-width:680px){
+  .member-table-card{padding:10px}
+  .member-tools input[type=search]{flex-basis:100%}
+  .member-data-actions{width:100%;margin-left:0}
+  .member-data-button{flex:1}
+  .member-entry-rail{width:100%}
+}

@@ -667,8 +667,9 @@ async function loadMembers(){
   memberList.innerHTML='<tr><td colspan="5"><div class="table-loading"><span class="table-spinner" aria-hidden="true"></span><span>Memuat data anggota…</span></div></td></tr>';
   try{
     members=await api('secretariat_members?select=*&order=cohort.desc,full_name.asc');
-    renderMembers();
+    updateMemberFilterOptions();
     updateMemberCount();
+    renderMembers();
     loadedAdminData.add('members');
     if(currentAttendanceEvent)await loadAttendanceRoster(currentAttendanceEvent.id);
   }catch(error){
@@ -679,27 +680,55 @@ async function loadMembers(){
     memberList.closest('.secretariat-table-wrap')?.removeAttribute('aria-busy');
   }
 }
+function updateMemberFilterOptions(){
+  const fill=(selector,values,allLabel)=>{
+    const node=$(selector);
+    const current=node.value||'all';
+    node.innerHTML='<option value="all">'+allLabel+'</option>'+values.map(value=>'<option value="'+escapeHTML(value)+'">'+escapeHTML(value)+'</option>').join('');
+    if(values.includes(current))node.value=current;
+  };
+  const cohorts=[...new Set(members.map(member=>String(member.cohort||'').trim()).filter(Boolean))]
+    .sort((a,b)=>Number(b)-Number(a)||a.localeCompare(b,'id'));
+  const programs=[...new Set(members.map(member=>String(member.study_program||'').trim()).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,'id'));
+  fill('#member-cohort-filter',cohorts,'Semua');
+  fill('#member-program-filter',programs,'Semua prodi');
+}
+function memberStudyStatusLabel(status){
+  return ({mahasiswa:'Masih mahasiswa',lulus:'Lulus',belum_ditentukan:'Belum diisi'})[status]||'Belum diisi';
+}
+function normalizeMemberStudyStatus(value){
+  const normalized=String(value||'').trim().toLowerCase().replace(/[_-]+/g,' ');
+  if(['lulus','sudah lulus','alumni','lulusan'].includes(normalized))return 'lulus';
+  if(['mahasiswa','masih mahasiswa','belum lulus','aktif kuliah'].includes(normalized))return 'mahasiswa';
+  return 'belum_ditentukan';
+}
 function updateMemberCount(){
-  const active=members.filter(member=>member.is_active).length;
-  $('#member-count').textContent=members.length+' anggota · '+active+' aktif';
-  $('#member-total-stat').textContent=members.length;
-  $('#member-active-stat').textContent=active;
-  $('#member-visible-count').textContent=members.length+' data';
+  $('#member-count').textContent=members.length+' anggota';
 }
 function renderMembers(){
   const query=$('#member-search').value.trim().toLowerCase();
-  const status=$('#member-status-filter').value;
-  const rows=members.filter(m=>{
-    const statusMatches=status==='all'||(status==='active'?m.is_active:!m.is_active);
-    const queryMatches=!query||[m.nia,m.full_name,m.cohort,m.faculty,m.study_program].some(v=>String(v||'').toLowerCase().includes(query));
-    return statusMatches&&queryMatches;
+  const cohort=$('#member-cohort-filter').value;
+  const program=$('#member-program-filter').value;
+  const status=$('#member-study-status-filter').value;
+  const rows=members.filter(member=>{
+    const cohortMatches=cohort==='all'||String(member.cohort)===cohort;
+    const programMatches=program==='all'||String(member.study_program||'')===program;
+    const studyStatus=member.study_status||'belum_ditentukan';
+    const statusMatches=status==='all'||studyStatus===status;
+    const queryMatches=!query||[member.nia,member.full_name,member.cohort,member.faculty,member.study_program].some(value=>String(value||'').toLowerCase().includes(query));
+    return cohortMatches&&programMatches&&statusMatches&&queryMatches;
   });
   $('#member-visible-count').textContent=rows.length+' data';
   if(!rows.length){memberList.innerHTML='<tr><td colspan="5" class="records-empty">Belum ada anggota yang cocok.</td></tr>';return;}
-  memberList.innerHTML=rows.map(m=>'<tr><td><strong>'+escapeHTML(m.full_name)+'</strong><small>'+escapeHTML(m.nia)+'</small></td><td>'+escapeHTML(m.cohort)+'</td><td>'+escapeHTML(m.study_program||'—')+'</td><td><span class="record-status '+(m.is_active?'published':'')+'">'+(m.is_active?'AKTIF':'NONAKTIF')+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(m.id)+'">Edit</button><button type="button" data-member-action="toggle" data-id="'+escapeHTML(m.id)+'">'+(m.is_active?'Nonaktifkan':'Aktifkan')+'</button></div></td></tr>').join('');
+  memberList.innerHTML=rows.map(member=>{
+    const status=member.study_status||'belum_ditentukan';
+    const statusClass=status==='mahasiswa'?'published':status==='lulus'?'study-graduate':'study-unknown';
+    return '<tr><td><strong>'+escapeHTML(member.full_name)+'</strong><small>'+escapeHTML(member.nia)+'</small></td><td>'+escapeHTML(member.cohort)+'</td><td>'+escapeHTML(member.study_program||'—')+'</td><td><span class="record-status '+statusClass+'">'+escapeHTML(memberStudyStatusLabel(status))+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(member.id)+'">Edit</button></div></td></tr>';
+  }).join('');
 }
 function resetMemberForm(){
-  memberForm.reset();$('#member-record-id').value='';$('#member-active').checked=true;$('#member-nia').readOnly=false;
+  memberForm.reset();$('#member-record-id').value='';$('#member-nia').readOnly=false;
   $('#member-editor-title').textContent='Tambah anggota';
   $('#save-member').innerHTML='Simpan anggota <span aria-hidden="true">↗</span>';
   showMessage('#member-message','');
@@ -707,34 +736,33 @@ function resetMemberForm(){
 $('#member-form-reset').addEventListener('click',resetMemberForm);
 $('#members-refresh').addEventListener('click',loadMembers);
 $('#member-search').addEventListener('input',renderMembers);
-$('#member-status-filter').addEventListener('change',renderMembers);
+$('#member-cohort-filter').addEventListener('change',renderMembers);
+$('#member-program-filter').addEventListener('change',renderMembers);
+$('#member-study-status-filter').addEventListener('change',renderMembers);
 $('#member-export').addEventListener('click',()=>downloadCSV('cssmora-anggota.csv',[
-  ['NIA','Nama','Angkatan','Fakultas','Jurusan','Status'],
-  ...members.map(m=>[m.nia,m.full_name,m.cohort,m.faculty,m.study_program,m.is_active?'Aktif':'Nonaktif'])
+  ['NIA','Nama','Angkatan','Fakultas','Program Studi','Status Studi'],
+  ...members.map(member=>[member.nia,member.full_name,member.cohort,member.faculty,member.study_program,memberStudyStatusLabel(member.study_status||'belum_ditentukan')])
 ]));
-memberList.addEventListener('click',async event=>{
+memberList.addEventListener('click',event=>{
   const retry=event.target.closest('[data-retry-members]');
   if(retry){void ensureAdminData('members',loadMembers);return;}
-  const button=event.target.closest('[data-member-action]');if(!button)return;
+  const button=event.target.closest('[data-member-action="edit"]');
+  if(!button)return;
   const member=memberById(button.dataset.id);if(!member)return;
-  if(button.dataset.memberAction==='edit'){
-    $('#member-record-id').value=member.id;
-    $('#member-nia').value=member.nia;$('#member-nia').readOnly=true;
-    $('#member-name').value=member.full_name;$('#member-cohort').value=member.cohort;
-    $('#member-faculty').value=member.faculty||'';$('#member-program').value=member.study_program||'';
-    $('#member-active').checked=member.is_active;
-    $('#member-editor-title').textContent='Edit anggota';
-    $('#save-member').innerHTML='Simpan perubahan <span aria-hidden="true">↗</span>';
-    $('#member-name').focus();return;
-  }
-  button.disabled=true;
-  try{await api('secretariat_members?id=eq.'+encodeURIComponent(member.id),{method:'PATCH',body:{is_active:!member.is_active,updated_at:new Date().toISOString()}});await loadMembers();}
-  catch(error){showMessage('#member-list-message',error.message,'error');button.disabled=false;}
+  $('#member-record-id').value=member.id;
+  $('#member-nia').value=member.nia;$('#member-nia').readOnly=true;
+  $('#member-name').value=member.full_name;$('#member-cohort').value=member.cohort;
+  $('#member-faculty').value=member.faculty||'';$('#member-program').value=member.study_program||'';
+  $('#member-study-status').value=member.study_status||'belum_ditentukan';
+  $('#member-editor-title').textContent='Edit anggota';
+  $('#save-member').innerHTML='Simpan perubahan <span aria-hidden="true">↗</span>';
+  $('#member-name').focus();
 });
 memberForm.addEventListener('submit',async event=>{
   event.preventDefault();
   const id=$('#member-record-id').value;
-  const payload={nia:$('#member-nia').value.trim(),full_name:$('#member-name').value.trim(),cohort:Number($('#member-cohort').value),faculty:$('#member-faculty').value.trim()||null,study_program:$('#member-program').value.trim()||null,is_active:$('#member-active').checked,updated_at:new Date().toISOString()};
+  const existing=id?memberById(id):null;
+  const payload={nia:$('#member-nia').value.trim(),full_name:$('#member-name').value.trim(),cohort:Number($('#member-cohort').value),faculty:$('#member-faculty').value.trim()||null,study_program:$('#member-program').value.trim()||null,study_status:$('#member-study-status').value||'belum_ditentukan',is_active:existing?.is_active??true,updated_at:new Date().toISOString()};
   $('#save-member').disabled=true;showMessage('#member-message','Menyimpan data anggota…');
   try{
     if(id)await api('secretariat_members?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:payload});
@@ -748,10 +776,22 @@ $('#member-csv').addEventListener('change',async event=>{
   try{
     const matrix=parseCSV(await file.text());if(matrix.length<2)throw new Error('CSV belum berisi baris data.');
     const headers=matrix[0].map(normHeader);
-    const find=keys=>headers.findIndex(h=>keys.some(k=>h===k||h.includes(k)));
-    const columns={nia:find(['nia','nomor induk']),name:find(['nama lengkap','nama']),cohort:find(['angkatan','tahun masuk']),faculty:find(['fakultas']),program:find(['jurusan','program studi','prodi'])};
+    const find=keys=>headers.findIndex(header=>keys.some(key=>header===key||header.includes(key)));
+    const columns={nia:find(['nia','nomor induk']),name:find(['nama lengkap','nama']),cohort:find(['angkatan','tahun masuk']),faculty:find(['fakultas']),program:find(['jurusan','program studi','prodi']),studyStatus:find(['status studi','status kuliah','status pendidikan','status'])};
     if(columns.nia<0||columns.name<0||columns.cohort<0)throw new Error('Kolom wajib belum ditemukan. Gunakan NIA, Nama, dan Angkatan.');
-    const imported=matrix.slice(1).map(row=>({nia:(row[columns.nia]||'').trim(),full_name:(row[columns.name]||'').trim(),cohort:Number(row[columns.cohort]),faculty:columns.faculty<0?null:(row[columns.faculty]||'').trim()||null,study_program:columns.program<0?null:(row[columns.program]||'').trim()||null,is_active:true,updated_at:new Date().toISOString()})).filter(m=>m.nia&&m.full_name&&Number.isInteger(m.cohort));
+    const imported=matrix.slice(1).map(row=>{
+      const member={
+        nia:(row[columns.nia]||'').trim(),
+        full_name:(row[columns.name]||'').trim(),
+        cohort:Number(row[columns.cohort]),
+        faculty:columns.faculty<0?null:(row[columns.faculty]||'').trim()||null,
+        study_program:columns.program<0?null:(row[columns.program]||'').trim()||null,
+        updated_at:new Date().toISOString()
+      };
+      const statusValue=columns.studyStatus<0?'':String(row[columns.studyStatus]||'').trim();
+      if(statusValue)member.study_status=normalizeMemberStudyStatus(statusValue);
+      return member;
+    }).filter(member=>member.nia&&member.full_name&&Number.isInteger(member.cohort));
     if(!imported.length)throw new Error('Tidak ada baris anggota yang valid.');
     await api('secretariat_members?on_conflict=nia',{method:'POST',body:imported,extraHeaders:{Prefer:'resolution=merge-duplicates,return=minimal'}});
     showMessage('#member-list-message',imported.length+' data anggota berhasil diimpor.','success');await loadMembers();
