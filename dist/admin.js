@@ -167,6 +167,8 @@ function renderRecords(){
 function clearPosterPreview(){
   const preview=$('#poster-preview');
   const name=$('#poster-upload-name');
+  const oldUrl=preview.getAttribute('src');
+  if(oldUrl?.startsWith('blob:'))URL.revokeObjectURL(oldUrl);
   preview.removeAttribute('src');
   preview.hidden=true;
   name.textContent='';
@@ -174,6 +176,8 @@ function clearPosterPreview(){
 function showPosterPreview(url,label=''){
   const preview=$('#poster-preview');
   const name=$('#poster-upload-name');
+  const oldUrl=preview.getAttribute('src');
+  if(oldUrl?.startsWith('blob:'))URL.revokeObjectURL(oldUrl);
   if(url){preview.src=url;preview.hidden=false;}else{preview.removeAttribute('src');preview.hidden=true;}
   name.textContent=label;
 }
@@ -314,7 +318,7 @@ async function uploadProgramPhoto(file,path) {
   });
   if(!response.ok) {
     const data=await response.json().catch(()=>({}));
-    throw new Error(data.message||data.error||'Foto proker gagal diunggah.');
+    throw new Error(data.message||data.error||'File gagal diunggah ke penyimpanan CSSMoRA.');
   }
 }
 async function deleteProgramPhoto(path) {
