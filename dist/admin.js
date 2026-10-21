@@ -600,10 +600,7 @@ let currentAttendanceEvent=null;
 let currentAttendanceRows=[];
 
 const memberById=id=>members.find(member=>member.id===id);
-const localDateInput=()=>{
-  const date=new Date();
-  return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,10);
-};
+const localDateInput=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const csvCell=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
 function downloadCSV(name,rows){
   const csv='\\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\\r\\n');
