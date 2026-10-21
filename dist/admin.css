@@ -192,3 +192,69 @@
  .module-placeholder-card>.module-icon{width:36px;height:36px}
 }
 @media(max-width:390px){.module-copy small{font-size:8px}.admin-tabs.module-grid .admin-tab{padding:9px;min-height:92px}}
+
+
+/* Secretary workspace: shared member register, attendance recap, and outgoing letters. */
+.secretariat-management{margin-top:12px}
+.secretariat-tabs{display:flex;gap:6px;width:max-content;max-width:100%;margin:0 0 16px;padding:5px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
+.secretariat-tab{min-height:36px;padding:0 16px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:.77rem;font-weight:800;cursor:pointer}
+.secretariat-tab:hover{background:var(--bg);color:var(--green)}
+.secretariat-tab.is-active{background:var(--green);color:#fff}
+.secretariat-tab:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.secretariat-subpanel[hidden]{display:none!important}
+.secretariat-intro{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:18px 0 14px}
+.secretariat-intro h3{margin-top:4px;font-size:1.45rem;letter-spacing:-.04em}
+.secretariat-intro p,.admin-muted{margin-top:5px;color:var(--muted);font-size:.82rem;line-height:1.5}
+.secretariat-management .admin-columns{grid-template-columns:minmax(280px,.76fr) minmax(420px,1.24fr);gap:14px}
+.secretariat-management .editor-card,.secretariat-management .records-card{padding:18px;border-radius:18px}
+.secretariat-management .editor-heading{margin-bottom:8px}
+.secretariat-management .editor-heading h3{font-size:1.2rem}
+.member-tools{display:flex;align-items:center;gap:10px;margin:13px 0 7px}
+.member-tools input[type=search]{min-width:130px;flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)}
+.member-tools input:focus{outline:2px solid var(--green);outline-offset:1px}
+.file-import-button{flex:0 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--green);font-size:.72rem;font-weight:800;cursor:pointer}
+.secretariat-table-wrap{max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:13px}
+.secretariat-table{width:100%;border-collapse:collapse;text-align:left;font-size:.76rem}
+.secretariat-table th{position:sticky;top:0;padding:10px 11px;background:#f2f6ef;color:#617265;font-size:.66rem;letter-spacing:.04em;white-space:nowrap}
+.secretariat-table td{padding:9px 11px;border-top:1px solid #edf0e9;vertical-align:middle}
+.secretariat-table td strong,.secretariat-table td small{display:block}
+.secretariat-table td strong{font-size:.78rem}
+.secretariat-table td small{margin-top:3px;color:var(--muted);font-size:.67rem}
+.secretariat-table td select,.secretariat-table td input{max-width:190px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit}
+.secretariat-table .records-empty{padding:20px;color:var(--muted);text-align:center}
+.secretariat-table .record-actions{min-width:125px}
+.secretariat-table .record-actions button{padding:5px 8px;font-size:.66rem}
+.secretariat-record-list{display:grid;gap:8px;max-height:530px;overflow:auto}
+.secretariat-record{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--ink);text-align:left;cursor:pointer}
+.secretariat-record:hover{border-color:#a9c8ae;background:#f8fbf6}
+.secretariat-record>span:first-child{display:grid;gap:5px}
+.secretariat-record strong{font-size:.82rem}
+.secretariat-record small{color:var(--muted);font-size:.7rem}
+.attendance-roster-panel{margin-top:14px}
+.attendance-actions{display:flex;align-items:center;gap:14px}
+.attendance-actions .attendance-save{width:auto;margin:0;padding:10px 13px;font-size:.73rem}
+.attendance-summary{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.attendance-summary span{padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:#f7f8f3;color:var(--muted);font-size:.7rem}
+.attendance-summary strong{margin-right:3px;color:var(--green);font-size:.84rem}
+.attendance-reason{display:block;margin-top:5px}
+.letter-record{padding:12px;border:1px solid var(--line);border-radius:13px;background:#fff}
+.letter-record+.letter-record{margin-top:8px}
+.letter-record-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.letter-record-heading>strong{overflow-wrap:anywhere;color:var(--green);font-size:.76rem}
+.letter-record>p{margin:8px 0 4px;font-weight:800;font-size:.82rem}
+.letter-record>small{color:var(--muted);font-size:.68rem}
+.letter-archive-form{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;margin-top:10px}
+.letter-archive-form input,.letter-archive-form select{min-width:0;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:.7rem}
+.letter-archive-form button{padding:8px 10px;border:0;border-radius:8px;background:#eaf3e8;color:var(--green);font-size:.68rem;font-weight:800;cursor:pointer}
+@media(max-width:950px){.secretariat-management .admin-columns{grid-template-columns:1fr}}
+@media(max-width:680px){
+ .secretariat-tabs{width:100%;display:grid;grid-template-columns:repeat(3,1fr);border-radius:14px}
+ .secretariat-tab{padding:0 7px;font-size:.68rem}
+ .secretariat-intro{align-items:flex-start}
+ .secretariat-management .editor-card,.secretariat-management .records-card{padding:14px}
+ .member-tools{flex-wrap:wrap}
+ .member-tools input[type=search]{flex-basis:100%}
+ .attendance-actions{align-items:flex-end;flex-direction:column;gap:8px}
+ .letter-archive-form{grid-template-columns:1fr 1fr}
+ .letter-archive-form input{grid-column:1/-1}
+}
