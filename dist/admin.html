@@ -44,9 +44,31 @@
         <div><span class="overline">DASHBOARD PENGURUS</span><h2 id="dashboard-title">Pusat pengelolaan</h2><p id="signed-in-as"></p></div>
         <button class="text-button" id="logout" type="button">Keluar</button>
       </div>
-      <nav class="admin-tabs" role="tablist" aria-label="Pilih data yang dikelola">
-        <button class="admin-tab is-active" id="tab-competitions" type="button" role="tab" aria-selected="true" aria-controls="competitions-panel">Kelola lomba</button>
-        <button class="admin-tab" id="tab-agenda" type="button" role="tab" aria-selected="false" aria-controls="agenda-panel">Kelola agenda</button>
+      <div class="module-picker-heading">
+        <div><span class="admin-kicker">RUANG KERJA PENGURUS</span><h3>Pilih bidang pengelolaan</h3></div>
+      </div>
+      <nav class="admin-tabs module-grid" role="tablist" aria-label="Pilih bidang pengelolaan">
+        <button class="admin-tab is-active" id="tab-competitions" type="button" role="tab" aria-selected="true" aria-controls="competitions-panel">
+          <span class="module-icon" aria-hidden="true">↗</span><span class="module-copy"><strong>Lomba</strong><small>Poster, informasi, dan pendaftaran</small></span><span class="module-state is-ready">Aktif</span>
+        </button>
+        <button class="admin-tab" id="tab-agenda" type="button" role="tab" aria-selected="false" aria-controls="agenda-panel">
+          <span class="module-icon" aria-hidden="true">◷</span><span class="module-copy"><strong>Kegiatan</strong><small>Proker, agenda, dan kalender</small></span><span class="module-state is-ready">Aktif</span>
+        </button>
+        <button class="admin-tab" id="tab-scholarship" type="button" role="tab" aria-selected="false" aria-controls="scholarship-panel">
+          <span class="module-icon" aria-hidden="true">✦</span><span class="module-copy"><strong>Beasiswa</strong><small>Info, periode, dan persyaratan</small></span><span class="module-state">Disiapkan</span>
+        </button>
+        <button class="admin-tab" id="tab-finance" type="button" role="tab" aria-selected="false" aria-controls="finance-panel">
+          <span class="module-icon" aria-hidden="true">Rp</span><span class="module-copy"><strong>Bendahara</strong><small>Kas, anggaran, dan laporan</small></span><span class="module-state">Disiapkan</span>
+        </button>
+        <button class="admin-tab" id="tab-secretariat" type="button" role="tab" aria-selected="false" aria-controls="secretariat-panel">
+          <span class="module-icon" aria-hidden="true">№</span><span class="module-copy"><strong>Sekretaris</strong><small>Surat, nomor, dan arsip</small></span><span class="module-state">Disiapkan</span>
+        </button>
+        <button class="admin-tab" id="tab-attendance" type="button" role="tab" aria-selected="false" aria-controls="attendance-panel">
+          <span class="module-icon" aria-hidden="true">✓</span><span class="module-copy"><strong>Absensi</strong><small>Kehadiran pengurus dan peserta</small></span><span class="module-state">Disiapkan</span>
+        </button>
+        <button class="admin-tab" id="tab-achievements" type="button" role="tab" aria-selected="false" aria-controls="achievements-panel">
+          <span class="module-icon" aria-hidden="true">★</span><span class="module-copy"><strong>Prestasi</strong><small>Rekap capaian dan apresiasi</small></span><span class="module-state">Disiapkan</span>
+        </button>
       </nav>
       <div class="management-panel" id="competitions-panel" role="tabpanel" aria-labelledby="tab-competitions">
       <div class="admin-columns">
@@ -123,6 +145,21 @@
             </section>
           </div>
         </section>
+      </section>
+      <section class="management-panel module-placeholder" id="scholarship-panel" role="tabpanel" aria-labelledby="tab-scholarship" hidden>
+        <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">✦</span><div><span class="admin-kicker">MODUL BEASISWA</span><h3>Pengelolaan beasiswa</h3><p>Ruang untuk mengatur informasi, periode, dan persyaratan beasiswa sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
+      </section>
+      <section class="management-panel module-placeholder" id="finance-panel" role="tabpanel" aria-labelledby="tab-finance" hidden>
+        <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">Rp</span><div><span class="admin-kicker">MODUL KEUANGAN</span><h3>Pengelolaan bendahara</h3><p>Ruang untuk pencatatan kas, anggaran, prognosa, dan laporan keuangan sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
+      </section>
+      <section class="management-panel module-placeholder" id="secretariat-panel" role="tabpanel" aria-labelledby="tab-secretariat" hidden>
+        <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">№</span><div><span class="admin-kicker">MODUL SEKRETARIAT</span><h3>Pengelolaan persuratan</h3><p>Ruang untuk alur surat, penomoran, disposisi, dan arsip sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
+      </section>
+      <section class="management-panel module-placeholder" id="attendance-panel" role="tabpanel" aria-labelledby="tab-attendance" hidden>
+        <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">✓</span><div><span class="admin-kicker">MODUL KEHADIRAN</span><h3>Pengelolaan absensi</h3><p>Ruang untuk rekap kehadiran pengurus dan peserta kegiatan sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
+      </section>
+      <section class="management-panel module-placeholder" id="achievements-panel" role="tabpanel" aria-labelledby="tab-achievements" hidden>
+        <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">★</span><div><span class="admin-kicker">MODUL PRESTASI</span><h3>Pengelolaan prestasi</h3><p>Ruang untuk rekap capaian, KPI prestasi, dan apresiasi anggota sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
       </section>
     </section>
   </main>
