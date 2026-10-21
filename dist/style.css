@@ -67,3 +67,4 @@ h1,h2,h3{letter-spacing:-.035em}.hero h1{letter-spacing:-.045em;font-weight:600;
 .footer-partners span{font:700 10px var(--display);letter-spacing:.07em;color:#b8b9d0;text-align:right}
 @media(max-width:760px){.brand-logo{width:48px;height:48px}.footer-partners{align-items:flex-start;margin-top:24px}.footer-partners span{text-align:left}}
 @media(max-width:480px){.brand-logo{width:44px;height:44px}.brand-copy strong{font-size:13px}.brand-copy small{font-size:10px}}
+ .footer-admin-link{display:inline-block;margin-top:14px;color:var(--green);font-size:.78rem;font-weight:900;text-decoration:underline;text-underline-offset:4px}

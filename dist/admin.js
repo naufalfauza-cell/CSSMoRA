@@ -1,0 +1,210 @@
+const $ = selector => document.querySelector(selector);
+const config = window.CSSMORA_SUPABASE;
+const authView = $('#auth-view');
+const adminView = $('#admin-view');
+const authForm = $('#auth-form');
+const competitionForm = $('#competition-form');
+const recordList = $('#record-list');
+let session = null;
+let competitions = [];
+
+const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const baseHeaders = () => ({apikey:config.publishableKey,'Content-Type':'application/json'});
+const showMessage = (selector,message,kind='') => {
+  const node=$(selector);
+  node.textContent=message;
+  node.dataset.kind=kind;
+};
+const saveSession = value => {
+  session=value;
+  if(value)sessionStorage.setItem('cssmora-admin-session',JSON.stringify(value));
+  else sessionStorage.removeItem('cssmora-admin-session');
+};
+
+async function authRequest(path,body) {
+  const response=await fetch(`${config.url}/auth/v1/${path}`,{
+    method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(body)
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.msg||data.message||data.error_description||'Autentikasi gagal. Periksa email dan kata sandi.');
+  return data;
+}
+
+async function refreshSession() {
+  if(!session?.refresh_token)throw new Error('Sesi berakhir. Silakan login kembali.');
+  const refreshed=await authRequest('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
+  saveSession({...refreshed,expires_at:Date.now()+Number(refreshed.expires_in||3600)*1000});
+}
+
+async function api(path,{method='GET',body,allowRetry=true}={}) {
+  const headers={...baseHeaders()};
+  if(session?.access_token)headers.Authorization=`Bearer ${session.access_token}`;
+  const response=await fetch(`${config.url}/rest/v1/${path}`,{
+    method,headers,body:body===undefined?undefined:JSON.stringify(body)
+  });
+  if(response.status===401&&allowRetry&&session?.refresh_token){
+    await refreshSession();
+    return api(path,{method,body,allowRetry:false});
+  }
+  const raw=await response.text();
+  const result=raw?JSON.parse(raw):null;
+  if(!response.ok)throw new Error(result?.message||result?.hint||result?.details||'Permintaan gagal. Coba lagi.');
+  return result;
+}
+
+async function checkAdmin() {
+  const user=session?.user;
+  if(!user?.email)throw new Error('Akun tidak memiliki alamat email yang terverifikasi.');
+  const rows=await api(`competition_admins?select=email&email=eq.${encodeURIComponent(user.email.toLowerCase())}`);
+  if(!rows?.length)throw new Error('Akun ini belum diberi akses admin CSSMoRA. Hubungi pengurus utama.');
+  $('#signed-in-as').textContent=user.email;
+  authView.hidden=true;
+  adminView.hidden=false;
+  await loadRecords();
+}
+
+async function signIn(email,password) {
+  const result=await authRequest('token?grant_type=password',{email,password});
+  saveSession({...result,expires_at:Date.now()+Number(result.expires_in||3600)*1000});
+  await checkAdmin();
+}
+
+authForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const submit=$('#auth-submit');
+  const email=authForm.elements.email.value.trim().toLowerCase();
+  const password=authForm.elements.password.value;
+  submit.disabled=true;
+  showMessage('#auth-message','Memeriksa akun…');
+  try{
+    await signIn(email,password);
+    showMessage('#auth-message','Login berhasil.','success');
+  }catch(error){
+    saveSession(null);
+    authView.hidden=false;
+    adminView.hidden=true;
+    showMessage('#auth-message',error.message,'error');
+  }finally{submit.disabled=false;}
+});
+
+$('#logout').addEventListener('click',async()=>{
+  try{if(session?.access_token)await fetch(`${config.url}/auth/v1/logout`,{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${session.access_token}`}});}catch{}
+  saveSession(null);
+  adminView.hidden=true;
+  authView.hidden=false;
+  authForm.reset();
+  showMessage('#auth-message','Kamu sudah keluar.','success');
+});
+
+async function loadRecords(){
+  recordList.innerHTML='<p class="records-empty">Memuat data…</p>';
+  try{
+    competitions=await api('competitions?select=*&order=deadline.desc');
+    renderRecords();
+  }catch(error){
+    recordList.innerHTML=`<p class="records-empty">${escapeHTML(error.message)}</p>`;
+  }
+}
+
+function renderRecords(){
+  $('#record-count').textContent=String(competitions.length);
+  if(!competitions.length){recordList.innerHTML='<p class="records-empty">Belum ada lomba. Tambahkan dari form di samping.</p>';return;}
+  recordList.innerHTML=competitions.map(item=>`<article class="record-row">
+    <div><h4>${escapeHTML(item.title)}</h4><p>${escapeHTML(item.organizer)} · Tenggat ${escapeHTML(new Date(item.deadline).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Jakarta'}))}</p><span class="record-status ${item.status==='published'?'published':''}">${item.status==='published'?'TERBIT':'DRAF'}</span></div>
+    <div class="record-actions"><button type="button" data-action="edit" data-id="${escapeHTML(item.id)}">Edit</button><button type="button" class="delete" data-action="delete" data-id="${escapeHTML(item.id)}">Hapus</button></div>
+  </article>`).join('');
+}
+
+function clearEditor(){
+  competitionForm.reset();
+  $('#record-id').value='';
+  $('#editor-title').textContent='Tambah lomba';
+  $('#save-competition').innerHTML='Simpan lomba <span aria-hidden="true">↗</span>';
+  showMessage('#editor-message','');
+}
+$('#form-reset').addEventListener('click',clearEditor);
+
+recordList.addEventListener('click',async event=>{
+  const button=event.target.closest('[data-action]');
+  if(!button)return;
+  const item=competitions.find(row=>row.id===button.dataset.id);
+  if(!item)return;
+  if(button.dataset.action==='edit'){
+    $('#record-id').value=item.id;
+    competitionForm.elements.title.value=item.title||'';
+    competitionForm.elements.subtitle.value=item.subtitle||'';
+    competitionForm.elements.category.value=item.category||'Esai & Riset';
+    competitionForm.elements.organizer.value=item.organizer||'';
+    competitionForm.elements.deadline.value=new Date(item.deadline).toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'});
+    competitionForm.elements.fee.value=item.fee||'Gratis';
+    competitionForm.elements.poster.value=item.posterImage||'';
+    competitionForm.elements.registration.value=item.registrationUrl||'';
+    competitionForm.elements.description.value=item.description||'';
+    competitionForm.elements.published.checked=item.status==='published';
+    $('#editor-title').textContent='Edit lomba';
+    $('#save-competition').innerHTML='Simpan perubahan <span aria-hidden="true">↗</span>';
+    $('#title').focus();
+    return;
+  }
+  if(button.dataset.action==='delete'&&confirm(`Hapus lomba “${item.title}”?`)){
+    button.disabled=true;
+    try{
+      await api(`competitions?id=eq.${encodeURIComponent(item.id)}`,{method:'DELETE'});
+      competitions=competitions.filter(row=>row.id!==item.id);
+      renderRecords();
+      if($('#record-id').value===item.id)clearEditor();
+    }catch(error){alert(`Lomba belum terhapus: ${error.message}`);button.disabled=false;}
+  }
+});
+
+competitionForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const submit=$('#save-competition');
+  const title=competitionForm.elements.title.value.trim();
+  const deadline=competitionForm.elements.deadline.value;
+  const poster=competitionForm.elements.poster.value.trim();
+  const registration=competitionForm.elements.registration.value.trim();
+  if((poster&&!poster.startsWith('https://'))||(registration&&!registration.startsWith('https://'))){showMessage('#editor-message','Tautan poster dan pendaftaran harus memakai https://.','error');return;}
+  const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
+  const existingId=$('#record-id').value;
+  const payload={
+    id:existingId||`${slug}-${Date.now()}`,
+    title,
+    subtitle:competitionForm.elements.subtitle.value.trim(),
+    category:competitionForm.elements.category.value,
+    organizer:competitionForm.elements.organizer.value.trim(),
+    deadline:`${deadline}T23:59:00+07:00`,
+    fee:competitionForm.elements.fee.value.trim(),
+    palette:'purple',
+    mark:title.split(/\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase(),
+    year:deadline.slice(0,4),
+    posterImage:poster,
+    registrationUrl:registration,
+    description:competitionForm.elements.description.value.trim(),
+    status:competitionForm.elements.published.checked?'published':'draft',
+    updatedAt:new Date().toISOString()
+  };
+  submit.disabled=true;
+  showMessage('#editor-message','Menyimpan…');
+  try{
+    if(existingId){
+      await api(`competitions?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
+      showMessage('#editor-message','Perubahan berhasil disimpan.','success');
+    }else{
+      await api('competitions',{method:'POST',body:payload});
+      showMessage('#editor-message','Lomba berhasil ditambahkan.','success');
+    }
+    await loadRecords();
+    clearEditor();
+  }catch(error){showMessage('#editor-message',error.message,'error');}
+  finally{submit.disabled=false;}
+});
+
+async function initialize(){
+  if(!config?.url||!config?.publishableKey){showMessage('#auth-message','Konfigurasi Supabase belum tersedia.','error');return;}
+  try{
+    const stored=sessionStorage.getItem('cssmora-admin-session');
+    if(stored){session=JSON.parse(stored);if(session.expires_at<Date.now()+60000)await refreshSession();await checkAdmin();}
+  }catch(error){saveSession(null);authView.hidden=false;adminView.hidden=true;showMessage('#auth-message',error.message,'error');}
+}
+initialize();

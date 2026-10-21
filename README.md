@@ -1,36 +1,42 @@
 # CSSMoRA Lomba
 
-Situs publik untuk informasi dan dokumentasi perlombaan CSSMoRA UNAIR.
+Situs publik informasi perlombaan dan panel pengelolaan untuk CSSMoRA UNAIR.
 
-**Situs:** https://cssmora-lomba-unair.naufal-almaroqi.chatgpt.site
+**Situs:** https://cssmora.vercel.app  
+**Panel admin:** https://cssmora.vercel.app/admin.html
 
 ## Struktur proyek
 
 ```text
 .
-├── .openai/
-│   └── hosting.json       # Pengaturan direktori publikasi
-├── dist/                  # Berkas situs yang langsung dipublikasikan
-│   ├── assets/            # Logo CSSMoRA dan Kemenag–LPDP
-│   ├── app.js             # Interaksi dan data tampilan
-│   ├── index.html         # Struktur halaman
-│   └── style.css          # Gaya dan tata letak
-└── README.md
+├── .openai/hosting.json       # Konfigurasi situs CSSMoRA Sites
+├── README.md
+└── dist/                     # Folder root untuk deployment Vercel
+    ├── assets/                # Logo CSSMoRA dan Kemenag–LPDP
+    ├── admin.html             # Login pengurus dan panel pengelolaan
+    ├── admin.css              # Gaya panel admin
+    ├── admin.js               # Supabase Auth dan operasi katalog
+    ├── app.js                 # Katalog publik dan filter
+    ├── index.html             # Halaman katalog
+    ├── style.css              # Gaya situs
+    └── supabase-config.js      # URL dan publishable key Supabase
 ```
 
-## Mengedit situs
+## Supabase
 
-- Ubah konten dan susunan halaman di `dist/index.html`.
-- Ubah interaksi di `dist/app.js`.
-- Ubah warna, tipografi, dan tata letak di `dist/style.css`.
-- Simpan gambar atau logo di `dist/assets/`, lalu gunakan path relatif seperti `assets/nama-file.png`.
+Katalog publik membaca data berstatus `published`. Pengurus dapat mengelola draf dan menerbitkan lomba dari `/admin.html`.
 
-## Menjalankan secara lokal
+Untuk mengaktifkan akun admin:
+1. Buat dan verifikasi akun di **Supabase → Authentication → Users**.
+2. Tambahkan email akun tersebut ke tabel `public.competition_admins` melalui SQL Editor:
+   `insert into public.competition_admins (email) values (lower('email@contoh.id'));`
 
-Jalankan server statis dengan `dist/` sebagai direktori publik. Contoh:
+Row Level Security membatasi operasi tulis ke email yang terdaftar. Publishable key di frontend memang aman untuk publik; jangan pernah menaruh service-role key di situs.
+
+## Menjalankan lokal
 
 ```bash
 python -m http.server 8000 --directory dist
-```
+``
 
 Lalu buka http://localhost:8000.
