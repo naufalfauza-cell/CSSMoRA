@@ -2,13 +2,12 @@ let competitions = [];
 
 const $ = selector => document.querySelector(selector);
 const grid = $('#competition-grid');
-const dialog = $('#detail-dialog');
 const isOpen = item => new Date(item.deadline) >= new Date();
 const formatDate = date => new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Jakarta'}).format(new Date(date));
 const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const poster = item => item.posterImage
   ? `<img class="poster-image" src="${escapeHTML(item.posterImage)}" alt="Poster ${escapeHTML(item.title)}" loading="lazy">`
-  : `<div class="poster-design palette-${item.palette}" role="img" aria-label="Poster lomba ${escapeHTML(item.title)}"><div class="design-top"><span>CSSMoRA / EXPLORE</span><span>✳</span></div><div class="design-symbol">${escapeHTML(item.mark)}</div><div class="design-main"><span>${escapeHTML(item.subtitle)}</span><strong>${escapeHTML(item.title)}</strong></div><div class="design-bottom"><span>OPEN CALL • ${escapeHTML(item.year)}</span><span>↗</span></div></div>`;
+  : `<div class="poster-missing" role="img" aria-label="Poster belum diunggah untuk ${escapeHTML(item.title)}"><span aria-hidden="true">▧</span><strong>Poster belum diunggah</strong></div>`;
 
 function render() {
   const query = $('#search').value.trim().toLocaleLowerCase('id');
@@ -38,30 +37,33 @@ function render() {
 }
 
 function detail(item, updateURL=true) {
-  const open = isOpen(item);
-  const url = /^https:\/\//i.test(item.registrationUrl) ? item.registrationUrl : '';
-  $('#detail-content').innerHTML = `<div class="detail-poster">${poster(item)}</div><div class="detail-info">
-    <span class="overline">INFO LOMBA</span>
-    <span class="detail-status ${open?'is-open':'is-closed'}">● ${open?'Masih dibuka':'Sudah ditutup'}</span>
-    <h2 id="detail-title">${escapeHTML(item.title)}</h2><p class="detail-subtitle">${escapeHTML(item.subtitle)}</p>
-    <p class="detail-description">${escapeHTML(item.description)}</p>
-    <dl class="detail-facts"><div><dt>Batas pendaftaran</dt><dd>${formatDate(item.deadline)}<small>23.59 WIB</small></dd></div><div><dt>Biaya pendaftaran</dt><dd>${escapeHTML(item.fee)}</dd></div><div><dt>Penyelenggara</dt><dd>${escapeHTML(item.organizer)}</dd></div><div><dt>Bidang</dt><dd>${escapeHTML(item.category)}</dd></div></dl>
+  const open=isOpen(item);
+  const url=/^https:\/\//i.test(item.registrationUrl)?item.registrationUrl:'';
+  $('#catalog-page').hidden=true;
+  $('#competition-detail-page').hidden=false;
+  $('#detail-content').innerHTML=`<div class="detail-poster">${poster(item)}</div><div class="detail-info">
+    <p class="overline">INFO LOMBA</p>
+    <span class="detail-status ${open?'is-open':'is-closed'}">${open?'● Masih dibuka':'● Sudah ditutup'}</span>
+    <h1 id="detail-title">${escapeHTML(item.title)}</h1>
+    <div class="detail-organizer"><small>PENYELENGGARA</small><strong>${escapeHTML(item.organizer||item.subtitle||'Belum dicantumkan')}</strong></div>
+    <p class="detail-description">${escapeHTML(item.description||'Informasi dan persyaratan lomba dapat dilihat pada laman resmi penyelenggara.')}</p>
+    <dl class="detail-facts"><div><dt>Batas pendaftaran</dt><dd>${formatDate(item.deadline)}<small>23.59 WIB</small></dd></div><div><dt>Biaya pendaftaran</dt><dd>${escapeHTML(item.fee||'Belum dicantumkan')}</dd></div><div><dt>Bidang</dt><dd>${escapeHTML(item.category)}</dd></div></dl>
     ${open&&url?`<a class="register-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Buka pendaftaran resmi <span aria-hidden="true">↗</span></a>`:`<span class="register-button disabled" aria-disabled="true">${open?'Tautan pendaftaran belum tersedia':'Pendaftaran telah ditutup'}</span>`}
-    <p class="detail-caution">Pastikan kembali detail dan persyaratan pada laman resmi penyelenggara sebelum mendaftar.</p>
+    <p class="detail-caution">Pastikan kembali persyaratan pada laman resmi penyelenggara sebelum mendaftar.</p>
   </div>`;
-  if (!dialog.open) dialog.showModal();
-  if (updateURL) { const u = new URL(location.href); u.searchParams.set('lomba',item.id); history.pushState({lomba:item.id},'',u); }
+  document.title=`${item.title} — Info Lomba CSSMoRA UNAIR`;
+  window.scrollTo({top:0,behavior:'auto'});
+  if(updateURL){const u=new URL(location.href);u.searchParams.set('lomba',item.id);history.pushState({lomba:item.id},'',u);}
 }
-
-function closeDetail(updateURL=true) {
-  if(dialog.open) dialog.close();
-  if(updateURL && new URL(location.href).searchParams.has('lomba')) { const u=new URL(location.href);u.searchParams.delete('lomba');history.pushState({},'',u); }
+function closeDetail(updateURL=true){
+  $('#competition-detail-page').hidden=true;
+  $('#catalog-page').hidden=false;
+  document.title='Info Lomba — CSSMoRA UNAIR';
+  if(updateURL&&new URL(location.href).searchParams.has('lomba')){const u=new URL(location.href);u.searchParams.delete('lomba');history.pushState({},'',u);}
+  window.scrollTo({top:0,behavior:'auto'});
 }
-
-grid.addEventListener('click',event => {const card=event.target.closest('[data-id]');if(card){const item=competitions.find(x=>x.id===card.dataset.id);if(item)detail(item);}});
-$('#close-dialog').addEventListener('click',()=>closeDetail());
-dialog.addEventListener('click',event=>{if(event.target===dialog)closeDetail();});
-dialog.addEventListener('close',()=>{if(new URL(location.href).searchParams.has('lomba'))closeDetail();});
+grid.addEventListener('click',event=>{const card=event.target.closest('[data-id]');if(card){const item=competitions.find(x=>x.id===card.dataset.id);if(item)detail(item);}});
+$('#detail-back').addEventListener('click',event=>{event.preventDefault();closeDetail();});
 window.addEventListener('popstate',()=>{const id=new URL(location.href).searchParams.get('lomba');const item=competitions.find(x=>x.id===id);if(item)detail(item,false);else closeDetail(false);});
 ['search','category','status'].forEach(id=>$('#'+id).addEventListener(id==='search'?'input':'change',render));
 document.querySelectorAll('.quick-filter').forEach(button=>button.addEventListener('click',()=>{$('#category').value=button.dataset.category;render();}));
