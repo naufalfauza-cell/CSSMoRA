@@ -61,7 +61,7 @@
     const stop = () => {if(timer){clearInterval(timer);timer=null;}};
     const start = () => {
       stop();
-      if(!reducedMotion.matches&&!document.hidden)timer=setInterval(()=>show(index+1),5000);
+      if(!reducedMotion.matches&&!document.hidden)timer=setInterval(()=>show(index+1),2000);
     };
     box.querySelectorAll('.event-arrow').forEach(button=>button.addEventListener('click',()=>{show(index+Number(button.dataset.step));start();}));
     dots.forEach((button,i)=>button.addEventListener('click',()=>{show(i);start();}));
