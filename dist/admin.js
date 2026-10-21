@@ -7,6 +7,10 @@ const competitionForm = $('#competition-form');
 const recordList = $('#record-list');
 let session = null;
 let competitions = [];
+let agendas = [];
+const agendaForm = $('#agenda-form');
+const agendaRecordList = $('#agenda-record-list');
+const agendaTimeZone = 'Asia/Jakarta';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const baseHeaders = () => ({apikey:config.publishableKey,'Content-Type':'application/json'});
@@ -60,7 +64,7 @@ async function checkAdmin() {
   $('#signed-in-as').textContent=user.email;
   authView.hidden=true;
   adminView.hidden=false;
-  await loadRecords();
+  await Promise.all([loadRecords(),loadAgenda()]);
 }
 
 async function signIn(email,password) {
@@ -198,6 +202,133 @@ competitionForm.addEventListener('submit',async event=>{
     clearEditor();
   }catch(error){showMessage('#editor-message',error.message,'error');}
   finally{submit.disabled=false;}
+});
+
+
+const formatAgendaInput = value => {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: agendaTimeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date(value)).filter(part => part.type !== 'literal').map(part => [part.type,part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+};
+const formatAgendaDate = value => new Intl.DateTimeFormat('id-ID', {
+  timeZone: agendaTimeZone, weekday: 'short', day: 'numeric', month: 'short',
+  year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+}).format(new Date(value));
+const agendaIso = value => value ? `${value}:00+07:00` : null;
+
+async function loadAgenda() {
+  agendaRecordList.innerHTML='<p class="records-empty">Memuat agenda…</p>';
+  try {
+    agendas=await api('agenda?select=*&order=starts_at.asc');
+    renderAgendas();
+  } catch(error) {
+    agendaRecordList.innerHTML=`<p class="records-empty">${escapeHTML(error.message)}</p>`;
+  }
+}
+
+function renderAgendas() {
+  $('#agenda-record-count').textContent=String(agendas.length);
+  if(!agendas.length) {
+    agendaRecordList.innerHTML='<p class="records-empty">Belum ada agenda. Tambahkan melalui formulir ini.</p>';
+    return;
+  }
+  agendaRecordList.innerHTML=agendas.map(item=>`<article class="record-row agenda-record-row">
+    <div><h4>${escapeHTML(item.title)}</h4><p>${escapeHTML(formatAgendaDate(item.starts_at))} WIB${item.ends_at? ` – ${escapeHTML(formatAgendaDate(item.ends_at))} WIB`:''}${item.location?`<br>${escapeHTML(item.location)}`:''}</p><span class="record-status ${item.status==='published'?'published':''}">${item.status==='published'?'TERBIT':'DRAF'}</span></div>
+    <div class="record-actions"><button type="button" data-agenda-action="edit" data-id="${escapeHTML(item.id)}">Edit</button><button type="button" class="delete" data-agenda-action="delete" data-id="${escapeHTML(item.id)}">Hapus</button></div>
+  </article>`).join('');
+}
+
+function clearAgendaEditor() {
+  agendaForm.reset();
+  $('#agenda-record-id').value='';
+  $('#agenda-editor-title').textContent='Tambah agenda';
+  $('#save-agenda').innerHTML='Simpan agenda <span aria-hidden="true">↗</span>';
+  showMessage('#agenda-editor-message','');
+}
+
+document.querySelectorAll('.admin-tab').forEach(tab=>tab.addEventListener('click',()=>{
+  document.querySelectorAll('.admin-tab').forEach(item=>{
+    const selected=item===tab;
+    item.classList.toggle('is-active',selected);
+    item.setAttribute('aria-selected',String(selected));
+  });
+  document.querySelectorAll('.management-panel').forEach(panel=>{
+    panel.hidden=panel.id!==tab.getAttribute('aria-controls');
+  });
+}));
+
+$('#agenda-form-reset').addEventListener('click',clearAgendaEditor);
+$('#agenda-refresh').addEventListener('click',loadAgenda);
+
+agendaRecordList.addEventListener('click',async event=>{
+  const button=event.target.closest('[data-agenda-action]');
+  if(!button)return;
+  const item=agendas.find(row=>row.id===button.dataset.id);
+  if(!item)return;
+  if(button.dataset.agendaAction==='edit') {
+    $('#agenda-record-id').value=item.id;
+    agendaForm.elements.title.value=item.title||'';
+    agendaForm.elements.startsAt.value=formatAgendaInput(item.starts_at);
+    agendaForm.elements.endsAt.value=item.ends_at?formatAgendaInput(item.ends_at):'';
+    agendaForm.elements.location.value=item.location||'';
+    agendaForm.elements.description.value=item.description||'';
+    agendaForm.elements.published.checked=item.status==='published';
+    $('#agenda-editor-title').textContent='Edit agenda';
+    $('#save-agenda').innerHTML='Simpan perubahan <span aria-hidden="true">↗</span>';
+    $('#agenda-title-input').focus();
+    return;
+  }
+  if(button.dataset.agendaAction==='delete'&&confirm(`Hapus agenda “${item.title}”?`)) {
+    button.disabled=true;
+    try {
+      await api(`agenda?id=eq.${encodeURIComponent(item.id)}`,{method:'DELETE'});
+      agendas=agendas.filter(row=>row.id!==item.id);
+      renderAgendas();
+      if($('#agenda-record-id').value===item.id)clearAgendaEditor();
+    } catch(error) {
+      alert(`Agenda belum terhapus: ${error.message}`);
+      button.disabled=false;
+    }
+  }
+});
+
+agendaForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const submit=$('#save-agenda');
+  const starts=agendaForm.elements.startsAt.value;
+  const ends=agendaForm.elements.endsAt.value;
+  if(ends&&new Date(agendaIso(ends))<=new Date(agendaIso(starts))) {
+    showMessage('#agenda-editor-message','Waktu selesai harus setelah waktu mulai.','error');
+    return;
+  }
+  const existingId=$('#agenda-record-id').value;
+  const payload={
+    title:agendaForm.elements.title.value.trim(),
+    starts_at:agendaIso(starts),
+    ends_at:agendaIso(ends),
+    location:agendaForm.elements.location.value.trim()||null,
+    description:agendaForm.elements.description.value.trim()||null,
+    status:agendaForm.elements.published.checked?'published':'draft'
+  };
+  submit.disabled=true;
+  showMessage('#agenda-editor-message','Menyimpan…');
+  try {
+    if(existingId) {
+      await api(`agenda?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
+      showMessage('#agenda-editor-message','Perubahan agenda berhasil disimpan.','success');
+    } else {
+      await api('agenda',{method:'POST',body:payload});
+      showMessage('#agenda-editor-message','Agenda berhasil ditambahkan.','success');
+    }
+    await loadAgenda();
+    clearAgendaEditor();
+  } catch(error) {
+    showMessage('#agenda-editor-message',error.message,'error');
+  } finally {
+    submit.disabled=false;
+  }
 });
 
 async function initialize(){
