@@ -19,15 +19,23 @@
         <img class="brand-logo" src="./assets/cssmora-logo.png" alt="" width="58" height="58">
         <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong></span>
       </a>
-      <a class="header-action" href="./">Beranda <span aria-hidden="true">↗</span></a>
+      <nav class="portal-nav" aria-label="Navigasi utama">
+        <a href="./">Beranda</a>
+        <a href="./lomba.html" aria-current="page">Info lomba</a>
+        <a class="portal-nav-admin" href="./admin.html">Masuk pengurus <span aria-hidden="true">↗</span></a>
+      </nav>
     </div>
   </header>
 
   <main>
     <section class="catalog-section" id="katalog" aria-labelledby="catalog-title">
       <div class="wrap">
-        <h1 class="sr-only" id="catalog-title">Daftar lomba</h1>
-        <div class="sr-only" id="data-status" role="status" aria-live="polite"><p></p></div>
+        <nav class="page-breadcrumb" aria-label="Breadcrumb"><a href="./">Beranda</a><span aria-hidden="true">/</span><span aria-current="page">Info lomba</span></nav>
+        <div class="catalog-heading">
+          <div><p class="catalog-eyebrow">PELUANG CSSMoRA UNAIR</p><h1 id="catalog-title">Jelajahi lomba</h1><p class="catalog-subtitle">Poster, tenggat, dan informasi pendaftaran.</p></div>
+        </div>
+        <div class="catalog-status" id="data-status" role="status" aria-live="polite" hidden><p></p></div>
+        <div class="catalog-controls">
         <div class="quick-filters" aria-label="Pilihan cepat bidang lomba"><button type="button" class="quick-filter active" data-category="all" aria-pressed="true">Semua ✳</button><button type="button" class="quick-filter" data-category="Esai & Riset" aria-pressed="false">Esai & riset</button><button type="button" class="quick-filter" data-category="Bisnis & Inovasi" aria-pressed="false">Bisnis & inovasi</button><button type="button" class="quick-filter" data-category="Desain & Media" aria-pressed="false">Desain & media</button><button type="button" class="quick-filter" data-category="Debat & Public Speaking" aria-pressed="false">Debat & public speaking</button></div>
         <div class="toolbar" role="search">
           <label class="search-box"><span class="sr-only">Cari nama atau penyelenggara lomba</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="Cari nama lomba atau penyelenggara…" autocomplete="off"></label>
@@ -35,8 +43,9 @@
           <label class="select-wrap"><span class="sr-only">Filter status</span><select id="status"><option value="all">Semua status</option><option value="open">Masih dibuka</option><option value="closed">Sudah ditutup</option></select></label>
         </div>
         <div class="results-line"><span id="result-count" aria-live="polite"></span></div>
+        </div>
         <div class="competition-grid" id="competition-grid"></div>
-        <div class="empty-state" id="empty-state" hidden><span aria-hidden="true">↗</span><h3 id="empty-title">Belum ada lomba</h3><p id="empty-hint" hidden>Coba kata kunci atau filter lain.</p><button id="reset-filter" type="button">Atur ulang</button></div>
+        <div class="empty-state" id="empty-state" hidden><span aria-hidden="true">✦</span><h3 id="empty-title">Belum ada lomba</h3><p id="empty-hint" hidden>Coba kata kunci atau filter lain.</p><button id="reset-filter" type="button">Atur ulang filter</button></div>
       </div>
     </section>
 

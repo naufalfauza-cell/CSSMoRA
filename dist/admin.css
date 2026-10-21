@@ -47,3 +47,53 @@
  .dashboard-top h2{font-size:1.85rem}
  .record-row{padding:10px;gap:8px}
 }
+
+/* A consistent management workspace that keeps the existing CSSMoRA palette. */
+.admin-page .header-inner{justify-content:space-between}
+.admin-page .admin-main{padding-top:34px;padding-bottom:52px}
+.admin-page .auth-card{border-radius:22px}
+.auth-kicker{margin:0 0 7px;color:var(--green);font-size:10px;font-weight:800;letter-spacing:.1em}
+.auth-card h1{margin:0}
+.auth-card .auth-help{margin-top:6px;line-height:1.55}
+.auth-card form{margin-top:20px}
+.auth-card .password-help{display:inline-block;margin-top:8px}
+.admin-dashboard{margin:0 auto;max-width:1120px}
+.admin-breadcrumb{margin-bottom:18px}
+.dashboard-top{align-items:center;padding:0 0 18px;border-bottom:1px solid var(--line)}
+.dashboard-top h2{margin-top:4px;letter-spacing:-.045em}
+.dashboard-top p{margin-top:5px}
+.dashboard-top>.text-button{border:1px solid var(--line);border-radius:999px;padding:8px 13px;text-decoration:none;background:var(--paper)}
+.dashboard-top>.text-button:hover{background:var(--bg)}
+.admin-columns{grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:16px;margin-top:16px}
+.editor-card,.records-card{border-radius:20px;box-shadow:0 8px 24px #17282008}
+.editor-heading h3{letter-spacing:-.035em}
+.editor-card form{gap:9px}
+.editor-card label:not(.publish-toggle){color:var(--ink);font-size:12px}
+.editor-card input,.editor-card select,.editor-card textarea,.auth-card input{border-color:var(--line);border-radius:11px;transition:border-color .16s,box-shadow .16s}
+.editor-card input,.editor-card select{min-height:42px}
+.editor-card input:focus,.editor-card select:focus,.editor-card textarea:focus,.auth-card input:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 13%,transparent)}
+.editor-card textarea{min-height:98px;resize:vertical}
+.publish-toggle{border-radius:12px;background:var(--bg)}
+.admin-button{border-radius:12px;min-height:45px;transition:filter .16s,transform .16s}
+.admin-button:hover:not(:disabled){filter:brightness(.96);transform:translateY(-1px)}
+.admin-button:focus-visible,.record-actions button:focus-visible,.text-button:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.record-count{background:var(--bg);color:var(--green)}
+.record-list{max-height:760px;padding-right:3px}
+.record-row{border-radius:13px;align-items:center}
+.record-row h4{font-size:14px;letter-spacing:-.025em}
+.record-row p{font-size:12px;line-height:1.45}
+.record-actions button{border-radius:999px;min-height:32px;padding:6px 11px}
+.records-empty{border:1px dashed var(--line);border-radius:13px;background:var(--bg)}
+.form-message{margin:2px 0 0;line-height:1.5}
+.form-message[data-kind=error]{padding:9px 11px;border-radius:10px;background:#b43c2910}
+.form-message[data-kind=success]{padding:9px 11px;border-radius:10px;background:#27634b10}
+@media(max-width:900px){.admin-columns{grid-template-columns:1fr}.admin-dashboard{max-width:760px}}
+@media(max-width:600px){
+ .admin-page .admin-main{padding-top:26px;padding-bottom:34px}
+ .auth-card{padding:22px}
+ .dashboard-top{gap:12px}.dashboard-top h2{font-size:1.8rem}
+ .editor-card,.records-card{padding:17px}
+ .record-row{grid-template-columns:minmax(0,1fr);align-items:start}
+ .record-actions{justify-content:flex-end}
+ .admin-breadcrumb{margin-bottom:13px}
+}

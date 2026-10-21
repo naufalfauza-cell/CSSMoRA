@@ -72,11 +72,14 @@ async function loadCompetitions() {
   const status = $('#data-status');
   const statusMessage = status.querySelector('p');
   const config = window.CSSMORA_SUPABASE;
+  status.hidden = true;
   if (!config?.url || !config?.publishableKey) {
+    status.hidden = false;
     statusMessage.innerHTML = '<strong>Konfigurasi katalog belum tersedia.</strong> Hubungi pengurus CSSMoRA.';
     return;
   }
-  statusMessage.innerHTML = '<strong>Mengambil daftar lomba…</strong> Data katalog sedang diperbarui.';
+  status.hidden = false;
+  statusMessage.innerHTML = '<strong>Memuat daftar lomba…</strong> Mohon tunggu sebentar.';
   const params = new URLSearchParams({
     select: 'id,title,subtitle,category,organizer,deadline,fee,palette,mark,year,posterImage,registrationUrl,description',
     status: 'eq.published',
@@ -92,13 +95,15 @@ async function loadCompetitions() {
     if (!response.ok) throw new Error(`Supabase request failed: ${response.status}`);
     competitions = await response.json();
     render();
-    statusMessage.innerHTML = `<strong>Katalog terhubung.</strong> Menampilkan ${competitions.length} lomba terverifikasi CSSMoRA.`;
+    status.hidden = true;
+    statusMessage.innerHTML = '';
     const initial = competitions.find(item => item.id === new URL(location.href).searchParams.get('lomba'));
     if (initial) detail(initial, false);
   } catch (error) {
     console.error('Gagal memuat katalog lomba:', error);
     competitions = [];
     render();
+    status.hidden = false;
     statusMessage.innerHTML = '<strong>Katalog belum dapat dimuat.</strong> Coba muat ulang halaman beberapa saat lagi.';
   }
 }

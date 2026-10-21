@@ -24,7 +24,9 @@
   </header>
   <main class="admin-main wrap">
     <section class="auth-card" id="auth-view" aria-labelledby="auth-title">
+      <p class="auth-kicker">RUANG PENGELOLAAN · LOMBA</p>
       <h1 id="auth-title">Masuk</h1>
+      <p class="auth-help">Gunakan akun admin CSSMoRA untuk melanjutkan.</p>
       <form id="auth-form">
         <label for="admin-email">Email</label>
         <input id="admin-email" name="email" type="email" autocomplete="username" required>
@@ -37,6 +39,7 @@
     </section>
 
     <section class="admin-dashboard" id="admin-view" hidden aria-labelledby="dashboard-title">
+      <nav class="admin-breadcrumb" aria-label="Breadcrumb"><a href="./">Beranda</a><span aria-hidden="true">/</span><span>Pengelolaan lomba</span></nav>
       <div class="dashboard-top">
         <div><span class="overline">DASHBOARD PENGURUS</span><h2 id="dashboard-title">Katalog lomba</h2><p id="signed-in-as"></p></div>
         <button class="text-button" id="logout" type="button">Keluar</button>
