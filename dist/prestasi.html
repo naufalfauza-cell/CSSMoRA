@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#087443">
+  <meta name="description" content="Ajukan bantuan biaya perlombaan CSSMoRA UNAIR.">
+  <title>Pengajuan Biaya Lomba — CSSMoRA UNAIR</title>
+  <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./prestasi.css?v=20261022-form-v1">
+  <script src="./supabase-config.js" defer></script>
+  <script src="./prestasi.js?v=20261022-form-v1" defer></script>
+</head>
+<body class="achievement-page">
+  <header class="achievement-header">
+    <a href="./" class="achievement-brand"><img src="./assets/cssmora-logo.png" width="42" height="42" alt=""><span><strong>CSSMoRA</strong><small>UNAIR</small></span></a>
+    <a href="./" class="achievement-home">Beranda <span aria-hidden="true">↗</span></a>
+  </header>
+  <main class="achievement-main">
+    <a href="./" class="achievement-back">← Kembali</a>
+    <section class="achievement-intro">
+      <span class="achievement-eyebrow">PENGEMBANGAN PRESTASI</span>
+      <h1>Ajukan bantuan<br><em>biaya lomba.</em></h1>
+      <p>Isi data lomba dan lampirkan bukti pendaftaran. Pengajuan diperiksa Bendahara lalu Ketua CSSMoRA.</p>
+    </section>
+    <form id="achievement-form" class="achievement-form" novalidate>
+      <section class="achievement-card" aria-labelledby="competition-info-title">
+        <div class="achievement-section-heading"><span>01</span><div><h2 id="competition-info-title">Informasi lomba</h2><p>Masukkan detail acara dan biaya pendaftaran.</p></div></div>
+        <label for="competition-name">Nama lomba</label><input id="competition-name" name="competition_name" maxlength="180" required placeholder="Contoh: Lomba Esai Nasional 2026">
+        <label for="competition-type">Jenis lomba</label>
+        <select id="competition-type" name="competition_type" required>
+          <option value="">Pilih jenis lomba</option><option>Esai</option><option>Karya tulis ilmiah</option><option>Business plan</option><option>Debat</option><option>Olimpiade</option><option>Desain dan media</option><option>Inovasi</option><option>Lainnya</option>
+        </select>
+        <label for="information-url">Tautan informasi lomba</label><input id="information-url" name="information_url" type="url" required placeholder="https://…">
+        <div class="participation-picker" role="group" aria-label="Jenis kepesertaan">
+          <label class="participation-option"><input type="radio" name="participation_type" value="individu" checked><span><strong>Individu</strong><small>Peserta tunggal</small></span></label>
+          <label class="participation-option"><input type="radio" name="participation_type" value="tim"><span><strong>Tim</strong><small>Anggota dari roster CSSMoRA</small></span></label>
+        </div>
+        <label for="leader-member">Nama ketua / peserta</label>
+        <select id="leader-member" name="leader_member_id" required><option value="">Memuat roster CSSMoRA…</option></select>
+        <p class="achievement-hint">Nama dipilih dari daftar anggota aktif CSSMoRA.</p>
+        <div id="team-fields" hidden>
+          <label for="member-search">Anggota tim</label>
+          <input id="member-search" type="search" placeholder="Cari nama anggota…" autocomplete="off">
+          <fieldset class="team-member-list" id="team-member-list"><legend class="sr-only">Pilih anggota tim dari roster CSSMoRA</legend><p class="achievement-hint">Memuat roster…</p></fieldset>
+        </div>
+        <div class="achievement-grid-two">
+          <div><label for="leader-phone">Nomor WhatsApp ketua</label><input id="leader-phone" name="leader_phone" type="tel" inputmode="tel" required placeholder="08…"></div>
+          <div><label for="official-email">Email resmi</label><input id="official-email" name="official_email" type="email" required placeholder="nama@email.com"></div>
+        </div>
+        <label for="fee-amount">Total biaya pendaftaran (Rp)</label><input id="fee-amount" name="fee_amount" type="number" min="0" max="100000000" step="1" required placeholder="0">
+        <div class="subsidy-result" aria-live="polite"><span><small>Persentase subsidi</small><strong id="subsidy-rate">50%</strong></span><span><small>Nilai pengajuan otomatis</small><strong id="requested-amount">Rp0</strong></span></div>
+        <div class="subsidy-rules" id="subsidy-rules">Individu mendapat subsidi 50% dari biaya pendaftaran.</div>
+      </section>
+      <section class="achievement-card" aria-labelledby="proof-title">
+        <div class="achievement-section-heading"><span>02</span><div><h2 id="proof-title">Bukti &amp; rekening</h2><p>Bukti pendaftaran dan tujuan pencairan subsidi.</p></div></div>
+        <label for="proof-file">Bukti sudah submit pendaftaran</label>
+        <input id="proof-file" name="proof_file" type="file" accept="image/jpeg,image/png,application/pdf" required>
+        <p class="achievement-hint">JPG, PNG, atau PDF · maksimal 5 MB.</p>
+        <div class="achievement-grid-two">
+          <div><label for="bank-name">Nama bank</label><input id="bank-name" name="bank_name" maxlength="80" required placeholder="Contoh: BSI"></div>
+          <div><label for="account-number">Nomor rekening</label><input id="account-number" name="account_number" inputmode="numeric" pattern="[0-9]{5,30}" maxlength="30" required placeholder="Nomor rekening"></div>
+        </div>
+        <label for="account-name">Nama pemilik rekening</label><input id="account-name" name="account_name" maxlength="140" required placeholder="Sesuai nama pada rekening">
+        <label class="return-agreement"><input id="return-agreement" name="return_agreement" type="checkbox" required><span><strong>Kesepakatan pengembalian hadiah</strong><small>Saya bersedia menyetorkan 5% dari hadiah lomba ke kas CSSMoRA apabila memperoleh hadiah.</small></span></label>
+      </section>
+      <div class="achievement-submit-area"><p id="achievement-message" class="achievement-message" role="status" aria-live="polite"></p><button id="submit-achievement" class="achievement-submit" type="submit">Kirim pengajuan <span aria-hidden="true">↗</span></button><small>Pengajuan masuk ke Bendahara, lalu diteruskan ke Ketua jika disetujui.</small></div>
+    </form>
+  </main>
+  <footer class="achievement-footer">CSSMoRA Universitas Airlangga</footer>
+</body>
+</html>
