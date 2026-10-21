@@ -644,10 +644,19 @@ async function loadMembers(){
 function updateMemberCount(){
   const active=members.filter(member=>member.is_active).length;
   $('#member-count').textContent=members.length+' anggota · '+active+' aktif';
+  $('#member-total-stat').textContent=members.length;
+  $('#member-active-stat').textContent=active;
+  $('#member-visible-count').textContent=members.length+' data';
 }
 function renderMembers(){
   const query=$('#member-search').value.trim().toLowerCase();
-  const rows=members.filter(m=>!query||[m.nia,m.full_name,m.cohort,m.faculty,m.study_program].some(v=>String(v||'').toLowerCase().includes(query)));
+  const status=$('#member-status-filter').value;
+  const rows=members.filter(m=>{
+    const statusMatches=status==='all'||(status==='active'?m.is_active:!m.is_active);
+    const queryMatches=!query||[m.nia,m.full_name,m.cohort,m.faculty,m.study_program].some(v=>String(v||'').toLowerCase().includes(query));
+    return statusMatches&&queryMatches;
+  });
+  $('#member-visible-count').textContent=rows.length+' data';
   if(!rows.length){memberList.innerHTML='<tr><td colspan="5" class="records-empty">Belum ada anggota yang cocok.</td></tr>';return;}
   memberList.innerHTML=rows.map(m=>'<tr><td><strong>'+escapeHTML(m.full_name)+'</strong><small>'+escapeHTML(m.nia)+'</small></td><td>'+escapeHTML(m.cohort)+'</td><td>'+escapeHTML(m.study_program||'—')+'</td><td><span class="record-status '+(m.is_active?'published':'')+'">'+(m.is_active?'AKTIF':'NONAKTIF')+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(m.id)+'">Edit</button><button type="button" data-member-action="toggle" data-id="'+escapeHTML(m.id)+'">'+(m.is_active?'Nonaktifkan':'Aktifkan')+'</button></div></td></tr>').join('');
 }
@@ -660,6 +669,7 @@ function resetMemberForm(){
 $('#member-form-reset').addEventListener('click',resetMemberForm);
 $('#members-refresh').addEventListener('click',loadMembers);
 $('#member-search').addEventListener('input',renderMembers);
+$('#member-status-filter').addEventListener('change',renderMembers);
 $('#member-export').addEventListener('click',()=>downloadCSV('cssmora-anggota.csv',[
   ['NIA','Nama','Angkatan','Fakultas','Jurusan','Status'],
   ...members.map(m=>[m.nia,m.full_name,m.cohort,m.faculty,m.study_program,m.is_active?'Aktif':'Nonaktif'])

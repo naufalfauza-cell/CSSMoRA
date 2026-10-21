@@ -8,9 +8,9 @@
   <title>Admin CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261021-ux3">
+  <link rel="stylesheet" href="./admin.css?v=20261021-ux4">
   <script src="./supabase-config.js" defer></script>
-  <script src="./admin.js?v=20261021-ux1" defer></script>
+  <script src="./admin.js?v=20261021-ux2" defer></script>
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -153,13 +153,39 @@
         <section class="secretariat-subpanel" id="members-panel" role="tabpanel" aria-labelledby="tab-members">
           <div class="secretariat-intro"><div><span class="admin-kicker">DATA INDUK</span><h3>Data anggota</h3><p>NIA menjadi identitas utama agar ejaan nama tidak berulang atau berbeda di rekap.</p></div><span class="record-count" id="member-count" aria-live="polite">Memuat…</span></div>
           <div class="member-workspace">
+            <aside class="member-options-rail" aria-label="Opsi pengelolaan anggota">
+              <section class="records-card member-options-card" aria-labelledby="member-options-title">
+                <div class="editor-heading"><div><span class="admin-kicker">PENGATURAN</span><h3 id="member-options-title">Opsi anggota</h3></div></div>
+                <label class="member-option-label" for="member-status-filter">Status anggota</label>
+                <select id="member-status-filter" class="member-status-filter">
+                  <option value="all">Semua anggota</option>
+                  <option value="active">Aktif</option>
+                  <option value="inactive">Nonaktif</option>
+                </select>
+                <div class="member-stats">
+                  <div><span>Total</span><strong id="member-total-stat">—</strong></div>
+                  <div><span>Aktif</span><strong id="member-active-stat">—</strong></div>
+                </div>
+                <div class="member-options-divider"></div>
+                <span class="member-option-label">Kelola data</span>
+                <div class="member-option-list">
+                  <button class="member-option-button" id="members-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang</button>
+                  <label class="member-option-button" for="member-csv"><span aria-hidden="true">↑</span> Impor CSV</label>
+                  <input id="member-csv" type="file" accept=".csv,text/csv" hidden>
+                  <button class="member-option-button" id="member-export" type="button"><span aria-hidden="true">↓</span> Ekspor CSV</button>
+                </div>
+                <p class="field-hint">CSV: NIA, Nama, Angkatan, Fakultas, Jurusan. NIA yang sama akan diperbarui.</p>
+              </section>
+            </aside>
+
             <section class="records-card member-table-card" aria-labelledby="members-list-title">
-              <div class="editor-heading member-table-heading"><div><span class="admin-kicker">DAFTAR ANGGOTA</span><h3 id="members-list-title">Anggota tersimpan</h3></div></div>
+              <div class="editor-heading member-table-heading"><div><span class="admin-kicker">DAFTAR ANGGOTA</span><h3 id="members-list-title">Anggota tersimpan</h3></div><span class="member-table-count" id="member-visible-count">132 data</span></div>
               <div class="member-tools"><input id="member-search" type="search" placeholder="Cari nama, NIA, angkatan…" aria-label="Cari anggota"></div>
               <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>Angkatan</th><th>Program studi</th><th>Status</th><th></th></tr></thead><tbody id="member-record-list"><tr><td colspan="5" class="records-empty">Memuat data…</td></tr></tbody></table></div>
               <p class="form-message" id="member-list-message" role="status" aria-live="polite"></p>
             </section>
-            <aside class="member-side-rail" aria-label="Tambah anggota dan opsi data">
+
+            <aside class="member-entry-rail" aria-label="Form tambah anggota">
               <section class="editor-card member-editor-card" aria-labelledby="member-editor-title">
                 <div class="editor-heading"><div><span class="admin-kicker">ENTRI DATA</span><h3 id="member-editor-title">Tambah anggota</h3></div><button class="text-button" id="member-form-reset" type="button">Kosongkan</button></div>
                 <form id="member-form">
@@ -172,16 +198,6 @@
                   <button class="admin-button" id="save-member" type="submit">Simpan anggota <span aria-hidden="true">↗</span></button>
                   <p class="form-message" id="member-message" role="status" aria-live="polite"></p>
                 </form>
-              </section>
-              <section class="records-card member-options-card" aria-labelledby="member-options-title">
-                <div class="editor-heading"><div><span class="admin-kicker">PENGELOLAAN</span><h3 id="member-options-title">Opsi data</h3></div></div>
-                <div class="member-option-list">
-                  <button class="member-option-button" id="members-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang daftar</button>
-                  <label class="member-option-button" for="member-csv"><span aria-hidden="true">↑</span> Impor CSV</label>
-                  <input id="member-csv" type="file" accept=".csv,text/csv" hidden>
-                  <button class="member-option-button" id="member-export" type="button"><span aria-hidden="true">↓</span> Ekspor CSV</button>
-                </div>
-                <p class="field-hint">CSV: NIA, Nama, Angkatan, Fakultas, Jurusan. NIA yang sama akan diperbarui.</p>
               </section>
             </aside>
           </div>

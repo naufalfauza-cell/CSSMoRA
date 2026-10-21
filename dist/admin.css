@@ -318,62 +318,117 @@
 /* Keep every admin workspace on the shared 1440px page canvas. */
 
 
-/* Members: full register table with an adjacent compact entry and options rail. */
+
+/* Members: compact left options rail, dominant table, small add form on the right. */
 .member-workspace{
  display:grid;
- grid-template-columns:minmax(0,1fr) minmax(260px,300px);
+ grid-template-columns:170px minmax(0,1fr) 248px;
  align-items:start;
- gap:14px;
+ gap:10px;
+ font-size:12px;
 }
-.member-table-card{min-width:0;padding:18px;border-radius:18px}
-.member-table-heading{align-items:center}
-.member-tools{margin:12px 0 11px}
-.member-tools input[type=search]{
- width:100%;min-height:40px;padding:9px 12px;
- border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);
+.member-options-rail,.member-entry-rail{min-width:0}
+.member-options-card,.member-editor-card{
+ min-width:0;
+ padding:12px;
+ border:1px solid var(--line);
+ border-radius:14px;
+ box-shadow:0 5px 16px #17282008;
 }
-.member-tools input[type=search]:focus{
+.member-options-card .editor-heading,.member-editor-card .editor-heading{margin-bottom:10px}
+.member-options-card .editor-heading h3,.member-editor-card .editor-heading h3{
+ margin-top:3px;font-size:14px;line-height:1.2;letter-spacing:-.04em;
+}
+.member-options-card .admin-kicker,.member-editor-card .admin-kicker{
+ font-size:9px;letter-spacing:.1em;
+}
+.member-option-label{
+ display:block;margin:9px 0 5px;color:#617265;font-size:10px;font-weight:800;
+}
+.member-status-filter{
+ width:100%;min-height:32px;padding:6px 8px;border:1px solid var(--line);
+ border-radius:9px;background:#fff;color:var(--ink);font-size:10px;
+}
+.member-status-filter:focus,.member-tools input[type=search]:focus{
  outline:0;border-color:var(--green);
- box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 13%,transparent);
+ box-shadow:0 0 0 2px color-mix(in srgb,var(--green) 13%,transparent);
 }
-.member-side-rail{display:grid;gap:10px;min-width:0}
-.member-editor-card,.member-options-card{min-width:0;padding:16px;border-radius:18px}
-.member-editor-card .editor-heading,.member-options-card .editor-heading{margin-bottom:7px}
-.member-editor-card .editor-heading h3,.member-options-card .editor-heading h3{
- font-size:1.08rem;letter-spacing:-.035em;
+.member-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}
+.member-stats>div{
+ display:grid;gap:3px;padding:7px 8px;border:1px solid #e8eee5;
+ border-radius:9px;background:#f8faf6;
 }
-.member-editor-card .editor-heading .text-button{font-size:.7rem}
-.member-editor-card form{gap:7px;margin-top:11px}
-.member-editor-card form>label:not(.publish-toggle){margin-top:3px;font-size:.73rem}
-.member-editor-card .form-two{gap:8px}
-.member-editor-card .form-two>div{gap:6px}
-.member-editor-card input:not([type=checkbox]){
- min-height:37px;padding:8px 9px;border-radius:9px;font-size:.75rem;
-}
-.member-editor-card .publish-toggle{gap:8px;margin-top:3px;padding:9px;border-radius:11px}
-.member-editor-card .publish-toggle input{width:15px;height:15px}
-.member-editor-card .publish-toggle strong{font-size:.72rem}
-.member-editor-card .publish-toggle small{font-size:.64rem;line-height:1.4}
-.member-editor-card .admin-button{
- min-height:40px;margin-top:4px;padding:10px 12px;border-radius:11px;font-size:.76rem;
-}
-.member-editor-card .form-message,.member-options-card .field-hint{font-size:.68rem}
-.member-option-list{display:grid;gap:6px}
+.member-stats span{color:var(--muted);font-size:9px}
+.member-stats strong{color:var(--green);font-size:13px;line-height:1}
+.member-options-divider{height:1px;margin:10px 0;background:var(--line)}
+.member-option-list{display:grid;gap:5px}
 .member-option-button{
- display:flex;align-items:center;gap:9px;width:100%;min-height:36px;padding:7px 10px;
- border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--green);
- text-align:left;font-size:.72rem;font-weight:800;text-decoration:none;cursor:pointer;
+ display:flex;align-items:center;gap:7px;width:100%;min-height:31px;padding:5px 7px;
+ border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--green);
+ text-align:left;font-size:9.5px;font-weight:800;text-decoration:none;cursor:pointer;
 }
-.member-option-button>span{display:grid;place-items:center;width:20px;height:20px;border-radius:7px;background:#eaf3e8;font-size:.85rem}
-.member-option-button:hover{border-color:#b7cfb8;background:#f7fbf5}
-.member-options-card .field-hint{margin-top:9px;line-height:1.45}
-@media(max-width:950px){
- .member-workspace{grid-template-columns:1fr}
- .member-side-rail{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.member-option-button>span{
+ display:grid;place-items:center;width:18px;height:18px;flex:0 0 auto;
+ border-radius:6px;background:#eaf3e8;font-size:11px;
 }
-@media(max-width:680px){
- .member-side-rail{grid-template-columns:1fr}
- .member-table-card,.member-editor-card,.member-options-card{padding:14px}
- .member-tools{margin:10px 0}
- .member-editor-card .form-two{grid-template-columns:1fr 1fr}
+.member-option-button:hover{border-color:#b7cfb8;background:#f5faf3}
+.member-options-card .field-hint{margin-top:8px;font-size:8.5px;line-height:1.4}
+.member-table-card{min-width:0;padding:12px;border-radius:14px}
+.member-table-heading{align-items:center;margin-bottom:8px}
+.member-table-heading h3{margin-top:3px;font-size:15px;line-height:1.2;letter-spacing:-.04em}
+.member-table-count{padding:4px 7px;border-radius:999px;background:#eaf3e8;color:var(--green);font-size:9px;font-weight:800;white-space:nowrap}
+.member-tools{margin:0 0 8px}
+.member-tools input[type=search]{
+ width:100%;min-height:32px;padding:7px 9px;border:1px solid var(--line);
+ border-radius:9px;background:#fff;color:var(--ink);font-size:10px;
+}
+.member-table-card .secretariat-table{font-size:10px}
+.member-table-card .secretariat-table th{
+ padding:8px 8px;font-size:8.5px;letter-spacing:.03em;
+}
+.member-table-card .secretariat-table td{padding:7px 8px}
+.member-table-card .secretariat-table td strong{font-size:10px;line-height:1.25}
+.member-table-card .secretariat-table td small{margin-top:2px;font-size:8.5px}
+.member-table-card .secretariat-table .record-status{
+ margin-top:0;padding:3px 6px;font-size:8px;
+}
+.member-table-card .secretariat-table .record-actions{min-width:0;gap:4px}
+.member-table-card .secretariat-table .record-actions button{
+ min-height:25px;padding:4px 6px;border-radius:7px;font-size:8px;line-height:1.1;
+}
+.member-table-card .form-message{font-size:9px}
+.member-editor-card .editor-heading{gap:6px}
+.member-editor-card .editor-heading .text-button{padding:4px 0;font-size:8.5px}
+.member-editor-card form{gap:5px;margin-top:8px}
+.member-editor-card form>label:not(.publish-toggle){margin-top:3px;font-size:9px}
+.member-editor-card .form-two{grid-template-columns:1fr 1fr;gap:5px}
+.member-editor-card .form-two>div{gap:4px}
+.member-editor-card input:not([type=checkbox]){
+ min-height:30px;padding:6px 7px;border-radius:8px;font-size:9.5px;
+}
+.member-editor-card .publish-toggle{
+ gap:6px;margin-top:3px;padding:7px;border-radius:9px;
+}
+.member-editor-card .publish-toggle input{width:13px;height:13px}
+.member-editor-card .publish-toggle strong{font-size:9px}
+.member-editor-card .publish-toggle small{font-size:8px;line-height:1.35}
+.member-editor-card .admin-button{
+ min-height:32px;margin-top:3px;padding:7px 9px;border-radius:9px;font-size:9.5px;
+}
+.member-editor-card .form-message{font-size:8.5px}
+@media(max-width:1100px){
+ .member-workspace{grid-template-columns:156px minmax(0,1fr)}
+ .member-entry-rail{grid-column:2}
+}
+@media(max-width:760px){
+ .member-workspace{grid-template-columns:minmax(0,1fr);gap:8px}
+ .member-options-rail,.member-table-card,.member-entry-rail{grid-column:1}
+ .member-entry-rail{justify-self:end;width:min(100%,300px)}
+ .member-options-card .member-option-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .member-option-button{justify-content:center;gap:4px;padding:5px 4px;font-size:8.5px}
+}
+@media(max-width:390px){
+ .member-options-card .member-option-list{grid-template-columns:1fr}
+ .member-option-button{justify-content:flex-start;padding:6px 8px;font-size:9px}
+ .member-entry-rail{width:100%}
 }
