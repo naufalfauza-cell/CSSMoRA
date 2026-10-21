@@ -57,7 +57,7 @@
 .auth-card .auth-help{margin-top:6px;line-height:1.55}
 .auth-card form{margin-top:20px}
 .auth-card .password-help{display:inline-block;margin-top:8px}
-.admin-dashboard{margin:0 auto;max-width:1120px}
+.admin-dashboard{margin:0 auto;max-width:1440px}
 .admin-breadcrumb{margin-bottom:18px}
 .dashboard-top{align-items:center;padding:0 0 18px;border-bottom:1px solid var(--line)}
 .dashboard-top h2{margin-top:4px;letter-spacing:-.045em}
@@ -314,3 +314,5 @@
   .secretariat-table{min-width:560px}
   .table-loading,.table-load-error{min-height:64px}
 }
+
+/* Keep every admin workspace on the shared 1440px page canvas. */
