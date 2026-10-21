@@ -96,7 +96,15 @@
             <label for="subtitle">Nama program / subjudul</label><input id="subtitle" name="subtitle" maxlength="160">
             <div class="form-two"><div><label for="category">Bidang</label><select id="category" name="category" required><option>Esai &amp; Riset</option><option>Bisnis &amp; Inovasi</option><option>Desain &amp; Media</option><option>Debat &amp; Public Speaking</option></select></div><div><label for="organizer">Penyelenggara</label><input id="organizer" name="organizer" maxlength="160" required></div></div>
             <div class="form-two"><div><label for="deadline">Batas pendaftaran</label><input id="deadline" name="deadline" type="date" required></div><div><label for="fee">Biaya pendaftaran</label><input id="fee" name="fee" placeholder="Gratis / Rp50.000 per tim" maxlength="80" required></div></div>
+            <label for="poster-file">Poster lomba</label>
+            <div class="poster-upload-field">
+              <label class="poster-upload-control" for="poster-file"><span class="poster-upload-icon" aria-hidden="true">↥</span><span><strong>Pilih poster</strong><small>JPG, PNG, atau WebP · maks. 8 MB</small></span><span class="poster-upload-cta">Pilih file</span></label>
+              <input id="poster-file" name="posterFile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+              <img id="poster-preview" class="poster-upload-preview" alt="Pratinjau poster lomba" hidden>
+              <p id="poster-upload-name" class="poster-upload-name" aria-live="polite"></p>
+            </div>
             <label for="poster">Tautan poster (opsional)</label><input id="poster" name="poster" type="url" placeholder="https://…">
+            <small class="poster-upload-help">Unggah poster langsung atau masukkan tautan gambar. File yang diunggah akan dipakai jika keduanya diisi.</small>
             <label for="registration">Tautan pendaftaran resmi</label><input id="registration" name="registration" type="url" placeholder="https://…">
             <label for="description">Deskripsi dan catatan</label><textarea id="description" name="description" rows="4" maxlength="1200"></textarea>
             <label class="publish-toggle"><input id="published" name="published" type="checkbox"><span><strong>Terbitkan sekarang</strong><small>Lomba berstatus draft hanya terlihat oleh admin.</small></span></label>
