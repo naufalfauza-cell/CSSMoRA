@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#244d3f">
+  <meta name="description" content="Lihat agenda kegiatan CSSMoRA UNAIR dan hitung mundur menuju setiap acara.">
+  <title>Agenda CSSMoRA UNAIR</title>
+  <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./agenda-page.css">
+  <script src="./supabase-config.js" defer></script>
+  <script src="./agenda-page.js" defer></script>
+</head>
+<body class="agenda-page">
+  <a class="skip" href="#agenda-list">Langsung ke agenda</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="./" aria-label="Beranda CSSMoRA UNAIR">
+        <img class="brand-logo" src="./assets/cssmora-logo.png" alt="" width="48" height="48">
+        <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong></span>
+      </a>
+      <nav class="portal-nav" aria-label="Navigasi utama">
+        <a href="./">Beranda</a>
+        <a href="./lomba.html">Info lomba</a>
+        <a href="./agenda.html" aria-current="page">Agenda</a>
+        <a class="portal-nav-admin" href="./admin.html">Masuk pengurus <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap agenda-main">
+    <nav class="page-breadcrumb" aria-label="Breadcrumb"><a href="./">Beranda</a><span aria-hidden="true">/</span><span aria-current="page">Agenda</span></nav>
+    <section class="agenda-intro" aria-labelledby="agenda-title">
+      <div><p class="agenda-eyebrow">KALENDER KEGIATAN CSSMoRA</p><h1 id="agenda-title">Agenda kegiatan</h1><p class="agenda-subtitle">Rangkaian kegiatan dan program CSSMoRA UNAIR.</p></div>
+      <div class="agenda-today-card"><span class="agenda-today-icon" aria-hidden="true">◷</span><div><small>HARI INI</small><strong id="today-label">—</strong></div></div>
+    </section>
+
+    <section class="agenda-upcoming" aria-labelledby="month-title">
+      <div class="agenda-section-head">
+        <div><p class="agenda-section-kicker">JADWAL BULANAN</p><h2 id="month-title">Agenda terdekat</h2></div>
+        <div class="month-switcher" aria-label="Pilih bulan agenda">
+          <button type="button" id="month-prev" aria-label="Bulan sebelumnya">‹</button>
+          <strong id="month-label" aria-live="polite">—</strong>
+          <button type="button" id="month-next" aria-label="Bulan berikutnya">›</button>
+        </div>
+      </div>
+      <p class="agenda-filter-note" id="agenda-filter-note" hidden></p>
+      <button class="agenda-reset-filter" id="show-month-agenda" type="button" hidden>Tampilkan semua agenda bulan ini</button>
+      <div class="agenda-event-list" id="agenda-list" aria-live="polite"><p class="agenda-loading">Memuat agenda…</p></div>
+    </section>
+
+    <section class="calendar-section" aria-labelledby="calendar-title">
+      <div class="agenda-section-head calendar-section-head">
+        <div><p class="agenda-section-kicker">LIHAT BERDASARKAN TANGGAL</p><h2 id="calendar-title">Kalender</h2></div>
+        <p>Pilih tanggal untuk melihat agenda pada hari tersebut.</p>
+      </div>
+      <div class="calendar-card">
+        <div class="calendar-weekdays" aria-hidden="true"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+        <div class="calendar-grid" id="calendar-grid" role="grid" aria-label="Tanggal pada bulan terpilih"></div>
+        <div class="calendar-legend"><span><i class="legend-agenda"></i>Ada agenda</span><span><i class="legend-today"></i>Hari ini</span></div>
+      </div>
+    </section>
+  </main>
+  <footer class="agenda-footer"><div class="wrap"><strong>CSSMoRA <i>UNAIR</i></strong><span>Waktu agenda mengikuti WIB.</span></div></footer>
+</body>
+</html>
