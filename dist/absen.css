@@ -14,3 +14,6 @@
 @media(max-width:560px){.checkin-label{font-size:.63rem}.checkin-card{border-radius:18px}}
 
 #checkin-form[hidden]{display:none!important}
+
+.checkin-code-hint{display:block;margin:-3px 0 4px;color:var(--muted);font-size:.76rem;line-height:1.45}
+#checkin-code{font-variant-numeric:tabular-nums;letter-spacing:.12em}

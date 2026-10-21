@@ -26,7 +26,7 @@ form.addEventListener('submit',async event=>{
   event.preventDefault();const button=$('#checkin-submit');button.disabled=true;
   message('Menyimpan kehadiran…');
   try{
-    const result=await invoke('POST',{nia:$('#checkin-nia').value.trim(),full_name:$('#checkin-name').value.trim()});
+    const result=await invoke('POST',{nia:$('#checkin-nia').value.trim(),full_name:$('#checkin-name').value.trim(),checkin_code:$('#checkin-code').value.trim()});
     message(result.message||'Absensi berhasil dicatat.','success');form.reset();form.hidden=true;
   }catch(error){message(error.message,'error');button.disabled=false;}
 });

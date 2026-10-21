@@ -8,9 +8,9 @@
   <title>Absensi Kegiatan · CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./absen.css">
+  <link rel="stylesheet" href="./absen.css?v=20261021-code1">
   <script src="./supabase-config.js" defer></script>
-  <script src="./absen.js" defer></script>
+  <script src="./absen.js?v=20261021-code1" defer></script>
 </head>
 <body class="checkin-page">
   <header class="site-header"><div class="wrap header-inner">
@@ -30,6 +30,9 @@
         <input id="checkin-nia" name="nia" maxlength="40" autocomplete="off" required>
         <label for="checkin-name">Nama lengkap sesuai data anggota</label>
         <input id="checkin-name" name="full_name" maxlength="140" autocomplete="name" required>
+        <label for="checkin-code">Kode check-in (8 digit)</label>
+        <input id="checkin-code" name="checkin_code" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="one-time-code" required aria-describedby="checkin-code-hint">
+        <small class="checkin-code-hint" id="checkin-code-hint">Masukkan kode terbaru yang ditampilkan pengurus di lokasi kegiatan.</small>
         <button class="admin-button" id="checkin-submit" type="submit">Catat kehadiran <span aria-hidden="true">↗</span></button>
       </form>
       <p class="form-message" id="checkin-message" role="status" aria-live="polite"></p>

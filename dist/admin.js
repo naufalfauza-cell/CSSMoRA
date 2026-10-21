@@ -598,6 +598,9 @@ let members=[];
 let attendanceEvents=[];
 let currentAttendanceEvent=null;
 let currentAttendanceRows=[];
+let attendanceCodeRefreshTimer=null;
+let attendanceCodeEventId=null;
+let attendanceCodeExpiresAt=0;
 
 const memberById=id=>members.find(member=>member.id===id);
 const localDateInput=()=>{
@@ -813,6 +816,7 @@ function renderAttendanceEvents(){
   attendanceEventList.innerHTML=attendanceEvents.map(e=>'<article class="attendance-event-card"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(e.id)+'"><span><strong>'+escapeHTML(e.title)+'</strong><small>'+escapeHTML(e.event_date)+' · '+escapeHTML(e.session_name||'Umum')+(e.location?' · '+escapeHTML(e.location):'')+'</small></span><span class="record-status '+(e.status==='open'?'published':'')+'">'+(e.status==='open'?'TERBUKA':'DITUTUP')+'</span></button><div class="attendance-event-actions"><button type="button" data-copy-event="'+escapeHTML(e.id)+'">Salin tautan</button><button type="button" data-toggle-event="'+escapeHTML(e.id)+'">'+(e.status==='open'?'Tutup absensi':'Buka lagi')+'</button></div></article>').join('');
 }
 $('#events-refresh').addEventListener('click',loadAttendanceEvents);
+$('#attendance-code-retry').addEventListener('click',()=>{if(currentAttendanceEvent)void loadAttendanceCode(currentAttendanceEvent.id);});
 attendanceEventList.addEventListener('click',async event=>{
   const copy=event.target.closest('[data-copy-event]');
   if(copy){
@@ -850,11 +854,60 @@ attendanceEventForm.addEventListener('submit',async event=>{
   finally{button.disabled=false;}
 });
 function attendanceStatusLabel(status){return({hadir:'Hadir',izin:'Izin',sakit:'Sakit',alpa:'Tanpa keterangan',belum:'Belum dicatat'})[status]||status;}
+async function requestAttendanceCode(eventId,allowRetry=true){
+  const headers={apikey:config.publishableKey,Authorization:session?.access_token?'Bearer '+session.access_token:''};
+  const response=await fetchTimed(config.url+'/functions/v1/attendance-checkin?mode=code&event_id='+encodeURIComponent(eventId),{method:'GET',headers});
+  if(response.status===401&&allowRetry&&session?.refresh_token){
+    await refreshSession();
+    return requestAttendanceCode(eventId,false);
+  }
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||'Kode check-in belum dapat dimuat.');
+  return result;
+}
+function clearAttendanceCodeTimer(){
+  if(attendanceCodeRefreshTimer){clearInterval(attendanceCodeRefreshTimer);attendanceCodeRefreshTimer=null;}
+}
+function stopAttendanceCode(){
+  clearAttendanceCodeTimer();
+  attendanceCodeEventId=null;
+  $('#attendance-code-panel').hidden=true;
+}
+async function loadAttendanceCode(eventId){
+  clearAttendanceCodeTimer();
+  attendanceCodeEventId=eventId;
+  const panel=$('#attendance-code-panel');
+  panel.hidden=false;
+  $('#attendance-code-value').textContent='••••••••';
+  $('#attendance-code-countdown').textContent='Memuat kode…';
+  try{
+    const result=await requestAttendanceCode(eventId);
+    if(attendanceCodeEventId!==eventId)return;
+    if(!result.active){
+      $('#attendance-code-value').textContent='—';
+      $('#attendance-code-countdown').textContent=result.message||'Kode belum tersedia.';
+      return;
+    }
+    $('#attendance-code-value').textContent=result.code;
+    attendanceCodeExpiresAt=Date.now()+Math.max(1,Number(result.seconds_remaining)||1)*1000;
+    attendanceCodeRefreshTimer=window.setInterval(()=>{
+      if(attendanceCodeEventId!==eventId){clearAttendanceCodeTimer();return;}
+      const remaining=Math.max(0,Math.ceil((attendanceCodeExpiresAt-Date.now())/1000));
+      $('#attendance-code-countdown').textContent=remaining?'Berganti dalam '+remaining+' detik':'Memperbarui kode…';
+      if(!remaining){clearAttendanceCodeTimer();void loadAttendanceCode(eventId);}
+    },250);
+  }catch(error){
+    if(attendanceCodeEventId!==eventId)return;
+    $('#attendance-code-value').textContent='—';
+    $('#attendance-code-countdown').textContent=error.message;
+  }
+}
 async function loadAttendanceRoster(eventId){
-  const selected=attendanceEvents.find(e=>e.id===eventId);if(!selected)return;
+  const selected=attendanceEvents.find(event=>event.id===eventId);if(!selected)return;
   currentAttendanceEvent=selected;attendanceRosterPanel.hidden=false;
   $('#attendance-roster-title').textContent=selected.title;
   $('#attendance-event-meta').textContent=selected.event_date+' · '+(selected.session_name||'Umum')+(selected.location?' · '+selected.location:'');
+  if(selected.status==='open')void loadAttendanceCode(eventId);else stopAttendanceCode();
   $('#attendance-roster').innerHTML='<tr><td colspan="3" class="records-empty">Memuat daftar anggota…</td></tr>';
   try{
     currentAttendanceRows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
