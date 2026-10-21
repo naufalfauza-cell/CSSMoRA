@@ -10,7 +10,6 @@
   const selectedLabel = document.getElementById('calendar-selected-date');
   const countdown = document.getElementById('calendar-countdown');
   const eventsBox = document.getElementById('calendar-events');
-  const weekday = new Intl.DateTimeFormat('id-ID', {timeZone: tz, weekday: 'long'});
   const monthFmt = new Intl.DateTimeFormat('id-ID', {timeZone: tz, month: 'long', year: 'numeric'});
   const longDate = new Intl.DateTimeFormat('id-ID', {timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
   const dayKey = date => new Intl.DateTimeFormat('en-CA', {timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'}).format(date);
@@ -108,7 +107,7 @@
     const firstWeekday = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     monthLabel.textContent = monthFmt.format(new Date(Date.UTC(viewYear, viewMonth, 15, 12)));
-    todayLabel.textContent = `Hari ini · ${weekday.format(new Date())}, ${dateText(today)}`;
+    todayLabel.textContent = `Hari ini · ${dateText(today)}`;
     const cells = [];
     for (let cell = 0; cell < 42; cell++) {
       const day = cell - firstWeekday + 1;
