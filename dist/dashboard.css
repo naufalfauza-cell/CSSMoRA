@@ -189,3 +189,22 @@
   .sign-board{padding:14px}
   .sign-link{min-height:48px}
 }
+
+
+/* Compact CSSMoRA, Kemenag and LPDP identity in the top corner. */
+@media (min-width:761px){
+  .brand-chip{top:2.4%;gap:7px;padding:5px 9px 5px 6px;font-size:11px}
+  .brand-chip img.brand-chip-logo{width:30px;height:30px}
+  .brand-chip-divider{width:1px;height:21px;flex:0 0 1px;background:#19392a30}
+  .brand-chip img.brand-chip-partners{width:84px;height:24px;max-width:none;object-fit:cover;object-position:center;border-radius:0;background:transparent;padding:0}
+  .campus-stage{background-color:#244b38}
+  .campus-stage:after{background:linear-gradient(180deg,transparent 52%,#123f2b18 72%,#123f2b62 100%)}
+}
+@media (max-width:760px){
+  .brand-chip{top:12px;left:14px;gap:6px;padding:4px 8px 4px 5px;font-size:10px}
+  .brand-chip img.brand-chip-logo{width:28px;height:28px}
+  .brand-chip-divider{width:1px;height:18px;flex:0 0 1px;background:#19392a30}
+  .brand-chip img.brand-chip-partners{width:70px;height:20px;max-width:none;object-fit:cover;object-position:center;border-radius:0;background:transparent;padding:0}
+  .campus-stage{background-color:#244b38}
+  .campus-stage:after{background:linear-gradient(180deg,transparent 110px,#123f2b1c 280px,#244b38 650px)}
+}
