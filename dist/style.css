@@ -76,3 +76,43 @@ body{font-family:var(--font);font-size:15px;font-weight:400}
 /* Keep small controls aligned with the CSSMoRA green palette. */
 .select-wrap select{background:linear-gradient(45deg,transparent 50%,var(--theme-brand) 50%) calc(100% - 20px) 24px/5px 5px no-repeat,linear-gradient(135deg,var(--theme-brand) 50%,transparent 50%) calc(100% - 15px) 24px/5px 5px no-repeat}
 .empty-state>span{color:var(--theme-accent)}
+
+
+/* Compact scale at 100% browser zoom across the catalog. */
+html{font-size:14px}
+body{font-size:14px}
+.site-header{height:66px}
+.brand-logo{width:44px;height:44px}
+.header-inner{gap:30px}
+.header-action{padding:8px 12px;font-size:12px}
+.quick-filters{gap:6px;margin-bottom:14px}
+.quick-filter{padding:7px 12px;font-size:11px}
+.toolbar{gap:8px;margin-bottom:13px}
+.search-box{min-height:42px}
+.search-box input{font-size:13px}
+.select-wrap{min-width:148px}
+.select-wrap select{font-size:12px}
+.results-line{margin:15px 0 10px}
+.competition-grid{gap:18px 12px}
+.competition-card{padding:7px 7px 12px}
+.card-title-row h3{font-size:20px}
+.empty-state{padding:48px 16px}
+@media(max-width:760px){
+ .site-header{height:64px}
+ .brand-logo{width:42px;height:42px}
+ .header-inner{gap:16px}
+ .quick-filters{gap:6px}
+ .quick-filter{padding:7px 11px;font-size:11px}
+ .toolbar{gap:8px}
+ .search-box{min-height:42px}
+ .select-wrap{min-width:0}
+ .competition-grid{gap:16px 8px}
+ .empty-state{padding:40px 14px}
+}
+@media(max-width:480px){
+ .wrap{width:calc(100% - 28px)}
+ .brand-logo{width:40px;height:40px}
+ .brand-copy strong{font-size:12px}
+ .quick-filter{font-size:10px;padding:7px 10px}
+ .card-title-row h3{font-size:16px}
+}
