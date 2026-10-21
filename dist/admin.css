@@ -1539,7 +1539,7 @@
   font:14px/1.55 'Plus Jakarta Sans',sans-serif;
 }
 .admin-page :is(button,input,select,textarea){font-family:'Plus Jakarta Sans',sans-serif}
-.admin-page :is(h1,h2,h3,h4){font-family:'DM Serif Display',Georgia,serif;font-weight:400;letter-spacing:-.025em}
+.admin-page :is(h1,h2,h3,h4){font-family:'Outfit','Plus Jakarta Sans',sans-serif;font-weight:400;letter-spacing:-.025em}
 .admin-page .text-button,.admin-page .admin-button,.admin-page .record-actions button{font-family:'Plus Jakarta Sans',sans-serif}
 .admin-page :focus-visible{outline:3px solid #6b9b78;outline-offset:2px}
 
@@ -1554,7 +1554,7 @@
 .admin-page .admin-main:has(#auth-view:not([hidden])){min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center}
 .admin-page .auth-card{width:min(100%,430px);max-width:430px;margin:0;padding:32px;background:#fff;border:1px solid #e6edf5;border-radius:16px;box-shadow:0 4px 16px #142b490d}
 .admin-page .auth-kicker{margin-bottom:7px;color:#244d3f;font-size:10px;font-weight:700;letter-spacing:.08em}
-.admin-page .auth-card h1{font:400 27px/1.2 'DM Serif Display',Georgia,serif;letter-spacing:-.02em;color:#142b49}
+.admin-page .auth-card h1{font:400 27px/1.2 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#142b49}
 .admin-page .auth-help{margin-top:4px;color:#5b6f89;font-size:13px}
 .admin-page .auth-card form{gap:7px;margin-top:22px}
 .admin-page .auth-card label,.admin-page .editor-card label{margin:0;color:#5b6f89;font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:none}
@@ -1586,7 +1586,7 @@
 .admin-page .admin-workspace-content{min-width:0;background:#f6f8fc}
 .admin-page .admin-topbar{position:sticky;top:0;z-index:20;min-height:60px;padding:0 32px;border-bottom:1px solid #e6edf5;background:#fff}
 .admin-page .admin-topbar-leading{gap:10px}
-.admin-page .admin-topbar-leading h2{font:400 20px/1.25 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
+.admin-page .admin-topbar-leading h2{font:400 20px/1.25 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
 .admin-page .sidebar-toggle{width:32px;height:32px;border-color:#e6edf5;border-radius:8px;background:#f1f5fb;color:#38506d;font-size:15px}
 .admin-page .admin-topbar-user{gap:11px}
 .admin-page .admin-user-copy span{color:#8090a3;font:700 8px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em}
@@ -1603,7 +1603,7 @@
 .admin-page .secretariat-tab:hover,.admin-page .agenda-admin-tab:hover{background:#e4eaf2;color:#244d3f}
 .admin-page .secretariat-tab.is-active,.admin-page .agenda-admin-tab.is-active{background:#fff;color:#244d3f;box-shadow:0 1px 4px #142b4912}
 .admin-page .secretariat-intro{margin:0 0 14px}
-.admin-page .secretariat-intro h3,.admin-page .program-library-heading h3{font:400 21px/1.25 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
+.admin-page .secretariat-intro h3,.admin-page .program-library-heading h3{font:400 21px/1.25 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
 .admin-page .secretariat-intro p,.admin-page .admin-muted{margin-top:4px;color:#5b6f89;font-size:12px;line-height:1.45}
 .admin-page .member-intro{display:none}
 
@@ -1611,7 +1611,7 @@
 .admin-page :is(.editor-card,.records-card,.module-placeholder-card){min-width:0;padding:18px;border:1px solid #e6edf5;border-radius:12px;background:#fff;box-shadow:0 1px 3px #142b490d,0 4px 12px #142b4908}
 .admin-page .admin-columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:0}
 .admin-page .editor-heading{align-items:center;gap:12px;margin:0 0 12px}
-.admin-page .editor-heading h3,.admin-page .module-placeholder-card h3{margin:0;font:400 17px/1.3 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
+.admin-page .editor-heading h3,.admin-page .module-placeholder-card h3{margin:0;font:400 17px/1.3 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
 .admin-page .record-count,.admin-page .member-table-count{padding:4px 8px;border:0;border-radius:6px;background:#e8f1e9;color:#244d3f;font:600 11px 'Plus Jakarta Sans',sans-serif}
 .admin-page .editor-card form{gap:7px;margin-top:12px}
 .admin-page .editor-card label:not(.publish-toggle){margin-top:3px;color:#5b6f89;font-size:11px;font-weight:700;letter-spacing:0;text-transform:none}
@@ -1649,7 +1649,7 @@
 .admin-page .member-workspace{grid-template-columns:minmax(0,1fr) 270px;gap:14px;font-size:13px}
 .admin-page .member-table-card,.admin-page .member-editor-card{padding:16px;border-radius:12px}
 .admin-page .member-table-heading{margin-bottom:10px}
-.admin-page .member-table-heading h3{font:400 17px/1.3 'DM Serif Display',Georgia,serif}
+.admin-page .member-table-heading h3{font:400 17px/1.3 'Outfit','Plus Jakarta Sans',sans-serif}
 .admin-page .member-tools{gap:8px;margin:0 0 10px}
 .admin-page .member-tools input[type=search]{flex:1 1 190px;min-height:36px;font-size:12px}
 .admin-page .member-data-actions{gap:5px}
@@ -1779,7 +1779,7 @@
 .admin-page :is(.editor-heading h3,.member-table-heading h3,.secretariat-intro h3,.program-library-heading h3,.module-placeholder-card h3){font:600 15px/1.4 'Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
 .admin-page .editor-card label:not(.publish-toggle){font:600 11px/1.35 'Plus Jakarta Sans',sans-serif;letter-spacing:.035em;text-transform:uppercase;color:#5b6f89}
 .admin-page .member-filter-label{font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.025em;text-transform:uppercase}
-.admin-page .auth-card h1,.admin-page .admin-topbar-leading h2{font-family:'DM Serif Display',Georgia,serif}
+.admin-page .auth-card h1,.admin-page .admin-topbar-leading h2{font-family:'Outfit','Plus Jakarta Sans',sans-serif}
 @media(max-width:1200px){
  .admin-page .admin-workspace-shell{grid-template-columns:220px minmax(0,1fr)}
  .admin-page .admin-sidebar{width:220px;max-width:220px}
@@ -1899,7 +1899,7 @@
 .admin-page .secretariat-intro h3,
 .admin-page .program-library-heading h3,
 .admin-page .module-placeholder-card h3{
-  font-family:'DM Serif Display',Georgia,serif;
+  font-family:'Outfit','Plus Jakarta Sans',sans-serif;
   font-size:17px;
   font-weight:400;
   line-height:1.3;
@@ -1963,3 +1963,11 @@
 .admin-page .poster-upload-preview{width:112px;max-height:145px;object-fit:cover;border:1px solid #e1e9df;border-radius:11px;background:#fff}
 .admin-page .poster-upload-name,.admin-page .poster-upload-help{font-size:10px;line-height:1.45;color:#718075}
 .admin-page .poster-upload-help{margin-top:-5px}
+
+/* Modern sans display typography: fresh, clear, and consistent with the admin workspace. */
+.admin-page :is(h1,h2,h3,h4){
+  font-family:'Outfit','Plus Jakarta Sans',sans-serif!important;
+  font-weight:600!important;
+  font-style:normal!important;
+  letter-spacing:-.025em!important;
+}
