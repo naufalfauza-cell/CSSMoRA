@@ -203,12 +203,19 @@ body{font-size:14px}
 @media(prefers-reduced-motion:reduce){.portal-nav a,.competition-card,.card-title-row>span{transition:none}}
 
 
-/* Compact the secondary pages while leaving the public dashboard untouched. */
+/* Compact secondary pages while keeping the public dashboard unchanged. */
 @media(min-width:1000px){
  .agenda-page,.admin-page,.catalog-page{zoom:.8}
  .agenda-page .wrap,.admin-page .wrap,.catalog-page .wrap{width:min(1800px,calc(100% - 64px))}
  .admin-page .admin-dashboard{max-width:none}
- .admin-page .admin-columns,.admin-page .program-library-grid{grid-template-columns:minmax(0,1fr)}
- .admin-page .record-list,.admin-page .program-record-list{max-height:none;overflow:visible}
- .admin-page .editor-card form>*:not([type=hidden]){max-width:1120px}
+ .admin-page .admin-columns,.admin-page .program-library-grid{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:12px}
+ .admin-page .record-list,.admin-page .program-record-list{max-height:min(68vh,680px);overflow:auto}
+ .admin-page .editor-card form>*:not([type=hidden]){max-width:none}
+ .admin-page .editor-card,.admin-page .records-card{padding:16px}
+ .admin-page .editor-card input,.admin-page .editor-card select{min-height:38px;padding:8px 10px}
+ .admin-page .editor-card textarea{min-height:76px}
+}
+@media(min-width:761px) and (max-width:999px){
+ .admin-page .admin-columns,.admin-page .program-library-grid{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:12px}
+ .admin-page .record-list,.admin-page .program-record-list{max-height:620px;overflow:auto}
 }
