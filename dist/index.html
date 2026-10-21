@@ -3,62 +3,83 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#087443">
-  <meta name="description" content="Pusat informasi publik CSSMoRA UNAIR: agenda terdekat, peluang lomba, program, dan kabar anggota.">
+  <meta name="theme-color" content="#123f2b">
+  <meta name="description" content="Agenda terdekat, informasi lomba, dan informasi publik CSSMoRA UNAIR.">
   <title>CSSMoRA UNAIR — Informasi Publik</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./dashboard.css">
+  <link rel="stylesheet" href="./scene.css">
 </head>
 <body>
-  <a class="skip" href="#main">Lewati ke konten</a>
-  <header class="topbar">
-    <div class="shell topbar-inner">
-      <a class="brand" href="./" aria-label="CSSMoRA UNAIR, beranda"><img src="./assets/cssmora-logo.png" width="42" height="42" alt=""><span>CSSMoRA <b>UNAIR</b></span></a>
-      <nav aria-label="Navigasi utama"><a href="./lomba.html">Info lomba</a><a href="#agenda">Agenda</a><a href="#tentang">Tentang</a></nav>
-      <a class="admin-link" href="./admin.html">Pengurus <span aria-hidden="true">↗</span></a>
-    </div>
-  </header>
+  <main class="campus-stage" aria-label="Pusat informasi publik CSSMoRA UNAIR">
+    <p class="sr-only">Foto gedung Universitas Airlangga pada malam hari sebagai latar pusat informasi CSSMoRA UNAIR.</p>
+    <a class="brand-chip" href="./" aria-label="Beranda CSSMoRA UNAIR">
+      <img src="./assets/cssmora-logo.png" width="40" height="40" alt="">
+      <span>CSSMoRA <b>UNAIR</b></span>
+    </a>
 
-  <main id="main" class="shell">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <p class="eyebrow"><span></span> CSSMoRA UNIVERSITAS AIRLANGGA</p>
-        <h1 id="hero-title">Informasi penting,<br><em>langsung terlihat.</em></h1>
-        <p class="intro">Agenda terdekat dan kabar CSSMoRA UNAIR dalam satu tampilan. Praktis dibuka anggota maupun masyarakat.</p>
-        <div class="actions"><a class="button" href="./lomba.html">Jelajahi lomba <span aria-hidden="true">↗</span></a><a class="text-link" href="#tentang">Tentang CSSMoRA <span aria-hidden="true">↓</span></a></div>
-        <div class="hero-meta"><span><i></i> PUSAT INFORMASI PUBLIK</span><span>UNAIR · SURABAYA</span></div>
-      </div>
-
-      <section class="videotron" id="agenda" aria-labelledby="agenda-title">
-        <div class="screen-frame">
-          <div class="screen">
-            <div class="screen-top"><div class="screen-brand"><img src="./assets/cssmora-logo.png" alt=""><span>CSSMoRA <b>UNAIR</b></span></div><span class="live"><i></i> AGENDA PUBLIK</span></div>
-            <div class="screen-content">
-              <div class="screen-heading"><span>YANG AKAN DATANG</span><span class="screen-spark" aria-hidden="true">✳</span></div>
-              <h2 id="agenda-title">Agenda terdekat</h2>
-              <div class="agenda-empty"><span class="calendar-icon" aria-hidden="true">▦</span><strong>Belum ada agenda terbit</strong><p>Agenda yang diumumkan pengurus akan tampil di layar ini.</p></div>
-            </div>
-            <div class="screen-bottom"><span>INFORMASI KEGIATAN CSSMoRA UNAIR</span><span>↗</span></div>
+    <section class="agenda-videotron" id="agenda" aria-labelledby="agenda-title">
+      <div class="videotron-bezel">
+        <div class="videotron-screen">
+          <div class="screen-header">
+            <div class="screen-brand"><img src="./assets/cssmora-logo.png" alt=""><span>CSSMoRA <b>UNAIR</b></span></div>
+            <span class="screen-status"><i></i> AGENDA PUBLIK</span>
           </div>
+          <div class="screen-main">
+            <p class="screen-kicker">AGENDA TERDEKAT</p>
+            <h1 id="agenda-title">Jadwal CSSMoRA</h1>
+            <div class="event-empty">
+              <span class="event-icon" aria-hidden="true">▦</span>
+              <div><strong>Belum ada agenda terbit</strong><p>Agenda yang diumumkan pengurus akan tampil di sini.</p></div>
+            </div>
+          </div>
+          <div class="screen-footer"><span>INFORMASI KEGIATAN · CSSMoRA UNAIR</span><span aria-hidden="true">↗</span></div>
         </div>
-        <span class="screen-caption">AGENDA &amp; KEGIATAN</span>
-      </section>
+      </div>
+      <span class="screen-caption">VIDEOTRON INFORMASI</span>
     </section>
 
-    <section class="quick-links" aria-label="Akses cepat">
-      <a class="quick-card" href="./lomba.html"><span class="quick-icon icon-lomba">↗</span><span><small>PELUANG</small><strong>Info lomba</strong></span><b aria-hidden="true">↗</b></a>
-      <a class="quick-card" href="#agenda"><span class="quick-icon icon-agenda">▦</span><span><small>JADWAL</small><strong>Kalender kegiatan</strong></span><b aria-hidden="true">↗</b></a>
-      <a class="quick-card" href="#tentang"><span class="quick-icon icon-program">✳</span><span><small>ORGANISASI</small><strong>Program &amp; profil</strong></span><b aria-hidden="true">↗</b></a>
-      <a class="quick-card" href="./admin.html"><span class="quick-icon icon-pengurus">◎</span><span><small>AKSES INTERNAL</small><strong>Pengurus</strong></span><b aria-hidden="true">↗</b></a>
-    </section>
+    <aside class="sign-pillar" aria-label="Papan informasi CSSMoRA">
+      <div class="sign-board">
+        <div class="sign-header">
+          <img src="./assets/cssmora-logo.png" width="42" height="42" alt="">
+          <div><strong>CSSMoRA <i>UNAIR</i></strong><span>PUSAT INFORMASI PUBLIK</span></div>
+        </div>
+        <nav class="sign-nav" aria-label="Pilih informasi">
+          <a class="sign-link" href="./lomba.html"><span class="sign-number">01</span><span class="sign-copy"><small>PELUANG</small><strong>Info lomba</strong></span><b aria-hidden="true">↗</b></a>
+          <a class="sign-link" href="#agenda"><span class="sign-number">02</span><span class="sign-copy"><small>JADWAL</small><strong>Agenda terdekat</strong></span><b aria-hidden="true">↗</b></a>
+          <button class="sign-link" type="button" data-dialog="about-dialog"><span class="sign-number">03</span><span class="sign-copy"><small>ORGANISASI</small><strong>Tentang CSSMoRA</strong></span><b aria-hidden="true">↗</b></button>
+          <button class="sign-link" type="button" data-dialog="program-dialog"><span class="sign-number">04</span><span class="sign-copy"><small>KABAR ANGGOTA</small><strong>Program &amp; prestasi</strong></span><b aria-hidden="true">↗</b></button>
+          <a class="sign-link" href="./admin.html"><span class="sign-number">05</span><span class="sign-copy"><small>AKSES INTERNAL</small><strong>Masuk pengurus</strong></span><b aria-hidden="true">↗</b></a>
+        </nav>
+        <div class="sign-footer"><span>UNIVERSITAS AIRLANGGA</span><span>UNAIR</span></div>
+      </div>
+    </aside>
 
-    <section class="about-strip" id="tentang" aria-label="Tentang CSSMoRA UNAIR">
-      <div class="about-mark"><img src="./assets/cssmora-logo.png" alt="" width="48" height="48"></div>
-      <div><span class="eyebrow">TENTANG CSSMoRA UNAIR</span><p>Komunitas mahasiswa penerima beasiswa Kementerian Agama di Universitas Airlangga.</p></div>
-      <span class="about-note">Program &amp; prestasi<br>dipublikasikan di sini</span>
-    </section>
+    <div class="scene-caption"><span><i></i> CSSMoRA UNIVERSITAS AIRLANGGA</span><span>SURABAYA · INDONESIA</span></div>
   </main>
 
-  <footer class="footer"><div class="shell footer-inner"><span>CSSMoRA UNAIR</span><span>Informasi publik · Universitas Airlangga</span><a href="./admin.html">Akses pengurus ↗</a></div></footer>
+  <dialog class="info-dialog" id="about-dialog" aria-labelledby="about-title">
+    <button class="dialog-close" type="button" aria-label="Tutup">×</button>
+    <p class="dialog-kicker">TENTANG CSSMoRA UNAIR</p>
+    <h2 id="about-title">Ruang tumbuh dan kebersamaan.</h2>
+    <p>CSSMoRA UNAIR adalah komunitas mahasiswa penerima beasiswa Kementerian Agama di Universitas Airlangga.</p>
+  </dialog>
+  <dialog class="info-dialog" id="program-dialog" aria-labelledby="program-title">
+    <button class="dialog-close" type="button" aria-label="Tutup">×</button>
+    <p class="dialog-kicker">PROGRAM &amp; PRESTASI</p>
+    <h2 id="program-title">Kabar anggota CSSMoRA.</h2>
+    <p>Program dan capaian anggota akan ditampilkan di sini setelah dipublikasikan oleh pengurus.</p>
+  </dialog>
+
+  <script>
+    document.querySelectorAll('[data-dialog]').forEach(button => {
+      button.addEventListener('click', () => document.getElementById(button.dataset.dialog)?.showModal());
+    });
+    document.querySelectorAll('.info-dialog').forEach(dialog => {
+      dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+    });
+  </script>
 </body>
 </html>
