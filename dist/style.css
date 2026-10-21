@@ -71,3 +71,8 @@ body{font-family:var(--font);font-size:15px;font-weight:400}
 .results-line span:first-child{font-size:13px}
 .empty-state h3{font:600 24px/1.2 var(--display);letter-spacing:-.025em}
 @media(min-width:761px){html{font-size:15px}.wrap{width:min(1240px,calc(100% - 80px))}.site-header{height:70px}.brand-logo{width:48px;height:48px}.header-inner{gap:38px}.catalog-section{padding:24px 0 64px}.quick-filter{padding:8px 14px;font-size:12px}.toolbar{gap:9px;margin-bottom:16px}.search-box{min-height:46px}.select-wrap{min-width:164px}.results-line{margin:18px 0 12px}.competition-grid{gap:22px 14px}.empty-state{padding:56px 18px}}
+
+
+/* Keep small controls aligned with the CSSMoRA green palette. */
+.select-wrap select{background:linear-gradient(45deg,transparent 50%,var(--theme-brand) 50%) calc(100% - 20px) 24px/5px 5px no-repeat,linear-gradient(135deg,var(--theme-brand) 50%,transparent 50%) calc(100% - 15px) 24px/5px 5px no-repeat}
+.empty-state>span{color:var(--theme-accent)}
