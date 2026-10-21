@@ -728,7 +728,7 @@ function renderMembers(){
   }).join('');
 }
 function resetMemberForm(){
-  memberForm.reset();$('#member-record-id').value='';$('#member-nia').readOnly=false;
+  memberForm.reset();$('#member-record-id').value='';$('#member-active').checked=true;$('#member-nia').readOnly=false;
   $('#member-editor-title').textContent='Tambah anggota';
   $('#save-member').innerHTML='Simpan anggota <span aria-hidden="true">↗</span>';
   showMessage('#member-message','');
@@ -754,6 +754,7 @@ memberList.addEventListener('click',event=>{
   $('#member-name').value=member.full_name;$('#member-cohort').value=member.cohort;
   $('#member-faculty').value=member.faculty||'';$('#member-program').value=member.study_program||'';
   $('#member-study-status').value=member.study_status||'belum_ditentukan';
+  $('#member-active').checked=member.is_active;
   $('#member-editor-title').textContent='Edit anggota';
   $('#save-member').innerHTML='Simpan perubahan <span aria-hidden="true">↗</span>';
   $('#member-name').focus();
@@ -761,8 +762,7 @@ memberList.addEventListener('click',event=>{
 memberForm.addEventListener('submit',async event=>{
   event.preventDefault();
   const id=$('#member-record-id').value;
-  const existing=id?memberById(id):null;
-  const payload={nia:$('#member-nia').value.trim(),full_name:$('#member-name').value.trim(),cohort:Number($('#member-cohort').value),faculty:$('#member-faculty').value.trim()||null,study_program:$('#member-program').value.trim()||null,study_status:$('#member-study-status').value||'belum_ditentukan',is_active:existing?.is_active??true,updated_at:new Date().toISOString()};
+  const payload={nia:$('#member-nia').value.trim(),full_name:$('#member-name').value.trim(),cohort:Number($('#member-cohort').value),faculty:$('#member-faculty').value.trim()||null,study_program:$('#member-program').value.trim()||null,study_status:$('#member-study-status').value||'belum_ditentukan',is_active:$('#member-active').checked,updated_at:new Date().toISOString()};
   $('#save-member').disabled=true;showMessage('#member-message','Menyimpan data anggota…');
   try{
     if(id)await api('secretariat_members?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:payload});

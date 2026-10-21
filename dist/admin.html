@@ -8,9 +8,9 @@
   <title>Admin CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261021-members1">
+  <link rel="stylesheet" href="./admin.css?v=20261021-members2">
   <script src="./supabase-config.js" defer></script>
-  <script src="./admin.js?v=20261021-members1" defer></script>
+  <script src="./admin.js?v=20261021-members2" defer></script>
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -212,6 +212,7 @@
                     <option value="lulus">Lulus</option>
                     <option value="belum_ditentukan">Belum ditentukan</option>
                   </select>
+                  <label class="publish-toggle"><input id="member-active" type="checkbox" checked><span><strong>Masuk roster absensi</strong><small>Anggota ini muncul pada daftar hadir baru.</small></span></label>
                   <button class="admin-button" id="save-member" type="submit">Simpan anggota <span aria-hidden="true">↗</span></button>
                   <p class="form-message" id="member-message" role="status" aria-live="polite"></p>
                 </form>
