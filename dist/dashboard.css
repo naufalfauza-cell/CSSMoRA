@@ -14,8 +14,8 @@
 /* Softer campus-stage proportions and grounded videotron */
 @media (min-width:761px){
   .campus-stage{
-    background-size:cover,cover,max(104vw,156vh) auto;
-    background-position:center,center,center bottom;
+    background-size:cover,cover,cover;
+    background-position:center,center,center 18%;
   }
   .agenda-videotron{
     left:4.6%;
