@@ -649,11 +649,28 @@ async function loadAttendanceEvents(){
 }
 function renderAttendanceEvents(){
   if(!attendanceEvents.length){attendanceEventList.innerHTML='<p class="records-empty">Belum ada kegiatan absensi.</p>';return;}
-  attendanceEventList.innerHTML=attendanceEvents.map(e=>'<button type="button" class="secretariat-record" data-event-id="'+escapeHTML(e.id)+'"><span><strong>'+escapeHTML(e.title)+'</strong><small>'+escapeHTML(e.event_date)+' · '+escapeHTML(e.session_name||'Umum')+(e.location?' · '+escapeHTML(e.location):'')+'</small></span><span class="record-status '+(e.status==='open'?'published':'')+'">'+(e.status==='open'?'TERBUKA':'DITUTUP')+'</span></button>').join('');
+  attendanceEventList.innerHTML=attendanceEvents.map(e=>'<article class="attendance-event-card"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(e.id)+'"><span><strong>'+escapeHTML(e.title)+'</strong><small>'+escapeHTML(e.event_date)+' · '+escapeHTML(e.session_name||'Umum')+(e.location?' · '+escapeHTML(e.location):'')+'</small></span><span class="record-status '+(e.status==='open'?'published':'')+'">'+(e.status==='open'?'TERBUKA':'DITUTUP')+'</span></button><div class="attendance-event-actions"><button type="button" data-copy-event="'+escapeHTML(e.id)+'">Salin tautan</button><button type="button" data-toggle-event="'+escapeHTML(e.id)+'">'+(e.status==='open'?'Tutup absensi':'Buka lagi')+'</button></div></article>').join('');
 }
 $('#events-refresh').addEventListener('click',loadAttendanceEvents);
-attendanceEventList.addEventListener('click',event=>{
-  const button=event.target.closest('[data-event-id]');if(button)loadAttendanceRoster(button.dataset.eventId);
+attendanceEventList.addEventListener('click',async event=>{
+  const copy=event.target.closest('[data-copy-event]');
+  if(copy){
+    const item=attendanceEvents.find(row=>row.id===copy.dataset.copyEvent);
+    if(!item)return;
+    const link=window.location.origin+'/absen.html?t='+encodeURIComponent(item.public_token);
+    try{await navigator.clipboard.writeText(link);showMessage('#event-message','Tautan absensi tersalin. Bagikan kepada peserta kegiatan.','success');}
+    catch{showMessage('#event-message','Salin tautan ini: '+link,'success');}
+    return;
+  }
+  const toggle=event.target.closest('[data-toggle-event]');
+  if(toggle){
+    const item=attendanceEvents.find(row=>row.id===toggle.dataset.toggleEvent);if(!item)return;
+    toggle.disabled=true;
+    try{await api('secretariat_attendance_events?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',body:{status:item.status==='open'?'closed':'open'}});await loadAttendanceEvents();if(currentAttendanceEvent?.id===item.id){currentAttendanceEvent=attendanceEvents.find(row=>row.id===item.id);await loadAttendanceRoster(item.id);}}
+    catch(error){showMessage('#event-message',error.message,'error');toggle.disabled=false;}
+    return;
+  }
+  const select=event.target.closest('[data-event-id]');if(select)loadAttendanceRoster(select.dataset.eventId);
 });
 attendanceEventForm.addEventListener('submit',async event=>{
   event.preventDefault();
@@ -690,6 +707,8 @@ function renderAttendanceRoster(){
   $('#attendance-summary').innerHTML='<span><strong>'+counts.hadir+'</strong> hadir</span><span><strong>'+counts.izin+'</strong> izin</span><span><strong>'+counts.sakit+'</strong> sakit</span><span><strong>'+counts.alpa+'</strong> tanpa keterangan</span><span><strong>'+rate+'%</strong> kehadiran</span>';
   if(!rows.length){$('#attendance-roster').innerHTML='<tr><td colspan="3" class="records-empty">Belum ada roster. Pastikan data anggota sudah diimpor sebelum membuat daftar hadir.</td></tr>';return;}
   $('#attendance-roster').innerHTML=rows.map(row=>'<tr><td><strong>'+escapeHTML(row.member.full_name)+'</strong><small>Angkatan '+escapeHTML(row.member.cohort)+'</small></td><td>'+escapeHTML(row.member.nia)+'</td><td><select data-attendance-status="'+escapeHTML(row.member_id)+'" aria-label="Status kehadiran '+escapeHTML(row.member.full_name)+'">'+['belum','hadir','izin','sakit','alpa'].map(status=>'<option value="'+status+'" '+(row.status===status?'selected':'')+'>'+attendanceStatusLabel(status)+'</option>').join('')+'</select><input class="attendance-reason" data-attendance-reason="'+escapeHTML(row.member_id)+'" value="'+escapeHTML(row.reason||'')+'" placeholder="Catatan izin (opsional)" aria-label="Catatan kehadiran '+escapeHTML(row.member.full_name)+'"></td></tr>').join('');
+  document.querySelectorAll('#attendance-roster select,#attendance-roster input').forEach(field=>field.disabled=currentAttendanceEvent.status==='closed');
+  $('#attendance-save').disabled=currentAttendanceEvent.status==='closed';
 }
 $('#attendance-save').addEventListener('click',async()=>{
   if(!currentAttendanceEvent)return;
