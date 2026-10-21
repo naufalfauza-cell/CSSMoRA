@@ -11,7 +11,7 @@ dialog{border:0;padding:0;background:var(--paper);color:var(--ink);width:min(910
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
 
 /* CSSMoRA / fluid app edition */
-:root{--bg:#f5f6fb;--paper:#fff;--ink:#1d2455;--muted:#6f7695;--line:#e5e8f2;--green:#544dd9;--lime:#c6f3ee;--orange:#ec5a88}
+:root{--bg:#f5f8f5;--paper:#fff;--ink:#183b2a;--muted:#63736a;--line:#dce7de;--green:#087443;--lime:#e1efe4;--orange:#d5a21a}
 body{background:var(--bg)}.wrap{width:min(1360px,calc(100% - 88px))}
 .site-header{height:78px;background:#fffdfc;border-bottom:0;box-shadow:0 2px 24px #27327609}
 .brand-symbol{width:43px;height:43px;border-radius:15px;background:linear-gradient(145deg,#3432aa,#7770ef);font-size:29px;transform:rotate(-7deg);box-shadow:0 6px 13px #514bd02b}.brand-symbol span{color:#bdf9ee}.brand-copy strong{color:#242760}.brand-copy i,footer i{color:#6158db}.brand-copy small{color:#858ca4}
@@ -116,3 +116,7 @@ body{font-size:14px}
  .quick-filter{font-size:10px;padding:7px 10px}
  .card-title-row h3{font-size:16px}
 }
+
+
+/* Green keyboard focus state for consistent, accessible controls. */
+:focus-visible{outline-color:var(--green)}
