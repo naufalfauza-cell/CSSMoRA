@@ -115,3 +115,5 @@
 .agenda-event-meta{margin-top:auto;padding-top:12px}
 @media(max-width:1100px){.agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr))}.agenda-card-photo{height:clamp(175px,25vw,230px)}}
 @media(max-width:680px){.agenda-event-list{grid-template-columns:1fr}.agenda-event-card{min-height:0}.agenda-card-photo{height:clamp(190px,48vw,260px)}.agenda-card-body{padding:16px}.agenda-card-top{gap:8px}.agenda-event-meta{margin-top:12px;padding-top:0}}
+
+@media(min-width:1000px){.agenda-page{zoom:.8}}
