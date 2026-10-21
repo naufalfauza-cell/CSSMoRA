@@ -15,6 +15,8 @@ const programPhotoInput = $('#program-photo');
 const agendaForm = $('#agenda-form');
 const agendaRecordList = $('#agenda-record-list');
 const agendaTimeZone = 'Asia/Jakarta';
+const loadedAdminData = new Set();
+const loadingAdminData = new Map();
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const baseHeaders = () => ({apikey:config.publishableKey,'Content-Type':'application/json'});
@@ -29,8 +31,20 @@ const saveSession = value => {
   else sessionStorage.removeItem('cssmora-admin-session');
 };
 
+async function fetchTimed(url, options) {
+  const timeoutOptions=typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function'?{signal:AbortSignal.timeout(15000)}:{};
+  try {
+    return await fetch(url,{...options,...timeoutOptions});
+  } catch(error) {
+    if(error?.name==='TimeoutError'||error?.name==='AbortError') {
+      throw new Error('Supabase belum merespons setelah 15 detik. Periksa koneksi lalu coba lagi.');
+    }
+    throw error;
+  }
+}
+
 async function authRequest(path,body) {
-  const response=await fetch(`${config.url}/auth/v1/${path}`,{
+  const response=await fetchTimed(`${config.url}/auth/v1/${path}`,{
     method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(body)
   });
   const data=await response.json().catch(()=>({}));
@@ -47,7 +61,7 @@ async function refreshSession() {
 async function api(path,{method='GET',body,allowRetry=true,extraHeaders={}}={}) {
   const headers={...baseHeaders(),...extraHeaders};
   if(session?.access_token)headers.Authorization=`Bearer ${session.access_token}`;
-  const response=await fetch(`${config.url}/rest/v1/${path}`,{
+  const response=await fetchTimed(`${config.url}/rest/v1/${path}`,{
     method,headers,body:body===undefined?undefined:JSON.stringify(body)
   });
   if(response.status===401&&allowRetry&&session?.refresh_token){
@@ -60,6 +74,31 @@ async function api(path,{method='GET',body,allowRetry=true,extraHeaders={}}={}) 
   return result;
 }
 
+async function ensureAdminData(key, loader) {
+  if(loadedAdminData.has(key))return;
+  if(loadingAdminData.has(key))return loadingAdminData.get(key);
+  const pending=Promise.resolve().then(loader).finally(()=>loadingAdminData.delete(key));
+  loadingAdminData.set(key,pending);
+  return pending;
+}
+
+async function loadAdminPanel(panelId) {
+  if(panelId==='competitions-panel') {
+    await ensureAdminData('competitions',loadRecords);
+    return;
+  }
+  if(panelId==='agenda-panel') {
+    await ensureAdminData('programs',loadPrograms);
+    await ensureAdminData('agenda',loadAgenda);
+    return;
+  }
+  if(panelId==='secretariat-panel') {
+    initializeSecretaryForms();
+    const selected=document.querySelector('.secretariat-tab.is-active')||document.querySelector('.secretariat-tab');
+    await loadSecretarySection(selected);
+  }
+}
+
 async function checkAdmin() {
   const user=session?.user;
   if(!user?.email)throw new Error('Akun tidak memiliki alamat email yang terverifikasi.');
@@ -68,9 +107,7 @@ async function checkAdmin() {
   $('#signed-in-as').textContent=user.email;
   authView.hidden=true;
   adminView.hidden=false;
-  await Promise.all([loadRecords(),loadPrograms()]);
-  await loadAgenda();
-  await loadSecretary();
+  void loadAdminPanel('competitions-panel');
 }
 
 async function signIn(email,password) {
@@ -107,10 +144,12 @@ $('#logout').addEventListener('click',async()=>{
 });
 
 async function loadRecords(){
+  loadedAdminData.delete('competitions');
   recordList.innerHTML='<p class="records-empty">Memuat data…</p>';
   try{
     competitions=await api('competitions?select=*&order=deadline.desc');
     renderRecords();
+    loadedAdminData.add('competitions');
   }catch(error){
     recordList.innerHTML=`<p class="records-empty">${escapeHTML(error.message)}</p>`;
   }
@@ -236,10 +275,12 @@ async function deleteProgramPhoto(path) {
   if(!response.ok)throw new Error('Foto lama belum dapat dihapus dari penyimpanan.');
 }
 async function loadPrograms() {
+  loadedAdminData.delete('programs');
   programRecordList.innerHTML='<p class="records-empty">Memuat proker…</p>';
   try {
     programs=await api('agenda_programs?select=*&order=name.asc');
     renderPrograms();
+    loadedAdminData.add('programs');
     renderProgramOptions();
   } catch(error) {
     programRecordList.innerHTML=`<p class="records-empty">${escapeHTML(error.message)}</p>`;
@@ -389,11 +430,13 @@ const formatAgendaDate = value => new Intl.DateTimeFormat('id-ID', {
 const agendaIso = value => value ? `${value}:00+07:00` : null;
 
 async function loadAgenda() {
+  loadedAdminData.delete('agenda');
   agendaRecordList.innerHTML='<p class="records-empty">Memuat agenda…</p>';
   try {
     const rows=await api('agenda?select=*&order=starts_at.asc');
     agendas=rows.map(item=>({...item,program:programs.find(program=>program.id===item.program_id)||null}));
     renderAgendas();
+    loadedAdminData.add('agenda');
   } catch(error) {
     agendaRecordList.innerHTML=`<p class="records-empty">${escapeHTML(error.message)}</p>`;
   }
@@ -428,6 +471,8 @@ document.querySelectorAll('.admin-tab').forEach(tab=>tab.addEventListener('click
   document.querySelectorAll('.management-panel').forEach(panel=>{
     panel.hidden=panel.id!==tab.getAttribute('aria-controls');
   });
+  const activePanel=document.getElementById(tab.getAttribute('aria-controls'));
+  if(activePanel)void loadAdminPanel(activePanel.id);
 }));
 
 $('#agenda-form-reset').addEventListener('click',clearAgendaEditor);
@@ -554,22 +599,46 @@ function showSecretaryTab(tab){
     panel.hidden=panel.id!==tab.getAttribute('aria-controls');
   });
 }
-document.querySelectorAll('.secretariat-tab').forEach(tab=>tab.addEventListener('click',()=>showSecretaryTab(tab)));
-
-async function loadSecretary(){
-  $('#letter-issued-on').value=localDateInput();
-  $('#attendance-event-date').value=localDateInput();
-  await Promise.all([loadMembers(),loadAttendanceEvents(),loadLetters()]);
+function initializeSecretaryForms(){
+  if(!$('#letter-issued-on').value)$('#letter-issued-on').value=localDateInput();
+  if(!$('#attendance-event-date').value)$('#attendance-event-date').value=localDateInput();
 }
+async function loadSecretarySection(tab){
+  if(!tab)return;
+  const panel=tab.getAttribute('aria-controls');
+  if(panel==='members-panel') {
+    await ensureAdminData('members',loadMembers);
+  } else if(panel==='attendance-tools-panel') {
+    await Promise.all([
+      ensureAdminData('members',loadMembers),
+      ensureAdminData('attendanceEvents',loadAttendanceEvents)
+    ]);
+  } else if(panel==='letters-panel') {
+    await ensureAdminData('letters',loadLetters);
+  }
+}
+document.querySelectorAll('.secretariat-tab').forEach(tab=>tab.addEventListener('click',()=>{
+  showSecretaryTab(tab);
+  void loadSecretarySection(tab);
+}));
 async function loadMembers(){
-  memberList.innerHTML='<tr><td colspan="5" class="records-empty">Memuat data anggota…</td></tr>';
+  loadedAdminData.delete('members');
+  memberList.setAttribute('aria-busy','true');
+  memberList.closest('.secretariat-table-wrap')?.setAttribute('aria-busy','true');
+  $('#member-count').textContent='Memuat…';
+  memberList.innerHTML='<tr><td colspan="5"><div class="table-loading"><span class="table-spinner" aria-hidden="true"></span><span>Memuat data anggota…</span></div></td></tr>';
   try{
     members=await api('secretariat_members?select=*&order=cohort.desc,full_name.asc');
     renderMembers();
     updateMemberCount();
+    loadedAdminData.add('members');
     if(currentAttendanceEvent)await loadAttendanceRoster(currentAttendanceEvent.id);
   }catch(error){
-    memberList.innerHTML='<tr><td colspan="5" class="records-empty">'+escapeHTML(error.message)+'</td></tr>';
+    $('#member-count').textContent='Gagal dimuat';
+    memberList.innerHTML='<tr><td colspan="5"><div class="table-load-error"><span>'+escapeHTML(error.message)+'</span><button type="button" data-retry-members>Coba lagi</button></div></td></tr>';
+  }finally{
+    memberList.removeAttribute('aria-busy');
+    memberList.closest('.secretariat-table-wrap')?.removeAttribute('aria-busy');
   }
 }
 function updateMemberCount(){
@@ -596,6 +665,8 @@ $('#member-export').addEventListener('click',()=>downloadCSV('cssmora-anggota.cs
   ...members.map(m=>[m.nia,m.full_name,m.cohort,m.faculty,m.study_program,m.is_active?'Aktif':'Nonaktif'])
 ]));
 memberList.addEventListener('click',async event=>{
+  const retry=event.target.closest('[data-retry-members]');
+  if(retry){void ensureAdminData('members',loadMembers);return;}
   const button=event.target.closest('[data-member-action]');if(!button)return;
   const member=memberById(button.dataset.id);if(!member)return;
   if(button.dataset.memberAction==='edit'){
@@ -641,10 +712,12 @@ $('#member-csv').addEventListener('change',async event=>{
 });
 
 async function loadAttendanceEvents(){
+  loadedAdminData.delete('attendanceEvents');
   attendanceEventList.innerHTML='<p class="records-empty">Memuat kegiatan…</p>';
   try{
     attendanceEvents=await api('secretariat_attendance_events?select=*&order=event_date.desc,created_at.desc');
     renderAttendanceEvents();
+    loadedAdminData.add('attendanceEvents');
   }catch(error){attendanceEventList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
 }
 function renderAttendanceEvents(){
@@ -732,9 +805,11 @@ $('#attendance-export').addEventListener('click',()=>{
 });
 
 async function loadLetters(){
+  loadedAdminData.delete('letters');
   const list=$('#letter-record-list');list.innerHTML='<p class="records-empty">Memuat surat…</p>';
   try{
     const letters=await api('secretariat_letters?select=*&order=issued_on.desc,sequence_number.desc');
+    loadedAdminData.add('letters');
     $('#letter-count').textContent=letters.length+' surat';
     if(!letters.length){list.innerHTML='<p class="records-empty">Belum ada surat yang diberi nomor.</p>';return;}
     list.innerHTML=letters.map(letter=>'<article class="letter-record"><div class="letter-record-heading"><strong>'+escapeHTML(letter.letter_number)+'</strong><span class="record-status '+(letter.archive_status==='archived'?'published':'')+'">'+(letter.archive_status==='archived'?'SUDAH ARSIP':letter.archive_status==='void'?'DIBATALKAN':'BELUM ARSIP')+'</span></div><p>'+escapeHTML(letter.subject)+'</p><small>'+escapeHTML(letter.issued_on)+' · '+escapeHTML(letter.department_code)+' · '+escapeHTML(letter.recipient||'Tujuan belum diisi')+'</small><form class="letter-archive-form" data-letter-id="'+escapeHTML(letter.id)+'"><input name="archiveUrl" type="url" value="'+escapeHTML(letter.archive_url||'')+'" placeholder="Tautan arsip Drive"><select name="archiveStatus" aria-label="Status arsip surat"><option value="pending" '+(letter.archive_status==='pending'?'selected':'')+'>Belum diarsipkan</option><option value="archived" '+(letter.archive_status==='archived'?'selected':'')+'>Sudah diarsipkan</option><option value="void" '+(letter.archive_status==='void'?'selected':'')+'>Dibatalkan</option></select><button type="submit">Simpan arsip</button></form></article>').join('');

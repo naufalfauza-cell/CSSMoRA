@@ -8,9 +8,9 @@
   <title>Admin CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css">
+  <link rel="stylesheet" href="./admin.css?v=20261021-ux1">
   <script src="./supabase-config.js" defer></script>
-  <script src="./admin.js" defer></script>
+  <script src="./admin.js?v=20261021-ux1" defer></script>
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -151,7 +151,7 @@
         </nav>
 
         <section class="secretariat-subpanel" id="members-panel" role="tabpanel" aria-labelledby="tab-members">
-          <div class="secretariat-intro"><div><span class="admin-kicker">DATA INDUK</span><h3>Data anggota</h3><p>NIA menjadi identitas utama agar ejaan nama tidak berulang atau berbeda di rekap.</p></div><span class="record-count" id="member-count">0 anggota</span></div>
+          <div class="secretariat-intro"><div><span class="admin-kicker">DATA INDUK</span><h3>Data anggota</h3><p>NIA menjadi identitas utama agar ejaan nama tidak berulang atau berbeda di rekap.</p></div><span class="record-count" id="member-count" aria-live="polite">Memuat…</span></div>
           <div class="admin-columns">
             <section class="editor-card" aria-labelledby="member-editor-title">
               <div class="editor-heading"><div><span class="admin-kicker">PROFIL ANGGOTA</span><h3 id="member-editor-title">Tambah anggota</h3></div><button class="text-button" id="member-form-reset" type="button">Kosongkan</button></div>

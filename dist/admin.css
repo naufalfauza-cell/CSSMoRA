@@ -270,3 +270,47 @@
 .attendance-event-actions{display:flex;gap:7px;margin-top:9px}
 .attendance-event-actions button{padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:#f7f8f3;color:var(--green);font-size:.67rem;font-weight:800;cursor:pointer}
 .attendance-event-actions button:hover{background:#eaf3e8}
+
+/* Secretary controls and loading states. */
+.secretariat-tabs .secretariat-tab{
+  display:inline-flex;align-items:center;justify-content:center;min-width:88px;
+  transition:background-color .16s,color .16s,transform .16s;
+}
+.secretariat-tabs .secretariat-tab:active{transform:scale(.98)}
+.secretariat-table{table-layout:fixed;min-width:560px}
+.secretariat-table th:nth-child(1){width:29%}
+.secretariat-table th:nth-child(2){width:13%}
+.secretariat-table th:nth-child(3){width:28%}
+.secretariat-table th:nth-child(4){width:15%}
+.secretariat-table th:nth-child(5){width:15%}
+.secretariat-table-wrap{scrollbar-width:thin;scrollbar-color:#b8c9b8 transparent}
+.secretariat-table-wrap[aria-busy=true]{opacity:.8}
+.table-loading,.table-load-error{
+  min-height:72px;padding:16px;display:flex;align-items:center;justify-content:center;gap:10px;
+  color:var(--muted);font-size:.78rem;text-align:center;background:#fafcf9;
+}
+.table-spinner{
+  width:16px;height:16px;border:2px solid #dce8dc;border-top-color:var(--green);
+  border-radius:50%;animation:cssmora-spin .7s linear infinite;flex:0 0 auto;
+}
+@keyframes cssmora-spin{to{transform:rotate(360deg)}}
+.table-load-error{flex-wrap:wrap;color:#8c3d30}
+.table-load-error button{
+  padding:7px 11px;border:1px solid #d9e5d8;border-radius:999px;background:#fff;
+  color:var(--green);font-size:.72rem;font-weight:800;cursor:pointer;
+}
+.table-load-error button:hover{background:#edf6eb}
+.file-import-button,.member-tools #member-export{
+  display:inline-flex;align-items:center;justify-content:center;min-height:34px;
+  padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;
+  color:var(--green);font-size:.72rem;font-weight:800;text-decoration:none;cursor:pointer;
+}
+.file-import-button:hover,.member-tools #member-export:hover{background:#eff6ed;border-color:#b7cfb8}
+.member-tools #member-export{border:0;background:transparent}
+.member-tools #member-export:hover{text-decoration:underline;text-underline-offset:3px}
+.secretariat-table td{overflow-wrap:anywhere}
+.secretariat-table td:last-child{text-align:right}
+@media(max-width:680px){
+  .secretariat-table{min-width:560px}
+  .table-loading,.table-load-error{min-height:64px}
+}
