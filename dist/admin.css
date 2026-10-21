@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 23196)
+Total output lines: 1990
+
 .admin-page{min-height:100vh}.admin-main{padding-top:64px;padding-bottom:96px}.admin-heading{max-width:700px;margin:0 auto 32px}.admin-heading h1{font-size:clamp(2.7rem,7vw,5.4rem);line-height:.98;margin:16px 0}.admin-heading h1 em{font-family:var(--display);font-weight:500;color:var(--orange)}.admin-heading>p{max-width:560px;color:var(--muted);font-size:1.08rem}.auth-card,.editor-card,.records-card{border:1px solid var(--line);border-radius:26px;background:var(--paper);box-shadow:0 18px 50px #1728200a}.auth-card{max-width:520px;margin:auto;padding:32px}.admin-card-top,.editor-heading,.dashboard-top{display:flex;align-items:center;justify-content:space-between;gap:16px}.admin-card-top{color:var(--muted);font-size:.72rem;font-weight:900;letter-spacing:.12em}.admin-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:var(--lime);color:var(--green);font-size:1.2rem}.auth-card h2{font-size:2rem;margin:20px 0 4px}.auth-help,.auth-footnote{color:var(--muted);font-size:.9rem}.auth-card form,.editor-card form{display:grid;gap:9px;margin-top:24px}.auth-card label,.editor-card label{font-size:.84rem;font-weight:800}.auth-card input,.editor-card input,.editor-card select,.editor-card textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--ink)}.auth-card input:focus,.editor-card input:focus,.editor-card select:focus,.editor-card textarea:focus{outline:2px solid var(--green);outline-offset:1px}.admin-button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;margin-top:10px;padding:14px 17px;border:0;border-radius:15px;background:var(--green);color:white;font-weight:900}.admin-button:disabled{opacity:.55;cursor:wait}.text-button{padding:8px 0;border:0;background:transparent;color:var(--green);font-weight:900;text-decoration:underline;text-underline-offset:3px}.auth-card>.text-button{margin-top:13px}.auth-footnote{margin-top:18px;font-size:.79rem}.form-message{min-height:1.3em;color:var(--muted);font-size:.84rem}.form-message[data-kind=error]{color:#b43c29}.form-message[data-kind=success]{color:#27634b}.admin-dashboard{margin-top:72px}.dashboard-top{align-items:flex-end;margin-bottom:22px}.dashboard-top h2{font-size:2.4rem}.dashboard-top p{color:var(--muted);font-size:.85rem}.admin-columns{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(380px,1.1fr);align-items:start;gap:18px}.editor-card,.records-card{padding:24px}.editor-heading{align-items:flex-start;margin-bottom:14px}.admin-kicker{font-size:.68rem;color:var(--muted);font-weight:900;letter-spacing:.12em}.editor-heading h3{font-size:1.55rem;margin-top:4px}.editor-card form{margin-top:18px}.editor-card label:not(.publish-toggle){margin-top:6px}.form-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-two>div{display:grid;align-content:start;gap:8px}.publish-toggle{display:flex;gap:11px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:14px;background:#faf9f3;margin-top:8px}.publish-toggle input{width:18px;height:18px;accent-color:var(--green)}.publish-toggle span{display:grid;gap:3px}.publish-toggle small{color:var(--muted);font-weight:500}.record-count{padding:6px 10px;border-radius:999px;background:var(--lime);font-size:.75rem;font-weight:900}.record-list{display:grid;gap:10px;max-height:920px;overflow:auto}.record-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff}.record-row h4{font:700 1rem/1.25 var(--display);letter-spacing:-.03em}.record-row p{margin-top:4px;color:var(--muted);font-size:.78rem}.record-status{display:inline-flex;margin-top:8px;padding:4px 8px;border-radius:999px;background:#f1f1e8;color:#657064;font-size:.67rem;font-weight:900}.record-status.published{background:#e3f3df;color:#287146}.record-actions{display:flex;align-items:flex-start;gap:6px}.record-actions button{padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--green);font-size:.75rem;font-weight:800}.record-actions button.delete{color:#aa3f32}.records-empty{padding:24px 12px;text-align:center;color:var(--muted);font-size:.9rem}[hidden]{display:none!important}@media(max-width:900px){.admin-columns{grid-template-columns:1fr}.record-list{max-height:none}}@media(max-width:600px){.admin-main{padding-top:40px}.auth-card,.editor-card,.records-card{padding:20px;border-radius:20px}.form-two{grid-template-columns:1fr;gap:4px}.dashboard-top{align-items:flex-start}.dashboard-top h2{font-size:2rem}}
 
 /* Login is the entry point for this section of the CSSMoRA app. */
@@ -1011,241 +1014,7 @@
   width:100%;
   min-width:0;
   min-height:48px;
-  align-items:center;
-  gap:12px;
-  padding:6px 10px;
-  border:1px solid transparent;
-  border-radius:11px;
-  background:transparent;
-  color:#47534b;
-  text-align:left;
-  box-shadow:none;
-  transform:none;
-}
-.admin-sidebar .admin-tab:hover{
-  border-color:#e7ece6;
-  background:#f7f9f7;
-  box-shadow:none;
-  transform:none;
-}
-.admin-sidebar .admin-tab.is-active{
-  border-color:#e1ebe2;
-  background:#edf4ee;
-  color:var(--green);
-  box-shadow:inset 3px 0 0 var(--green);
-}
-.admin-sidebar .module-icon{
-  display:grid;
-  flex:0 0 34px;
-  width:34px;
-  height:34px;
-  place-items:center;
-  border-radius:9px;
-  background:transparent;
-  color:currentColor;
-  font-size:16px;
-  font-weight:750;
-}
-.admin-sidebar .module-copy{
-  display:block;
-  min-width:0;
-}
-.admin-sidebar .module-copy strong{
-  display:block;
-  font-size:13px;
-  font-weight:650;
-  line-height:1.25;
-}
-.admin-sidebar .module-copy small{
-  display:none;
-}
-.admin-sidebar .module-state{
-  display:none;
-}
-.admin-sidebar .admin-tab:focus-visible,
-.sidebar-toggle:focus-visible{
-  outline:3px solid color-mix(in srgb,var(--green) 32%,transparent);
-  outline-offset:2px;
-}
-.admin-sidebar-scrim{
-  display:none;
-}
-.admin-workspace-content{
-  display:flex;
-  min-width:0;
-  min-height:100vh;
-  flex-direction:column;
-  background:#f5f7fa;
-}
-.admin-topbar{
-  position:sticky;
-  top:0;
-  z-index:20;
-  display:flex;
-  min-height:72px;
-  align-items:center;
-  justify-content:space-between;
-  gap:20px;
-  padding:0 32px;
-  border-bottom:1px solid #e7eaee;
-  background:#fff;
-}
-.admin-topbar-leading,
-.admin-topbar-user{
-  display:flex;
-  align-items:center;
-}
-.admin-topbar-leading{
-  gap:12px;
-}
-.admin-topbar-leading h2{
-  margin:0;
-  color:#202b24;
-  font-size:18px;
-  font-weight:700;
-  letter-spacing:-.025em;
-}
-.sidebar-toggle{
-  display:grid;
-  width:38px;
-  height:38px;
-  place-items:center;
-  border:1px solid #e5eaf0;
-  border-radius:10px;
-  background:#f8fafb;
-  color:#34443a;
-  font-size:17px;
-  cursor:pointer;
-}
-.sidebar-toggle:hover{
-  border-color:#d5e2d7;
-  background:#f1f6f1;
-}
-.admin-topbar-user{
-  gap:14px;
-}
-.admin-user-copy{
-  display:grid;
-  gap:3px;
-  text-align:right;
-}
-.admin-user-copy span{
-  color:#849087;
-  font-size:8px;
-  font-weight:850;
-  letter-spacing:.1em;
-}
-.admin-user-copy strong{
-  max-width:260px;
-  overflow:hidden;
-  color:#344239;
-  font-size:11px;
-  font-weight:600;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.admin-user-avatar{
-  display:grid;
-  flex:0 0 38px;
-  width:38px;
-  height:38px;
-  place-items:center;
-  border:2px solid #e3eee4;
-  border-radius:50%;
-  background:#edf5ed;
-  color:var(--green);
-  font-size:10px;
-  font-weight:900;
-}
-.admin-topbar-user #logout{
-  padding:8px 10px;
-  border:1px solid #e6e9ed;
-  border-radius:9px;
-  background:#fff;
-  color:#57645b;
-  font-size:10px;
-  text-decoration:none;
-}
-.admin-topbar-user #logout:hover{
-  border-color:#d3dfd4;
-  background:#f7faf7;
-}
-.admin-content-area{
-  width:100%;
-  min-width:0;
-  flex:1;
-  padding:24px 32px 40px;
-}
-.admin-content-area>.management-panel{
-  width:100%;
-  max-width:none;
-  margin:0;
-}
-.admin-content-area>.management-panel[hidden]{
-  display:none!important;
-}
-.admin-content-area>.management-panel>.admin-columns{
-  margin-top:0;
-}
-.admin-content-area .secretariat-tabs{
-  margin-top:0;
-}
-.admin-content-area .secretariat-intro{
-  margin-top:12px;
-}
-.admin-app-shell.is-sidebar-collapsed{
-  grid-template-columns:82px minmax(0,1fr);
-}
-.admin-app-shell.is-sidebar-collapsed .admin-sidebar{
-  width:82px;
-  padding-inline:10px;
-}
-.admin-app-shell.is-sidebar-collapsed .app-sidebar-brand{
-  justify-content:center;
-  padding-inline:0;
-}
-.admin-app-shell.is-sidebar-collapsed .app-sidebar-brand>span,
-.admin-app-shell.is-sidebar-collapsed .sidebar-account-copy,
-.admin-app-shell.is-sidebar-collapsed .sidebar-account-arrow,
-.admin-app-shell.is-sidebar-collapsed .sidebar-nav-label,
-.admin-app-shell.is-sidebar-collapsed .admin-sidebar .module-copy{
-  position:absolute;
-  width:1px;
-  height:1px;
-  overflow:hidden;
-  clip:rect(0,0,0,0);
-  white-space:nowrap;
-}
-.admin-app-shell.is-sidebar-collapsed .sidebar-account-card{
-  justify-content:center;
-  padding:7px 0;
-  border-color:transparent;
-  background:transparent;
-}
-.admin-app-shell.is-sidebar-collapsed .admin-sidebar .admin-tab{
-  justify-content:center;
-  padding:5px;
-}
-.admin-app-shell.is-sidebar-collapsed .admin-sidebar .module-icon{
-  flex-basis:38px;
-  width:38px;
-  height:38px;
-}
-@media(max-width:900px){
-  .admin-app-shell{
-    display:block;
-  }
-  .admin-sidebar{
-    position:fixed;
-    inset:0 auto 0 0;
-    width:min(292px,86vw);
-    height:100dvh;
-    transform:translateX(-102%);
-    box-shadow:12px 0 36px #101b1925;
-    transition:transform .22s ease;
-  }
-  .admin-app-shell.is-sidebar-open .admin-sidebar{
-    transform:translateX(0);
+  align-items:…1196 tokens truncated…form:translateX(0);
   }
   .admin-app-shell.is-sidebar-open .admin-sidebar-scrim{
     position:fixed;
@@ -1539,7 +1308,7 @@
   font:14px/1.55 'Plus Jakarta Sans',sans-serif;
 }
 .admin-page :is(button,input,select,textarea){font-family:'Plus Jakarta Sans',sans-serif}
-.admin-page :is(h1,h2,h3,h4){font-family:'Outfit','Plus Jakarta Sans',sans-serif;font-weight:400;letter-spacing:-.025em}
+.admin-page :is(h1,h2,h3,h4){font-family:'DM Serif Display',Georgia,serif;font-weight:400;letter-spacing:-.025em}
 .admin-page .text-button,.admin-page .admin-button,.admin-page .record-actions button{font-family:'Plus Jakarta Sans',sans-serif}
 .admin-page :focus-visible{outline:3px solid #6b9b78;outline-offset:2px}
 
@@ -1554,7 +1323,7 @@
 .admin-page .admin-main:has(#auth-view:not([hidden])){min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center}
 .admin-page .auth-card{width:min(100%,430px);max-width:430px;margin:0;padding:32px;background:#fff;border:1px solid #e6edf5;border-radius:16px;box-shadow:0 4px 16px #142b490d}
 .admin-page .auth-kicker{margin-bottom:7px;color:#244d3f;font-size:10px;font-weight:700;letter-spacing:.08em}
-.admin-page .auth-card h1{font:400 27px/1.2 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#142b49}
+.admin-page .auth-card h1{font:400 27px/1.2 'DM Serif Display',Georgia,serif;letter-spacing:-.02em;color:#142b49}
 .admin-page .auth-help{margin-top:4px;color:#5b6f89;font-size:13px}
 .admin-page .auth-card form{gap:7px;margin-top:22px}
 .admin-page .auth-card label,.admin-page .editor-card label{margin:0;color:#5b6f89;font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:none}
@@ -1586,7 +1355,7 @@
 .admin-page .admin-workspace-content{min-width:0;background:#f6f8fc}
 .admin-page .admin-topbar{position:sticky;top:0;z-index:20;min-height:60px;padding:0 32px;border-bottom:1px solid #e6edf5;background:#fff}
 .admin-page .admin-topbar-leading{gap:10px}
-.admin-page .admin-topbar-leading h2{font:400 20px/1.25 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
+.admin-page .admin-topbar-leading h2{font:400 20px/1.25 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
 .admin-page .sidebar-toggle{width:32px;height:32px;border-color:#e6edf5;border-radius:8px;background:#f1f5fb;color:#38506d;font-size:15px}
 .admin-page .admin-topbar-user{gap:11px}
 .admin-page .admin-user-copy span{color:#8090a3;font:700 8px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em}
@@ -1603,7 +1372,7 @@
 .admin-page .secretariat-tab:hover,.admin-page .agenda-admin-tab:hover{background:#e4eaf2;color:#244d3f}
 .admin-page .secretariat-tab.is-active,.admin-page .agenda-admin-tab.is-active{background:#fff;color:#244d3f;box-shadow:0 1px 4px #142b4912}
 .admin-page .secretariat-intro{margin:0 0 14px}
-.admin-page .secretariat-intro h3,.admin-page .program-library-heading h3{font:400 21px/1.25 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
+.admin-page .secretariat-intro h3,.admin-page .program-library-heading h3{font:400 21px/1.25 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
 .admin-page .secretariat-intro p,.admin-page .admin-muted{margin-top:4px;color:#5b6f89;font-size:12px;line-height:1.45}
 .admin-page .member-intro{display:none}
 
@@ -1611,7 +1380,7 @@
 .admin-page :is(.editor-card,.records-card,.module-placeholder-card){min-width:0;padding:18px;border:1px solid #e6edf5;border-radius:12px;background:#fff;box-shadow:0 1px 3px #142b490d,0 4px 12px #142b4908}
 .admin-page .admin-columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:0}
 .admin-page .editor-heading{align-items:center;gap:12px;margin:0 0 12px}
-.admin-page .editor-heading h3,.admin-page .module-placeholder-card h3{margin:0;font:400 17px/1.3 'Outfit','Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
+.admin-page .editor-heading h3,.admin-page .module-placeholder-card h3{margin:0;font:400 17px/1.3 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
 .admin-page .record-count,.admin-page .member-table-count{padding:4px 8px;border:0;border-radius:6px;background:#e8f1e9;color:#244d3f;font:600 11px 'Plus Jakarta Sans',sans-serif}
 .admin-page .editor-card form{gap:7px;margin-top:12px}
 .admin-page .editor-card label:not(.publish-toggle){margin-top:3px;color:#5b6f89;font-size:11px;font-weight:700;letter-spacing:0;text-transform:none}
@@ -1649,7 +1418,7 @@
 .admin-page .member-workspace{grid-template-columns:minmax(0,1fr) 270px;gap:14px;font-size:13px}
 .admin-page .member-table-card,.admin-page .member-editor-card{padding:16px;border-radius:12px}
 .admin-page .member-table-heading{margin-bottom:10px}
-.admin-page .member-table-heading h3{font:400 17px/1.3 'Outfit','Plus Jakarta Sans',sans-serif}
+.admin-page .member-table-heading h3{font:400 17px/1.3 'DM Serif Display',Georgia,serif}
 .admin-page .member-tools{gap:8px;margin:0 0 10px}
 .admin-page .member-tools input[type=search]{flex:1 1 190px;min-height:36px;font-size:12px}
 .admin-page .member-data-actions{gap:5px}
@@ -1779,7 +1548,7 @@
 .admin-page :is(.editor-heading h3,.member-table-heading h3,.secretariat-intro h3,.program-library-heading h3,.module-placeholder-card h3){font:600 15px/1.4 'Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
 .admin-page .editor-card label:not(.publish-toggle){font:600 11px/1.35 'Plus Jakarta Sans',sans-serif;letter-spacing:.035em;text-transform:uppercase;color:#5b6f89}
 .admin-page .member-filter-label{font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.025em;text-transform:uppercase}
-.admin-page .auth-card h1,.admin-page .admin-topbar-leading h2{font-family:'Outfit','Plus Jakarta Sans',sans-serif}
+.admin-page .auth-card h1,.admin-page .admin-topbar-leading h2{font-family:'DM Serif Display',Georgia,serif}
 @media(max-width:1200px){
  .admin-page .admin-workspace-shell{grid-template-columns:220px minmax(0,1fr)}
  .admin-page .admin-sidebar{width:220px;max-width:220px}
@@ -1892,14 +1661,13 @@
   .admin-page .admin-workspace-shell.admin-app-shell.is-sidebar-collapsed .admin-sidebar::before{width:82px}
 }
 
-
 /* Restore the softer CSSMoRA typography and rounded surfaces at the current scale. */
 .admin-page .editor-heading h3,
 .admin-page .member-table-heading h3,
 .admin-page .secretariat-intro h3,
 .admin-page .program-library-heading h3,
 .admin-page .module-placeholder-card h3{
-  font-family:'Outfit','Plus Jakarta Sans',sans-serif;
+  font-family:'DM Serif Display',Georgia,serif;
   font-size:17px;
   font-weight:400;
   line-height:1.3;
@@ -1927,47 +1695,65 @@
 .admin-page :is(.editor-card input,.editor-card select,.editor-card textarea,.auth-card input,.member-tools input[type=search],.member-column-filter,.letter-archive-form input,.letter-archive-form select){
   border-radius:11px;
 }
-.admin-page .admin-button,.admin-page .member-data-button,.admin-page .member-option-button{
-  border-radius:11px;
-}
-.admin-page .admin-sidebar .module-icon{
-  display:grid;
-  place-items:center;
-  color:#d8f17c;
-  background:#ffffff12;
-}
-.admin-page .admin-sidebar .module-icon svg{
-  display:block;
-  width:17px;
-  height:17px;
-  flex:none;
-}
-.admin-page .admin-sidebar .admin-tab.is-active .module-icon{
-  color:#fff;
-  background:#ffffff20;
-}
+.admin-page .admin-button,.admin-page .member-data-button,.admin-page .member-option-button{border-radius:11px}
+.admin-page .admin-sidebar .module-icon{display:grid;place-items:center;color:#d8f17c;background:#ffffff12}
+.admin-page .admin-sidebar .module-icon svg{display:block;width:17px;height:17px;flex:none}
+.admin-page .admin-sidebar .admin-tab.is-active .module-icon{color:#fff;background:#ffffff20}
 
-/* Direct poster upload for competition records */
-.admin-page .poster-upload-field{display:grid;gap:8px}
-.admin-page .poster-upload-control{
-  display:flex;align-items:center;gap:11px;width:100%;padding:11px 12px;
-  border:1px dashed #b9cdbb;border-radius:12px;background:#f7faf5;cursor:pointer;
-  transition:border-color .18s ease,background .18s ease,transform .18s ease
-}
-.admin-page .poster-upload-control:hover{border-color:#4f9568;background:#f0f7ef;transform:translateY(-1px)}
-.admin-page .poster-upload-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#e4efe3;color:#2c7147;font-size:19px}
-.admin-page .poster-upload-control strong,.admin-page .poster-upload-control small{display:block}
-.admin-page .poster-upload-control strong{font-size:11px;color:#294a35}
-.admin-page .poster-upload-control small{margin-top:2px;font-size:9px;font-weight:500;color:#748176}
-.admin-page .poster-upload-cta{margin-left:auto;padding:6px 10px;border-radius:999px;background:#e7f0e4;color:#2e6845;font-size:10px;font-weight:700}
-.admin-page .poster-upload-preview{width:112px;max-height:145px;object-fit:cover;border:1px solid #e1e9df;border-radius:11px;background:#fff}
-.admin-page .poster-upload-name,.admin-page .poster-upload-help{font-size:10px;line-height:1.45;color:#718075}
-.admin-page .poster-upload-help{margin-top:-5px}
-
-/* Modern sans display typography: fresh, clear, and consistent with the admin workspace. */
-.admin-page :is(h1,h2,h3,h4){
-  font-family:'Outfit','Plus Jakarta Sans',sans-serif!important;
-  font-weight:600!important;
-  font-style:normal!important;
-  letter-spacing:-.025em!important;
-}
+/* Two-step competition subsidy review. */
+.achievement-admin-panel{min-width:0}
+.achievement-admin-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.achievement-admin-heading h3{margin:5px 0;font:400 24px/1.25 'DM Serif Display',Georgia,serif;color:#173e2c}
+.achievement-admin-heading p,.achievement-reviewer-aside .admin-muted{margin:0;color:#718075;font-size:11px;line-height:1.6}
+.achievement-admin-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 16px}
+.achievement-admin-filters{display:flex;gap:6px;flex-wrap:wrap}
+.achievement-filter{padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#536558;font:600 10px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.achievement-filter.is-active{border-color:#2f754b;background:#eaf3e8;color:#1c633b}
+.achievement-action-message{min-height:0;margin:8px 0;color:#2c6d45}
+.achievement-admin-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;align-items:start;gap:14px}
+.achievement-application-list{display:grid;gap:12px;min-width:0}
+.achievement-application-card,.achievement-reviewer-aside .records-card{padding:16px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 7px 22px #142b4909}
+.achievement-application-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid #edf0eb}
+.achievement-request-number{font:600 9px 'DM Mono',monospace;letter-spacing:.05em;color:#76877a}
+.achievement-application-head h4{margin:4px 0;font:500 17px/1.3 'DM Serif Display',Georgia,serif;color:#183d2b}
+.achievement-application-head small{color:#7c897f;font-size:9px}
+.achievement-status{flex:none;margin:0!important;padding:6px 8px!important;background:#f5f2e6;color:#896a23}
+.achievement-status.pending_ketua{background:#edf0fb;color:#4a5689}
+.achievement-status.approved{background:#e6f4e8;color:#257147}
+.achievement-status.rejected{background:#faece9;color:#a34132}
+.achievement-application-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;padding:13px 0}
+.achievement-application-grid>div{display:grid;gap:3px;min-width:0}
+.achievement-application-grid small,.achievement-team-row small{color:#829087;font-size:9px}
+.achievement-application-grid strong{overflow-wrap:anywhere;color:#34493b;font-size:10px;font-weight:650;line-height:1.5}
+.achievement-team-row{display:grid;gap:4px;padding:10px 0;border-top:1px solid #edf0eb;color:#34493b;font-size:10px;line-height:1.6}
+.achievement-application-links{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0 12px}
+.achievement-application-links a,.achievement-application-links button,.achievement-wa-link{padding:7px 9px;border:1px solid #e0e8df;border-radius:8px;background:#f8faf7;color:#23633e;text-decoration:none;font:650 9px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.achievement-application-links button:disabled{opacity:.55}
+.achievement-approval-trail{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:11px 0}
+.achievement-approval-trail>span{display:grid;grid-template-columns:22px 1fr;column-gap:7px;align-items:center;padding:9px;border-radius:10px;background:#f6f8f5}
+.achievement-approval-trail b{grid-row:span 2;display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#e4eae2;color:#66796a;font-size:9px}
+.achievement-approval-trail strong{font-size:9px;color:#43584a}
+.achievement-approval-trail small{margin-top:3px;color:#79867c;font-size:8px;line-height:1.45;overflow-wrap:anywhere}
+.achievement-approval-trail .is-done{background:#edf5eb}
+.achievement-approval-trail .is-done b{background:#2f784b;color:#fff}
+.achievement-review-controls{display:flex;align-items:flex-end;gap:7px;padding-top:10px;border-top:1px solid #edf0eb}
+.achievement-review-controls label{display:grid;flex:1;gap:5px;color:#627268;font-size:9px;font-weight:700}
+.achievement-review-controls input,.achievement-reviewer-aside input{height:36px;min-width:0;padding:0 9px;border:1px solid #dfe6df;border-radius:8px;font:500 10px 'Plus Jakarta Sans',sans-serif}
+.achievement-review-controls button{height:34px;padding:0 9px;border:0;border-radius:8px;font:700 9px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.achievement-review-controls button:disabled{opacity:.5}
+.achievement-reject{background:#fff0ed;color:#9c4134}
+.achievement-approve{background:#246c43;color:#fff}
+.achievement-wa-link{display:inline-flex;margin-top:9px}
+.achievement-reviewer-aside .editor-heading{margin-bottom:8px}
+.achievement-reviewer-aside .editor-heading h3{font:400 17px 'DM Serif Display',Georgia,serif}
+.achievement-reviewer-aside form{display:grid;gap:8px;margin-top:15px}
+.achievement-reviewer-aside form label{font-size:10px;font-weight:700;color:#536558}
+.achievement-reviewer-aside .admin-button{margin-top:0;padding:10px 12px;font-size:10px}
+.achievement-reviewer-list{display:grid;gap:7px;margin-top:14px}
+.achievement-reviewer-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border-radius:9px;background:#f6f8f5}
+.achievement-reviewer-row span{display:grid;gap:3px;min-width:0}
+.achievement-reviewer-row strong{overflow-wrap:anywhere;font-size:9px;color:#34493b}
+.achievement-reviewer-row small{font-size:8px;color:#748176}
+.achievement-reviewer-row button{border:0;background:transparent;color:#a34335;font-size:9px;font-weight:700;cursor:pointer}
+@media(max-width:1050px){.achievement-admin-layout{grid-template-columns:minmax(0,1fr)}.achievement-reviewer-aside{max-width:500px}}
+@media(max-width:650px){.achievement-admin-heading{align-items:flex-start}.achievement-admin-toolbar{align-items:flex-start;flex-direction:column}.achievement-application-head{flex-direction:column}.achievement-application-grid{grid-template-columns:1fr}.achievement-review-controls{flex-wrap:wrap}.achievement-review-controls label{flex:1 1 100%}.achievement-approval-trail{grid-template-columns:1fr}}
