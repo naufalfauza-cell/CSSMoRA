@@ -345,3 +345,52 @@
 @media(prefers-reduced-motion:reduce){
  .event-dots button{transition:none}
 }
+
+/* Videotron: full proker photo with event details over a dark fade */
+.agenda-videotron .videotron-screen{min-height:clamp(380px,48vh,520px);padding:14px 16px 12px;display:flex;flex-direction:column}
+.agenda-videotron .screen-header{flex:none;padding-bottom:9px}
+.agenda-videotron .screen-brand{font-size:10px;gap:6px}
+.agenda-videotron .screen-brand img{width:23px;height:23px}
+.agenda-videotron .screen-status{font-size:8px}
+.agenda-videotron .screen-main{display:flex;flex:1;flex-direction:column;min-height:0;padding:10px 0 0}
+.agenda-videotron .screen-kicker{flex:none;margin:0 0 7px;color:#e2eee5;font-size:9px;letter-spacing:.1em}
+.agenda-videotron .screen-main h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.agenda-videotron .screen-footer{display:none}
+.agenda-videotron #agenda-list{position:relative;flex:1;width:100%;height:clamp(260px,34vh,390px);min-height:260px;overflow:hidden;border-radius:15px;background:#102017}
+.agenda-videotron .event-item{position:absolute;inset:0;display:none;grid-template-columns:minmax(0,1fr);grid-template-rows:1fr;gap:0;padding:0;border:0;border-radius:inherit;background:#102017;overflow:hidden}
+.agenda-videotron .event-item.on{display:grid}
+.agenda-videotron .event-photo{position:absolute;inset:0;width:100%;height:100%;min-height:0;object-fit:cover;border-radius:inherit}
+.agenda-videotron .event-content{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;width:100%;height:100%;padding:22px 23px 60px;border-radius:inherit;background:linear-gradient(180deg,rgba(0,0,0,0) 22%,rgba(0,0,0,.16) 43%,rgba(0,0,0,.86) 100%)}
+.agenda-videotron .event-date{display:flex;align-items:baseline;gap:7px;padding:0;border-radius:0;background:transparent;line-height:1.2;text-align:left}
+.agenda-videotron .event-date b{display:inline;font-size:15px;color:#fff}
+.agenda-videotron .event-date span{font-size:11px;color:#f0f3ef;text-transform:capitalize}
+.agenda-videotron .event-body{width:min(100%,520px)}
+.agenda-videotron .event-when{margin:0 0 5px;color:#e5e9e4;font-size:11px;line-height:1.45;text-shadow:0 1px 5px #000}
+.agenda-videotron .event-body strong{display:block;color:#fff;font-size:clamp(22px,2.4vw,34px);line-height:1.08;letter-spacing:-.035em;text-shadow:0 2px 12px #0008}
+.agenda-videotron .event-body p{margin-top:6px;color:#f0f2ee;font-size:11px;line-height:1.45;text-shadow:0 1px 5px #000}
+.agenda-videotron .event-carousel-tools{position:absolute;right:13px;bottom:12px;z-index:3;gap:8px;margin:0}
+.agenda-videotron .event-arrow{width:26px;height:26px;border-color:#ffffff80;background:#0005;color:#fff}
+.agenda-videotron .event-position{font-size:9px;color:#fff;text-shadow:0 1px 4px #000}
+.agenda-videotron .event-dots{position:absolute;left:14px;bottom:21px;z-index:3;justify-content:flex-start;max-width:45%;overflow-x:auto;scrollbar-width:none;margin:0}
+.agenda-videotron .event-dots::-webkit-scrollbar{display:none}
+.agenda-videotron .event-dots button{flex:0 0 auto;background:#ffffffa3}
+.agenda-videotron .event-dots button.on{background:#f2d46d}
+.agenda-videotron .event-empty{position:absolute;inset:0;display:grid;align-content:center;border:0;border-radius:inherit;background:linear-gradient(180deg,#112b1d2e,#07150de8),url('./assets/cssmora-logo.png') center/cover;color:#fff}
+.agenda-videotron .event-empty strong{font-size:15px}
+.agenda-videotron .event-empty p{font-size:11px;color:#e2e9e3}
+@media(max-width:760px){
+ .agenda-videotron .videotron-screen{min-height:0;padding:12px;border-radius:inherit}
+ .agenda-videotron .screen-header{padding-bottom:8px}
+ .agenda-videotron .screen-main{padding-top:8px}
+ .agenda-videotron .screen-kicker{font-size:8px;margin-bottom:6px}
+ .agenda-videotron #agenda-list{height:clamp(260px,40vh,360px);min-height:260px;border-radius:13px}
+ .agenda-videotron .event-content{padding:18px 16px 54px;gap:5px}
+ .agenda-videotron .event-date b{font-size:14px}
+ .agenda-videotron .event-date span{font-size:10px}
+ .agenda-videotron .event-when{font-size:10px}
+ .agenda-videotron .event-body strong{font-size:clamp(21px,6vw,29px)}
+ .agenda-videotron .event-body p{font-size:10px}
+ .agenda-videotron .event-dots{left:11px;bottom:18px;max-width:42%}
+ .agenda-videotron .event-carousel-tools{right:10px;bottom:9px}
+ .agenda-videotron .event-position{font-size:8px}
+}
