@@ -208,3 +208,16 @@
   .campus-stage{background-color:#244b38}
   .campus-stage:after{background:linear-gradient(180deg,transparent 110px,#123f2b1c 280px,#244b38 650px)}
 }
+
+
+/* Keep the navigation card compact while centering it in the viewport. */
+@media (min-width:761px){
+  .sign-pillar{top:50%;height:auto;max-height:82vh;transform:translateY(-50%)}
+  .sign-board{height:auto;max-height:82vh;overflow:auto}
+  .campus-stage{background-color:#2d563f}
+  .campus-stage:after{background:linear-gradient(180deg,transparent 52%,#123f2b10 72%,#123f2b38 100%)}
+}
+@media (max-width:760px){
+  .campus-stage{background-color:#2d563f}
+  .campus-stage:after{background:linear-gradient(180deg,transparent 110px,#123f2b14 280px,#2d563f 650px)}
+}
