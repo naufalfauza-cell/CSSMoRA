@@ -543,7 +543,7 @@ function parseCSV(text){
   if(cell||row.length){row.push(cell);if(row.some(v=>v.trim()))rows.push(row);}
   return rows;
 }
-const normHeader=value=>String(value||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toLowerCase();
+const normHeader=value=>String(value||'').replace(/^\\uFEFF/,'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toLowerCase();
 function showSecretaryTab(tab){
   document.querySelectorAll('.secretariat-tab').forEach(item=>{
     const selected=item===tab;
