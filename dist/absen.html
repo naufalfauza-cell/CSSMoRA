@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#087443">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Absensi Kegiatan · CSSMoRA UNAIR</title>
+  <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./absen.css">
+  <script src="./supabase-config.js" defer></script>
+  <script src="./absen.js" defer></script>
+</head>
+<body class="checkin-page">
+  <header class="site-header"><div class="wrap header-inner">
+    <a class="brand" href="./" aria-label="Kembali ke beranda CSSMoRA UNAIR">
+      <img class="brand-logo" src="./assets/cssmora-logo.png" alt="" width="52" height="52">
+      <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong></span>
+    </a>
+    <span class="checkin-label">ABSENSI KEGIATAN</span>
+  </div></header>
+  <main class="checkin-wrap">
+    <section class="checkin-card">
+      <span class="admin-kicker">CSSMoRA UNAIR</span>
+      <h1 id="event-title">Memuat kegiatan…</h1>
+      <p id="event-meta" class="checkin-meta"></p>
+      <form id="checkin-form" hidden>
+        <label for="checkin-nia">NIA</label>
+        <input id="checkin-nia" name="nia" maxlength="40" autocomplete="off" required>
+        <label for="checkin-name">Nama lengkap sesuai data anggota</label>
+        <input id="checkin-name" name="full_name" maxlength="140" autocomplete="name" required>
+        <button class="admin-button" id="checkin-submit" type="submit">Catat kehadiran <span aria-hidden="true">↗</span></button>
+      </form>
+      <p class="form-message" id="checkin-message" role="status" aria-live="polite"></p>
+      <p class="checkin-footnote">Tautan ini hanya aktif pada tanggal kegiatan. Jika data tidak cocok, hubungi sekretaris.</p>
+    </section>
+  </main>
+</body>
+</html>
