@@ -1518,43 +1518,15 @@
   .member-entry-rail{width:100%}
 }
 
-/* Rotating attendance code shown only in the authenticated admin workspace. */
-.attendance-code-panel{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:18px;
-  margin:0 0 14px;
-  padding:16px 18px;
-  border:1px solid #dce9dc;
-  border-radius:14px;
-  background:linear-gradient(115deg,#f0f7ee,#fbfcf9);
-}
-.attendance-code-main{display:grid;gap:4px}
-.attendance-code-main .admin-kicker{font-size:9px}
-.attendance-code-main strong{
-  color:#176b3f;
-  font-size:clamp(28px,4vw,40px);
-  font-weight:800;
-  letter-spacing:.18em;
-  line-height:1;
-  font-variant-numeric:tabular-nums;
-}
-.attendance-code-main small,
-.attendance-code-side small{color:#69786d;font-size:10px;line-height:1.45}
-.attendance-code-side{
-  display:grid;
-  justify-items:end;
-  gap:4px;
-  max-width:310px;
-  text-align:right;
-}
-.attendance-code-side>span{color:#315b3e;font-size:12px;font-weight:800}
-.attendance-code-side .text-button{padding:3px 0;font-size:9px}
-.checkin-card .checkin-code-hint{margin-top:-4px;color:var(--muted);font-size:.74rem;line-height:1.45}
-@media(max-width:640px){
-  .attendance-code-panel{align-items:flex-start;flex-direction:column;gap:12px}
-  .attendance-code-side{justify-items:start;text-align:left}
-}
-
-.attendance-code-panel[hidden]{display:none}
+.attendance-proof-button{width:auto;padding:5px 9px;border:1px solid #dce9dc;border-radius:999px;background:#f0f7ee;color:#176b3f;font-size:10px;font-weight:800}
+.attendance-proof-button:hover{background:#e3f0df}
+.attendance-proof-expired,.attendance-proof-missing{color:#748177;font-size:10px}
+.attendance-proof-dialog{position:relative;width:min(92vw,680px);max-width:680px;max-height:92vh;padding:18px;border:1px solid var(--line);border-radius:18px;background:var(--paper);color:var(--ink);box-shadow:0 24px 70px #10231733}
+.attendance-proof-dialog::backdrop{background:#10231799;backdrop-filter:blur(3px)}
+.attendance-proof-dialog form{position:absolute;top:10px;right:10px;margin:0}
+.attendance-proof-close{width:34px;height:34px;border:0;border-radius:50%;background:#fff;color:var(--ink);font-size:22px;line-height:1;cursor:pointer}
+.attendance-proof-dialog h3{margin:0 42px 12px 0;font-size:16px}
+.attendance-proof-dialog img{display:block;width:100%;max-height:72vh;object-fit:contain;border-radius:10px;background:#f1f4ef}
+.attendance-proof-dialog p{margin:10px 0 0;color:var(--muted);font-size:11px}
+.attendance-proof-dialog[open]{animation:proof-dialog-in .16s ease-out}
+@keyframes proof-dialog-in{from{opacity:0;transform:translateY(6px) scale(.99)}to{opacity:1;transform:none}}

@@ -4,6 +4,13 @@ const form = $("#checkin-form");
 const eventSelect = $("#event-select");
 const eventLabel = $("#event-picker-label");
 const statusMessage = $("#checkin-message");
+const photoInput = $("#checkin-photo");
+const photoPreview = $("#photo-preview");
+const photoPreviewImage = $("#photo-preview-image");
+const photoSize = $("#photo-size");
+const MAX_PHOTO_BYTES = 512000;
+let compressedPhoto = null;
+let photoPreviewUrl = null;
 const directToken = new URLSearchParams(location.search).get("t");
 let activeEvents = [];
 let selectedEvent = null;
@@ -45,7 +52,7 @@ function resetMemberFields() {
   fillSelect(cohort, [], "Pilih angkatan");
   fillSelect(program, [], "Pilih prodi");
   fillSelect(member, [], "Pilih nama");
-  $("#checkin-code").value = "";
+  resetPhoto();
 }
 function hideCheckin(message, kind = "") {
   form.hidden = true;
@@ -151,26 +158,125 @@ $("#checkin-program").addEventListener("change", async event => {
     if (!items.length) setMessage("Tidak ada anggota yang belum tercatat untuk pilihan ini.", "");
   } catch (error) { setMessage(error.message, "error"); }
 });
+function resetPhoto() {
+  compressedPhoto = null;
+  if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+  photoPreviewUrl = null;
+  photoInput.value = "";
+  photoPreviewImage.removeAttribute("src");
+  photoSize.textContent = "";
+  photoPreview.hidden = true;
+}
+async function decodePhoto(file) {
+  if (typeof createImageBitmap === "function") return await createImageBitmap(file);
+  return await new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    image.onload = () => { URL.revokeObjectURL(objectUrl); resolve(image); };
+    image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Foto tidak dapat dibaca. Coba pilih JPG atau PNG.")); };
+    image.src = objectUrl;
+  });
+}
+function canvasBlob(canvas, quality) {
+  return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Foto gagal dikompres. Coba foto lain.")), "image/jpeg", quality));
+}
+async function compressPhoto(file) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    throw new Error("Pilih foto JPG, PNG, atau WebP.");
+  }
+  const bitmap = await decodePhoto(file);
+  try {
+    const maxEdges = [1600, 1400, 1200, 1000, 800];
+    const qualities = [0.84, 0.78, 0.72, 0.66, 0.60, 0.54, 0.48];
+    for (const maxEdge of maxEdges) {
+      const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) throw new Error("Peramban tidak dapat memproses foto ini.");
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      for (const quality of qualities) {
+        const blob = await canvasBlob(canvas, quality);
+        if (blob.size <= MAX_PHOTO_BYTES) return blob;
+      }
+    }
+  } finally {
+    if (typeof bitmap.close === "function") bitmap.close();
+  }
+  throw new Error("Foto belum bisa diperkecil sampai 500 KB. Coba foto lain dengan ukuran lebih kecil.");
+}
+photoInput.addEventListener("change", async () => {
+  const file = photoInput.files?.[0];
+  compressedPhoto = null;
+  if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+  photoPreviewUrl = null;
+  photoPreviewImage.removeAttribute("src");
+  photoSize.textContent = "";
+  photoPreview.hidden = true;
+  if (!file) return;
+  setMessage("Mengompres foto di perangkat…");
+  photoInput.disabled = true;
+  try {
+    compressedPhoto = await compressPhoto(file);
+    photoPreviewUrl = URL.createObjectURL(compressedPhoto);
+    photoPreviewImage.src = photoPreviewUrl;
+    photoSize.textContent = "Siap diunggah · " + Math.max(1, Math.round(compressedPhoto.size / 1024)) + " KB";
+    photoPreview.hidden = false;
+    setMessage("Foto siap. Lanjutkan untuk mencatat kehadiran.", "success");
+  } catch (error) {
+    resetPhoto();
+    setMessage(error.message, "error");
+  } finally {
+    photoInput.disabled = false;
+  }
+});
 form.addEventListener("submit", async event => {
   event.preventDefault();
-  if (!selectedEvent) return;
+  if (!selectedEvent || !compressedPhoto) {
+    setMessage("Pilih foto bukti terlebih dahulu.", "error");
+    return;
+  }
+  const cohort = $("#checkin-cohort").value;
+  const studyProgram = $("#checkin-program").value;
+  const memberId = $("#checkin-member").value;
   const button = $("#checkin-submit");
   button.disabled = true;
-  setMessage("Menyimpan kehadiran…");
   try {
+    setMessage("Menyiapkan unggahan foto…");
+    const upload = await request("POST", { token: selectedEvent.public_token }, {
+      mode: "prepare_upload", cohort, study_program: studyProgram, member_id: memberId
+    });
+    if (!upload.already_uploaded) {
+      setMessage("Mengunggah foto terkompres…");
+      const formData = new FormData();
+      formData.append("cacheControl", "3600");
+      formData.append("", compressedPhoto, "proof.jpg");
+      const uploadResponse = await fetch(upload.signed_upload_url, {
+        method: "PUT",
+        headers: { apikey: config.publishableKey, "x-upsert": "false" },
+        body: formData
+      });
+      const uploadResult = await uploadResponse.json().catch(() => ({}));
+      if (!uploadResponse.ok) throw new Error(uploadResult.message || uploadResult.error || "Foto belum berhasil diunggah. Coba lagi.");
+    }
+    setMessage("Mencatat kehadiran…");
     const result = await request("POST", { token: selectedEvent.public_token }, {
-      cohort: $("#checkin-cohort").value,
-      study_program: $("#checkin-program").value,
-      member_id: $("#checkin-member").value,
-      checkin_code: $("#checkin-code").value.trim()
+      mode: "finalize", cohort, study_program: studyProgram, member_id: memberId, photo_path: upload.path
     });
     form.hidden = true;
+    resetPhoto();
     setMessage(result.message || "Absensi berhasil dicatat.", "success");
   } catch (error) {
     setMessage(error.message, "error");
+  } finally {
     button.disabled = false;
   }
 });
+window.addEventListener("beforeunload", () => { if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl); });
+
 if (config?.url && config?.publishableKey) {
   void refreshActiveEvents();
   refreshTimer = window.setInterval(() => void refreshActiveEvents(true), 30000);

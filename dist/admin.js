@@ -598,9 +598,6 @@ let members=[];
 let attendanceEvents=[];
 let currentAttendanceEvent=null;
 let currentAttendanceRows=[];
-let attendanceCodeRefreshTimer=null;
-let attendanceCodeEventId=null;
-let attendanceCodeExpiresAt=0;
 
 const memberById=id=>members.find(member=>member.id===id);
 const localDateInput=()=>{
@@ -816,7 +813,6 @@ function renderAttendanceEvents(){
   attendanceEventList.innerHTML=attendanceEvents.map(e=>'<article class="attendance-event-card"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(e.id)+'"><span><strong>'+escapeHTML(e.title)+'</strong><small>'+escapeHTML(e.event_date)+' · '+escapeHTML(e.session_name||'Umum')+(e.location?' · '+escapeHTML(e.location):'')+'</small></span><span class="record-status '+(e.status==='open'?'published':'')+'">'+(e.status==='open'?'TERBUKA':'DITUTUP')+'</span></button><div class="attendance-event-actions"><button type="button" data-copy-event="'+escapeHTML(e.id)+'">Salin tautan</button><button type="button" data-toggle-event="'+escapeHTML(e.id)+'">'+(e.status==='open'?'Tutup absensi':'Buka lagi')+'</button></div></article>').join('');
 }
 $('#events-refresh').addEventListener('click',loadAttendanceEvents);
-$('#attendance-code-retry').addEventListener('click',()=>{if(currentAttendanceEvent)void loadAttendanceCode(currentAttendanceEvent.id);});
 attendanceEventList.addEventListener('click',async event=>{
   const copy=event.target.closest('[data-copy-event]');
   if(copy){
@@ -854,60 +850,11 @@ attendanceEventForm.addEventListener('submit',async event=>{
   finally{button.disabled=false;}
 });
 function attendanceStatusLabel(status){return({hadir:'Hadir',izin:'Izin',sakit:'Sakit',alpa:'Tanpa keterangan',belum:'Belum dicatat'})[status]||status;}
-async function requestAttendanceCode(eventId,allowRetry=true){
-  const headers={apikey:config.publishableKey,Authorization:session?.access_token?'Bearer '+session.access_token:''};
-  const response=await fetchTimed(config.url+'/functions/v1/attendance-checkin?mode=code&event_id='+encodeURIComponent(eventId),{method:'GET',headers});
-  if(response.status===401&&allowRetry&&session?.refresh_token){
-    await refreshSession();
-    return requestAttendanceCode(eventId,false);
-  }
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(result.error||'Kode check-in belum dapat dimuat.');
-  return result;
-}
-function clearAttendanceCodeTimer(){
-  if(attendanceCodeRefreshTimer){clearInterval(attendanceCodeRefreshTimer);attendanceCodeRefreshTimer=null;}
-}
-function stopAttendanceCode(){
-  clearAttendanceCodeTimer();
-  attendanceCodeEventId=null;
-  $('#attendance-code-panel').hidden=true;
-}
-async function loadAttendanceCode(eventId){
-  clearAttendanceCodeTimer();
-  attendanceCodeEventId=eventId;
-  const panel=$('#attendance-code-panel');
-  panel.hidden=false;
-  $('#attendance-code-value').textContent='••••';
-  $('#attendance-code-countdown').textContent='Memuat kode…';
-  try{
-    const result=await requestAttendanceCode(eventId);
-    if(attendanceCodeEventId!==eventId)return;
-    if(!result.active){
-      $('#attendance-code-value').textContent='—';
-      $('#attendance-code-countdown').textContent=result.message||'Kode belum tersedia.';
-      return;
-    }
-    $('#attendance-code-value').textContent=result.code;
-    attendanceCodeExpiresAt=Date.now()+Math.max(1,Number(result.seconds_remaining)||1)*1000;
-    attendanceCodeRefreshTimer=window.setInterval(()=>{
-      if(attendanceCodeEventId!==eventId){clearAttendanceCodeTimer();return;}
-      const remaining=Math.max(0,Math.ceil((attendanceCodeExpiresAt-Date.now())/1000));
-      $('#attendance-code-countdown').textContent=remaining?'Berganti dalam '+remaining+' detik':'Memperbarui kode…';
-      if(!remaining){clearAttendanceCodeTimer();void loadAttendanceCode(eventId);}
-    },250);
-  }catch(error){
-    if(attendanceCodeEventId!==eventId)return;
-    $('#attendance-code-value').textContent='—';
-    $('#attendance-code-countdown').textContent=error.message;
-  }
-}
 async function loadAttendanceRoster(eventId){
   const selected=attendanceEvents.find(event=>event.id===eventId);if(!selected)return;
   currentAttendanceEvent=selected;attendanceRosterPanel.hidden=false;
   $('#attendance-roster-title').textContent=selected.title;
   $('#attendance-event-meta').textContent=selected.event_date+' · '+(selected.session_name||'Umum')+(selected.location?' · '+selected.location:'');
-  if(selected.status==='open')void loadAttendanceCode(eventId);else stopAttendanceCode();
   $('#attendance-roster').innerHTML='<tr><td colspan="3" class="records-empty">Memuat daftar anggota…</td></tr>';
   try{
     currentAttendanceRows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
@@ -919,17 +866,46 @@ function renderAttendanceRoster(){
   const counts={hadir:0,izin:0,sakit:0,alpa:0,belum:0};rows.forEach(row=>counts[row.status]=(counts[row.status]||0)+1);
   const rate=rows.length?Math.round(counts.hadir*100/rows.length):0;
   $('#attendance-summary').innerHTML='<span><strong>'+counts.hadir+'</strong> hadir</span><span><strong>'+counts.izin+'</strong> izin</span><span><strong>'+counts.sakit+'</strong> sakit</span><span><strong>'+counts.alpa+'</strong> tanpa keterangan</span><span><strong>'+rate+'%</strong> kehadiran</span>';
-  if(!rows.length){$('#attendance-roster').innerHTML='<tr><td colspan="3" class="records-empty">Belum ada roster. Pastikan data anggota sudah diimpor sebelum membuat daftar hadir.</td></tr>';return;}
-  $('#attendance-roster').innerHTML=rows.map(row=>'<tr><td><strong>'+escapeHTML(row.member.full_name)+'</strong><small>Angkatan '+escapeHTML(row.member.cohort)+'</small></td><td>'+escapeHTML(row.member.nia)+'</td><td><select data-attendance-status="'+escapeHTML(row.member_id)+'" aria-label="Status kehadiran '+escapeHTML(row.member.full_name)+'">'+['belum','hadir','izin','sakit','alpa'].map(status=>'<option value="'+status+'" '+(row.status===status?'selected':'')+'>'+attendanceStatusLabel(status)+'</option>').join('')+'</select><input class="attendance-reason" data-attendance-reason="'+escapeHTML(row.member_id)+'" value="'+escapeHTML(row.reason||'')+'" placeholder="Catatan izin (opsional)" aria-label="Catatan kehadiran '+escapeHTML(row.member.full_name)+'"></td></tr>').join('');
+  if(!rows.length){$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Belum ada roster. Pastikan data anggota sudah diimpor sebelum membuat daftar hadir.</td></tr>';return;}
+  $('#attendance-roster').innerHTML=rows.map(row=>{
+    const proof=row.proof_path&&row.proof_uploaded_at
+      ? '<button class="text-button attendance-proof-button" type="button" data-attendance-proof="'+escapeHTML(row.member_id)+'">Lihat foto</button>'
+      : row.proof_deleted_at
+        ? '<small class="attendance-proof-expired">Dihapus otomatis</small>'
+        : '<small class="attendance-proof-missing">Belum ada foto</small>';
+    return '<tr><td><strong>'+escapeHTML(row.member.full_name)+'</strong><small>Angkatan '+escapeHTML(row.member.cohort)+'</small></td><td>'+escapeHTML(row.member.nia)+'</td><td><select data-attendance-status="'+escapeHTML(row.member_id)+'" aria-label="Status kehadiran '+escapeHTML(row.member.full_name)+'">'+['belum','hadir','izin','sakit','alpa'].map(status=>'<option value="'+status+'" '+(row.status===status?'selected':'')+'>'+attendanceStatusLabel(status)+'</option>').join('')+'</select><input class="attendance-reason" data-attendance-reason="'+escapeHTML(row.member_id)+'" value="'+escapeHTML(row.reason||'')+'" placeholder="Catatan izin (opsional)" aria-label="Catatan kehadiran '+escapeHTML(row.member.full_name)+'"></td><td>'+proof+'</td></tr>';
+  }).join('');
   document.querySelectorAll('#attendance-roster select,#attendance-roster input').forEach(field=>field.disabled=currentAttendanceEvent.status==='closed');
+  document.querySelectorAll('#attendance-roster [data-attendance-proof]').forEach(button=>button.disabled=currentAttendanceEvent.status==='closed');
   $('#attendance-save').disabled=currentAttendanceEvent.status==='closed';
 }
+async function getAttendanceProofUrl(eventId,memberId){
+  const endpoint=config.url+'/functions/v1/attendance-checkin?mode=proof-url&event_id='+encodeURIComponent(eventId)+'&member_id='+encodeURIComponent(memberId);
+  const makeRequest=()=>fetchTimed(endpoint,{method:'GET',headers:{apikey:config.publishableKey,Authorization:session?.access_token?'Bearer '+session.access_token:''}});
+  let response=await makeRequest();
+  if(response.status===401&&session?.refresh_token){await refreshSession();response=await makeRequest();}
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||'Foto bukti belum dapat dimuat.');
+  return result.signed_url;
+}
+$('#attendance-roster').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-attendance-proof]');
+  if(!button||!currentAttendanceEvent)return;
+  button.disabled=true;
+  try{
+    const signedUrl=await getAttendanceProofUrl(currentAttendanceEvent.id,button.dataset.attendanceProof);
+    $('#attendance-proof-image').src=signedUrl;
+    $('#attendance-proof-dialog').showModal();
+  }catch(error){showMessage('#attendance-message',error.message,'error');}
+  finally{button.disabled=false;}
+});
+$('#attendance-proof-dialog').addEventListener('close',()=>{$('#attendance-proof-image').removeAttribute('src');});
 $('#attendance-save').addEventListener('click',async()=>{
   if(!currentAttendanceEvent)return;
   const rows=currentAttendanceRows.map(row=>{
     const select=document.querySelector('[data-attendance-status="'+CSS.escape(row.member_id)+'"]');
     const reason=document.querySelector('[data-attendance-reason="'+CSS.escape(row.member_id)+'"]');
-    return {event_id:currentAttendanceEvent.id,member_id:row.member_id,status:select?.value||row.status,reason:reason?.value.trim()||null,recorded_by:session?.user?.id||null,updated_at:new Date().toISOString()};
+    return {event_id:currentAttendanceEvent.id,member_id:row.member_id,status:select?.value||row.status,reason:reason?.value.trim()||null,recorded_by:session?.user?.id||null,proof_path:row.proof_path||null,proof_uploaded_at:row.proof_uploaded_at||null,proof_expires_at:row.proof_expires_at||null,proof_deleted_at:row.proof_deleted_at||null,updated_at:new Date().toISOString()};
   });
   const button=$('#attendance-save');button.disabled=true;showMessage('#attendance-message','Menyimpan status kehadiran…');
   try{
@@ -941,8 +917,8 @@ $('#attendance-save').addEventListener('click',async()=>{
 });
 $('#attendance-export').addEventListener('click',()=>{
   if(!currentAttendanceEvent)return;
-  const rows=currentAttendanceRows.map(row=>{const m=memberById(row.member_id);return[m?.nia,m?.full_name,m?.cohort,attendanceStatusLabel(row.status),row.reason||''];});
-  downloadCSV('absensi-'+currentAttendanceEvent.event_date+'.csv',[['NIA','Nama','Angkatan','Status','Catatan'],...rows]);
+  const rows=currentAttendanceRows.map(row=>{const m=memberById(row.member_id);return[m?.nia,m?.full_name,m?.cohort,attendanceStatusLabel(row.status),row.reason||'',row.proof_deleted_at?'Dihapus otomatis':row.proof_uploaded_at?'Tersedia':'Tidak ada'];});
+  downloadCSV('absensi-'+currentAttendanceEvent.event_date+'.csv',[['NIA','Nama','Angkatan','Status','Catatan','Bukti foto'],...rows]);
 });
 
 async function loadLetters(){

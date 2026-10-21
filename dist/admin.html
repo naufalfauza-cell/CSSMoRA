@@ -8,9 +8,9 @@
   <title>Admin CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261021-checkin30">
+  <link rel="stylesheet" href="./admin.css?v=20261021-photo24h">
   <script src="./supabase-config.js" defer></script>
-  <script src="./admin.js?v=20261021-checkin30" defer></script>
+  <script src="./admin.js?v=20261021-photo24h" defer></script>
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -222,7 +222,7 @@
         </section>
 
         <section class="secretariat-subpanel" id="attendance-tools-panel" role="tabpanel" aria-labelledby="tab-attendance-tools" hidden>
-          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Buat kegiatan, bagikan tautannya, lalu tampilkan kode check-in yang berubah setiap menit. Anggota tidak perlu mengunggah bukti.</p></div></div>
+          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Buat kegiatan dan bagikan tautannya. Anggota memilih identitas lalu mengunggah foto bukti; foto disimpan privat dan dihapus otomatis setelah 24 jam.</p></div></div>
           <div class="secretariat-workspace attendance-workspace">
             <aside class="secretariat-options-rail" aria-label="Opsi absensi">
               <section class="records-card secretariat-options-card">
@@ -230,7 +230,7 @@
                 <button class="member-option-button" id="events-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang</button>
                 <div class="member-options-divider"></div>
                 <span class="member-option-label">Alur rekap</span>
-                <ol class="workspace-steps"><li>Pilih kegiatan</li><li>Tandai kehadiran</li><li>Simpan atau ekspor</li></ol>
+                <ol class="workspace-steps"><li>Pilih kegiatan</li><li>Tinjau bukti foto</li><li>Simpan atau ekspor</li></ol>
               </section>
             </aside>
             <section class="records-card attendance-events-card" aria-labelledby="attendance-events-title">
@@ -250,14 +250,16 @@
           </div>
           <section class="records-card attendance-roster-panel" id="attendance-roster-panel" hidden aria-labelledby="attendance-roster-title">
             <div class="editor-heading"><div><span class="admin-kicker">REKAP KEGIATAN</span><h3 id="attendance-roster-title">Daftar hadir</h3><p class="admin-muted" id="attendance-event-meta"></p></div><div class="attendance-actions"><button class="text-button" id="attendance-export" type="button">Ekspor CSV</button><button class="admin-button attendance-save" id="attendance-save" type="button">Simpan status</button></div></div>
-            <div class="attendance-code-panel" id="attendance-code-panel" hidden aria-live="polite">
-              <div class="attendance-code-main"><span class="admin-kicker">KODE CHECK-IN</span><strong id="attendance-code-value">—</strong><small>Bagikan kode yang tampil ini kepada peserta di lokasi.</small></div>
-              <div class="attendance-code-side"><span id="attendance-code-countdown">Memuat kode…</span><small>Kode berubah tiap 30 detik. Kode lama masih berlaku 5 detik setelah berganti.</small><button class="text-button" id="attendance-code-retry" type="button">Muat ulang kode</button></div>
-            </div>
             <div class="attendance-summary" id="attendance-summary"></div>
-            <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Status kehadiran</th></tr></thead><tbody id="attendance-roster"><tr><td colspan="3" class="records-empty">Pilih kegiatan untuk mulai.</td></tr></tbody></table></div>
+            <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Status kehadiran</th><th>Bukti foto</th></tr></thead><tbody id="attendance-roster"><tr><td colspan="4" class="records-empty">Pilih kegiatan untuk mulai.</td></tr></tbody></table></div>
             <p class="form-message" id="attendance-message" role="status" aria-live="polite"></p>
           </section>
+          <dialog class="attendance-proof-dialog" id="attendance-proof-dialog" aria-labelledby="attendance-proof-title">
+            <form method="dialog"><button class="attendance-proof-close" aria-label="Tutup foto bukti">×</button></form>
+            <h3 id="attendance-proof-title">Foto bukti kehadiran</h3>
+            <img id="attendance-proof-image" alt="Foto bukti kehadiran anggota">
+            <p>Foto dihapus otomatis 24 jam setelah diunggah.</p>
+          </dialog>
         </section>
 
         <section class="secretariat-subpanel" id="letters-panel" role="tabpanel" aria-labelledby="tab-letters" hidden>

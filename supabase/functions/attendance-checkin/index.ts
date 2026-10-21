@@ -1,6 +1,6 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://cssmora.vercel.app",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-attendance-cleanup-secret",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Content-Type": "application/json",
   "Cache-Control": "no-store",
@@ -16,17 +16,6 @@ async function hmacBytes(secret: string, message: string) {
   return new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message)));
 }
 const toHex = (bytes: Uint8Array) => Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
-async function rotatingCode(secret: string, eventId: string, thirtySecondWindow: number) {
-  const bytes = await hmacBytes(secret, "cssmora-attendance:" + eventId + ":" + thirtySecondWindow);
-  const randomValue = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0, false);
-  return String(randomValue % 10000).padStart(4, "0");
-}
-const safeEqual = (left: string, right: string) => {
-  if (left.length !== right.length) return false;
-  let difference = 0;
-  for (let index = 0; index < left.length; index++) difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
-  return difference === 0;
-};
 async function recordAttempt(supabaseUrl: string, headers: Record<string, string>, eventId: string, limiterKey: string, windowStart: string) {
   const response = await fetch(supabaseUrl + "/rest/v1/rpc/increment_secretariat_attendance_code_attempt", {
     method: "POST",
@@ -39,7 +28,7 @@ async function recordAttempt(supabaseUrl: string, headers: Record<string, string
 function requestIp(request: Request) {
   return request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 }
-async function adminCode(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>) {
+async function adminProofUrl(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>) {
   const authorization = request.headers.get("Authorization") ?? "";
   if (!authorization.startsWith("Bearer ")) return json({ error: "Silakan login sebagai pengurus." }, 401);
   const userResponse = await fetch(supabaseUrl + "/auth/v1/user", {
@@ -53,20 +42,218 @@ async function adminCode(request: Request, url: URL, supabaseUrl: string, servic
   if (!adminResponse.ok) return json({ error: "Akses pengurus tidak dapat diperiksa." }, 500);
   if (!(await adminResponse.json()).length) return json({ error: "Akun ini tidak memiliki akses pengurus." }, 403);
   const eventId = url.searchParams.get("event_id") ?? "";
-  if (!isUuid(eventId)) return json({ error: "Kegiatan absensi tidak valid." }, 400);
-  const eventResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?select=id,event_date,status&id=eq." + encodeURIComponent(eventId) + "&limit=1", { headers });
-  if (!eventResponse.ok) return json({ error: "Kegiatan tidak dapat dimuat." }, 500);
-  const event = (await eventResponse.json())[0];
-  if (!event) return json({ error: "Kegiatan tidak ditemukan." }, 404);
-  if (event.status !== "open") return json({ active: false, message: "Absensi kegiatan ini sudah ditutup." });
-  if (event.event_date !== todayJakarta()) return json({ active: false, message: "Kode tersedia pada tanggal kegiatan." });
-  const now = Date.now();
-  const windowIndex = Math.floor(now / 30000);
-  return json({
-    active: true,
-    code: await rotatingCode(serviceKey, event.id, windowIndex),
-    seconds_remaining: Math.ceil((30000 - (now % 30000)) / 1000),
+  const memberId = url.searchParams.get("member_id") ?? "";
+  if (!isUuid(eventId) || !isUuid(memberId)) return json({ error: "Data foto bukti tidak valid." }, 400);
+  const query = new URLSearchParams({
+    select: "proof_path,proof_deleted_at",
+    event_id: "eq." + eventId,
+    member_id: "eq." + memberId,
+    limit: "1",
   });
+  const recordResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + query, { headers });
+  if (!recordResponse.ok) return json({ error: "Rekap absensi belum dapat dimuat." }, 500);
+  const record = (await recordResponse.json())[0];
+  if (!record) return json({ error: "Rekap absensi tidak ditemukan." }, 404);
+  if (record.proof_deleted_at) return json({ error: "Foto bukti sudah dihapus otomatis setelah 24 jam." }, 410);
+  if (!record.proof_path) return json({ error: "Foto bukti tidak tersedia." }, 404);
+  const safePath = String(record.proof_path).split("/").map(encodeURIComponent).join("/");
+  const signResponse = await fetch(supabaseUrl + "/storage/v1/object/sign/attendance-proofs/" + safePath, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ expiresIn: 300 }),
+  });
+  const signed = await signResponse.json().catch(() => ({}));
+  if (!signResponse.ok) return json({ error: "Foto bukti sudah tidak tersedia." }, 404);
+  const signedPath = signed.signedURL ?? signed.signedUrl;
+  if (!signedPath) return json({ error: "Tautan foto tidak dapat dibuat." }, 500);
+  return json({ signed_url: supabaseUrl + "/storage/v1" + signedPath });
+}
+async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>) {
+  const candidate = request.headers.get("x-attendance-cleanup-secret") ?? "";
+  if (candidate.length < 32) return json({ error: "Akses pembersihan ditolak." }, 401);
+  const verifyResponse = await fetch(supabaseUrl + "/rest/v1/rpc/verify_attendance_photo_cleanup_secret", {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_candidate: candidate }),
+  });
+  if (!verifyResponse.ok) return json({ error: "Pemeriksaan pembersihan gagal." }, 500);
+  if (await verifyResponse.json() !== true) return json({ error: "Akses pembersihan ditolak." }, 401);
+
+  const query = new URLSearchParams({
+    select: "event_id,member_id,proof_path,proof_uploaded_at,proof_expires_at",
+    proof_path: "not.is.null",
+    proof_expires_at: "lt." + new Date().toISOString(),
+    order: "proof_expires_at.asc",
+    limit: "100",
+  });
+  const recordsResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + query, { headers });
+  if (!recordsResponse.ok) return json({ error: "Daftar foto kedaluwarsa belum dapat dimuat." }, 500);
+  const rows = await recordsResponse.json();
+  if (!rows.length) return json({ success: true, deleted: 0, records_updated: 0 });
+
+  const now = new Date().toISOString();
+  const paths = rows
+    .map((row: { proof_path: string }) => String(row.proof_path ?? ""))
+    .filter((path: string) => /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/proof\.jpg$/i.test(path));
+  if (!paths.length) return json({ success: true, deleted: 0, records_updated: 0 });
+
+  const infoResults = await Promise.all(paths.map(async (path: string) => {
+    const safePath = path.split("/").map(encodeURIComponent).join("/");
+    const response = await fetch(supabaseUrl + "/storage/v1/object/info/attendance-proofs/" + safePath, { headers });
+    return { path, status: response.status, exists: response.ok };
+  }));
+  if (infoResults.some(item => !item.exists && item.status !== 404)) return json({ error: "Status foto lama belum dapat diperiksa." }, 500);
+  const existingPaths = infoResults.filter(item => item.exists).map(item => item.path);
+  const missingPaths = infoResults.filter(item => item.status === 404).map(item => item.path);
+  if (existingPaths.length) {
+    const removeResponse = await fetch(supabaseUrl + "/storage/v1/object/attendance-proofs", {
+      method: "DELETE",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ prefixes: existingPaths }),
+    });
+    if (!removeResponse.ok) return json({ error: "Foto lama belum dapat dihapus dari Storage." }, 500);
+  }
+
+  const clearRecords = async (expiredPaths: string[], deletedAt?: string) => {
+    if (!expiredPaths.length) return true;
+    const clearQuery = new URLSearchParams({ proof_path: "in.(" + expiredPaths.join(",") + ")" });
+    const body: Record<string, unknown> = { proof_path: null, proof_uploaded_at: null, proof_expires_at: null };
+    if (deletedAt) body.proof_deleted_at = deletedAt;
+    return (await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + clearQuery, {
+      method: "PATCH",
+      headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify(body),
+    })).ok;
+  };
+  const existingCleared = await clearRecords(existingPaths, now);
+  const missingCleared = await clearRecords(missingPaths);
+  if (!existingCleared || !missingCleared) return json({ error: "Foto sudah diproses, tetapi status penghapusan belum tercatat." }, 500);
+  return json({ success: true, deleted: existingPaths.length, reservations_cleared: missingPaths.length });
+}
+async function validateAttendanceMember(supabaseUrl: string, headers: Record<string, string>, eventId: string, input: Record<string, unknown>): Promise<{ error?: string; status?: number; member?: any; record?: any; cohort?: string; studyProgram?: string }> {
+  const memberId = String(input.member_id ?? "").trim();
+  const cohort = String(input.cohort ?? "").trim();
+  const studyProgram = String(input.study_program ?? "").trim();
+  if (!isUuid(memberId) || !cohort || !studyProgram) return { error: "Pilih angkatan, prodi, dan nama anggota." };
+  const memberQuery = new URLSearchParams({ select: "id,full_name,cohort,study_program", id: "eq." + memberId, limit: "1" });
+  const memberResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_members?" + memberQuery, { headers });
+  if (!memberResponse.ok) return { error: "Data anggota belum dapat diperiksa.", status: 500 };
+  const member = (await memberResponse.json())[0];
+  if (!member || String(member.cohort ?? "").trim() !== cohort || String(member.study_program ?? "").trim() !== studyProgram) {
+    return { error: "Data anggota tidak cocok dengan pilihan angkatan dan prodi.", status: 400 };
+  }
+  const recordQuery = new URLSearchParams({
+    select: "status,proof_path,proof_uploaded_at,proof_expires_at,proof_deleted_at",
+    event_id: "eq." + eventId,
+    member_id: "eq." + memberId,
+    limit: "1",
+  });
+  const recordResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + recordQuery, { headers });
+  if (!recordResponse.ok) return { error: "Data absensi belum dapat diperiksa.", status: 500 };
+  const record = (await recordResponse.json())[0];
+  if (!record) return { error: "Nama ini belum tercatat pada roster kegiatan. Hubungi sekretaris.", status: 403 };
+  if (record.status !== "belum") return { error: "Absensi sudah tercatat. Hubungi sekretaris bila perlu koreksi.", status: 409 };
+  return { member, record, cohort, studyProgram };
+}
+async function preparePhotoUpload(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, event: Record<string, unknown>, input: Record<string, unknown>) {
+  if (event.event_date !== todayJakarta()) return json({ error: "Absensi hanya tersedia pada tanggal kegiatan." }, 403);
+  const validated = await validateAttendanceMember(supabaseUrl, headers, String(event.id), input);
+  if (validated.error) return json({ error: validated.error }, validated.status ?? 400);
+  const member = validated.member as { id: string };
+  const record = validated.record as { proof_path?: string | null; proof_expires_at?: string | null };
+  const windowStart = new Date(Math.floor(Date.now() / 30000) * 30000).toISOString();
+  const ipHash = toHex(await hmacBytes(serviceKey, "cssmora-ip:" + requestIp(request)));
+  try {
+    const attempts = await recordAttempt(supabaseUrl, headers, String(event.id), "photo-ip:" + ipHash, windowStart);
+    if (attempts > 500) return json({ error: "Terlalu banyak permintaan dari jaringan ini. Tunggu sebentar lalu coba lagi." }, 429);
+    const memberAttempts = await recordAttempt(supabaseUrl, headers, String(event.id), "photo-member:" + member.id, windowStart);
+    if (memberAttempts > 3) return json({ error: "Percobaan unggah untuk anggota ini mencapai batas. Tunggu 30 detik." }, 429);
+  } catch {
+    return json({ error: "Pemeriksaan keamanan belum tersedia. Coba lagi sebentar." }, 503);
+  }
+
+  const path = String(event.id) + "/" + member.id + "/proof.jpg";
+  if (record.proof_path && record.proof_path !== path) return json({ error: "Foto bukti sudah disiapkan dengan jalur berbeda." }, 409);
+  if (record.proof_path === path && record.proof_expires_at && Date.parse(record.proof_expires_at) > Date.now()) {
+    const safePath = path.split("/").map(encodeURIComponent).join("/");
+    const existing = await fetch(supabaseUrl + "/storage/v1/object/info/attendance-proofs/" + safePath, { headers });
+    if (existing.ok) return json({ path, already_uploaded: true });
+  }
+
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const reserveQuery = new URLSearchParams({ event_id: "eq." + event.id, member_id: "eq." + member.id, status: "eq.belum" });
+  const reserveResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + reserveQuery, {
+    method: "PATCH",
+    headers: { ...headers, "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify({ proof_path: path, proof_expires_at: expiresAt, proof_deleted_at: null }),
+  });
+  if (!reserveResponse.ok) return json({ error: "Slot foto belum dapat disiapkan." }, 500);
+  if (!(await reserveResponse.json()).length) return json({ error: "Absensi sudah tercatat. Hubungi sekretaris bila perlu koreksi." }, 409);
+
+  const safePath = path.split("/").map(encodeURIComponent).join("/");
+  const signResponse = await fetch(supabaseUrl + "/storage/v1/object/upload/sign/attendance-proofs/" + safePath, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  const signed = await signResponse.json().catch(() => ({}));
+  if (!signResponse.ok) {
+    const existing = await fetch(supabaseUrl + "/storage/v1/object/info/attendance-proofs/" + safePath, { headers });
+    if (existing.ok) return json({ path, already_uploaded: true });
+    return json({ error: "Tautan unggah foto belum dapat dibuat." }, 500);
+  }
+  const signedPath = signed.url ?? signed.signedURL ?? signed.signedUrl;
+  if (!signedPath) return json({ error: "Tautan unggah foto tidak valid." }, 500);
+  const signedUrl = signedPath.startsWith("http") ? signedPath : supabaseUrl + "/storage/v1" + signedPath;
+  return json({ path, signed_upload_url: signedUrl, expires_in_seconds: 7200 });
+}
+async function finalizeAttendance(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, event: Record<string, unknown>, input: Record<string, unknown>) {
+  if (event.event_date !== todayJakarta()) return json({ error: "Absensi hanya tersedia pada tanggal kegiatan." }, 403);
+  const validated = await validateAttendanceMember(supabaseUrl, headers, String(event.id), input);
+  if (validated.error) return json({ error: validated.error }, validated.status ?? 400);
+  const member = validated.member as { id: string };
+  const record = validated.record as { proof_path?: string | null };
+  const expectedPath = String(event.id) + "/" + member.id + "/proof.jpg";
+  const photoPath = String(input.photo_path ?? "");
+  if (photoPath !== expectedPath || record.proof_path !== expectedPath) return json({ error: "Foto bukti belum berhasil diunggah." }, 400);
+  const safePath = photoPath.split("/").map(encodeURIComponent).join("/");
+  const infoResponse = await fetch(supabaseUrl + "/storage/v1/object/info/attendance-proofs/" + safePath, { headers });
+  if (!infoResponse.ok) return json({ error: "Foto belum ditemukan di penyimpanan. Coba kirim ulang." }, 400);
+  const info = await infoResponse.json();
+  const size = Number(info.size ?? info.metadata?.size ?? 0);
+  const contentType = String(info.contentType ?? info.content_type ?? info.metadata?.mimetype ?? "").toLowerCase();
+  if (!size || size > 512000 || contentType !== "image/jpeg") return json({ error: "Foto harus berupa JPG dengan ukuran maksimal 500 KB." }, 400);
+  const uploadedAt = new Date(info.createdAt ?? info.created_at ?? Date.now()).toISOString();
+  const expiresAt = new Date(Date.parse(uploadedAt) + 24 * 60 * 60 * 1000).toISOString();
+
+  const windowStart = new Date(Math.floor(Date.now() / 30000) * 30000).toISOString();
+  const ipHash = toHex(await hmacBytes(serviceKey, "cssmora-ip:" + requestIp(request)));
+  try {
+    const attempts = await recordAttempt(supabaseUrl, headers, String(event.id), "checkin-ip:" + ipHash, windowStart);
+    if (attempts > 500) return json({ error: "Terlalu banyak percobaan dari jaringan ini. Tunggu sebentar lalu coba lagi." }, 429);
+    const memberAttempts = await recordAttempt(supabaseUrl, headers, String(event.id), "checkin-member:" + member.id, windowStart);
+    if (memberAttempts > 3) return json({ error: "Percobaan check-in untuk anggota ini mencapai batas. Tunggu 30 detik." }, 429);
+  } catch {
+    return json({ error: "Pemeriksaan keamanan belum tersedia. Coba lagi sebentar." }, 503);
+  }
+
+  const updateQuery = new URLSearchParams({ event_id: "eq." + event.id, member_id: "eq." + member.id, status: "eq.belum" });
+  const saveResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + updateQuery, {
+    method: "PATCH",
+    headers: { ...headers, "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify({
+      status: "hadir",
+      proof_path: expectedPath,
+      proof_uploaded_at: uploadedAt,
+      proof_expires_at: expiresAt,
+      proof_deleted_at: null,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+  if (!saveResponse.ok) return json({ error: "Absensi belum tersimpan. Silakan coba lagi." }, 500);
+  const updatedRows = await saveResponse.json().catch(() => []);
+  if (!updatedRows.length) return json({ error: "Absensi sudah tercatat. Hubungi sekretaris bila perlu koreksi." }, 409);
+  return json({ success: true, message: "Absensi dan foto bukti berhasil dicatat." });
 }
 async function getActiveEvents(supabaseUrl: string, headers: Record<string, string>) {
   const query = new URLSearchParams({
@@ -146,15 +333,14 @@ Deno.serve(async (request: Request) => {
   if (!supabaseUrl || !serviceKey) return json({ error: "Layanan absensi belum siap." }, 500);
   const url = new URL(request.url);
   const headers = { apikey: serviceKey, Authorization: "Bearer " + serviceKey };
-  if (request.method === "GET" && url.searchParams.get("mode") === "code") {
-    return adminCode(request, url, supabaseUrl, serviceKey, headers);
-  }
-  if (request.method === "GET" && url.searchParams.get("mode") === "active") {
-    return getActiveEvents(supabaseUrl, headers);
-  }
+  const mode = url.searchParams.get("mode") ?? "";
+  if (request.method === "GET" && mode === "active") return getActiveEvents(supabaseUrl, headers);
+  if (request.method === "GET" && mode === "proof-url") return adminProofUrl(request, url, supabaseUrl, serviceKey, headers);
+  if (request.method === "POST" && mode === "cleanup") return cleanExpiredAttendancePhotos(request, supabaseUrl, serviceKey, headers);
 
   let input: Record<string, unknown> = {};
   if (request.method === "POST") input = await request.clone().json().catch(() => ({}));
+  const action = String(input.mode ?? "");
   const token = url.searchParams.get("token") ?? String(input.token ?? "");
   if (!isUuid(token)) return json({ error: "Tautan absensi tidak valid." }, 400);
   const eventUrl = supabaseUrl + "/rest/v1/secretariat_attendance_events?select=id,title,event_date,session_name,status&public_token=eq." + encodeURIComponent(token) + "&limit=1";
@@ -165,85 +351,10 @@ Deno.serve(async (request: Request) => {
   if (event.status !== "open") return json({ error: "Absensi kegiatan ini sudah ditutup." }, 410);
 
   if (request.method === "GET") {
-    if (url.searchParams.get("mode") === "options") {
-      return rosterOptions(request, url, supabaseUrl, serviceKey, headers, event);
-    }
+    if (mode === "options") return rosterOptions(request, url, supabaseUrl, serviceKey, headers, event);
     return json({ title: event.title, event_date: event.event_date, session_name: event.session_name });
   }
-  if (event.event_date !== todayJakarta()) return json({ error: "Tautan absensi hanya aktif pada tanggal kegiatan." }, 403);
-  const memberId = String(input.member_id ?? "").trim();
-  const cohort = String(input.cohort ?? "").trim();
-  const studyProgram = String(input.study_program ?? "").trim();
-  const suppliedCode = String(input.checkin_code ?? "").trim();
-  if (!isUuid(memberId) || !cohort || !studyProgram) {
-    return json({ error: "Pilih angkatan, prodi, dan nama anggota." }, 400);
-  }
-  if (!/^\d{4}$/.test(suppliedCode)) return json({ error: "Masukkan kode check-in 4 digit." }, 400);
-
-  const windowStart = new Date(Math.floor(Date.now() / 30000) * 30000).toISOString();
-  const ipHash = toHex(await hmacBytes(serviceKey, "cssmora-ip:" + requestIp(request)));
-  let ipAttempts: number;
-  try {
-    ipAttempts = await recordAttempt(supabaseUrl, headers, event.id, "ip:" + ipHash, windowStart);
-  } catch {
-    return json({ error: "Pemeriksaan keamanan belum tersedia. Coba lagi sebentar." }, 503);
-  }
-  if (ipAttempts > 500) return json({ error: "Terlalu banyak percobaan dari jaringan ini. Tunggu 30 detik lalu coba lagi." }, 429);
-
-  const memberQuery = new URLSearchParams({
-    select: "id,full_name,cohort,study_program",
-    id: "eq." + memberId,
-    limit: "1",
-  });
-  const memberResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_members?" + memberQuery.toString(), { headers });
-  if (!memberResponse.ok) return json({ error: "Data anggota belum dapat diperiksa." }, 500);
-  const member = (await memberResponse.json())[0];
-  if (!member || String(member.cohort ?? "").trim() !== cohort || String(member.study_program ?? "").trim() !== studyProgram) {
-    return json({ error: "Data anggota tidak cocok dengan pilihan angkatan dan prodi." }, 400);
-  }
-
-  const recordQuery = new URLSearchParams({
-    select: "status",
-    event_id: "eq." + event.id,
-    member_id: "eq." + member.id,
-    limit: "1",
-  });
-  const recordResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + recordQuery.toString(), { headers });
-  if (!recordResponse.ok) return json({ error: "Data absensi belum dapat diperiksa." }, 500);
-  const record = (await recordResponse.json())[0];
-  if (!record) return json({ error: "Nama ini belum tercatat pada roster kegiatan. Hubungi sekretaris." }, 403);
-  if (record.status !== "belum") return json({ error: "Absensi sudah tercatat. Hubungi sekretaris bila perlu koreksi." }, 409);
-
-  let memberAttempts: number;
-  try {
-    memberAttempts = await recordAttempt(supabaseUrl, headers, event.id, "member:" + member.id, windowStart);
-  } catch {
-    return json({ error: "Pemeriksaan keamanan belum tersedia. Coba lagi sebentar." }, 503);
-  }
-  if (memberAttempts > 3) return json({ error: "Percobaan kode untuk anggota ini mencapai batas. Tunggu 30 detik." }, 429);
-
-  const now = Date.now();
-  const windowIndex = Math.floor(now / 30000);
-  const currentCode = await rotatingCode(serviceKey, event.id, windowIndex);
-  let codeValid = safeEqual(suppliedCode, currentCode);
-  if (now % 30000 < 5000) {
-    const previousCode = await rotatingCode(serviceKey, event.id, windowIndex - 1);
-    codeValid = safeEqual(suppliedCode, previousCode) || codeValid;
-  }
-  if (!codeValid) return json({ error: "Kode salah atau sudah berganti. Minta kode terbaru di lokasi." }, 403);
-
-  const updateQuery = new URLSearchParams({
-    event_id: "eq." + event.id,
-    member_id: "eq." + member.id,
-    status: "eq.belum",
-  });
-  const saveResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + updateQuery.toString(), {
-    method: "PATCH",
-    headers: { ...headers, "Content-Type": "application/json", Prefer: "return=representation" },
-    body: JSON.stringify({ status: "hadir", updated_at: new Date().toISOString() }),
-  });
-  if (!saveResponse.ok) return json({ error: "Absensi belum tersimpan. Silakan coba lagi." }, 500);
-  const updatedRows = await saveResponse.json().catch(() => []);
-  if (!updatedRows.length) return json({ error: "Absensi sudah tercatat. Hubungi sekretaris bila perlu koreksi." }, 409);
-  return json({ success: true, message: "Absensi berhasil dicatat." });
+  if (action === "prepare_upload") return preparePhotoUpload(request, supabaseUrl, serviceKey, headers, event, input);
+  if (action === "finalize") return finalizeAttendance(request, supabaseUrl, serviceKey, headers, event, input);
+  return json({ error: "Unggah foto bukti diperlukan untuk mencatat kehadiran." }, 400);
 });

@@ -8,9 +8,9 @@
   <title>Absensi Anggota · CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./absen.css?v=20261021-code30">
+  <link rel="stylesheet" href="./absen.css?v=20261021-photo24h">
   <script src="./supabase-config.js" defer></script>
-  <script src="./absen.js?v=20261021-code30" defer></script>
+  <script src="./absen.js?v=20261021-photo24h" defer></script>
 </head>
 <body class="checkin-page">
   <header class="site-header"><div class="wrap header-inner">
@@ -35,12 +35,16 @@
         <select id="checkin-program" name="study_program" required disabled><option value="">Pilih prodi</option></select>
         <label for="checkin-member">Nama</label>
         <select id="checkin-member" name="member_id" required disabled><option value="">Pilih nama</option></select>
-        <label for="checkin-code">Kode absensi · 4 digit</label>
-        <input id="checkin-code" name="checkin_code" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required aria-describedby="checkin-code-hint">
-        <small class="checkin-code-hint" id="checkin-code-hint">Kode ditampilkan pengurus di lokasi dan berganti setiap 30 detik.</small>
+        <label for="checkin-photo">Foto bukti kehadiran</label>
+        <input id="checkin-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required aria-describedby="checkin-photo-hint">
+        <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat, maksimal 500 KB. File disimpan 24 jam.</small>
+        <div class="checkin-photo-preview" id="photo-preview" hidden>
+          <img id="photo-preview-image" alt="Pratinjau foto bukti kehadiran">
+          <span id="photo-size"></span>
+        </div>
         <button class="admin-button" id="checkin-submit" type="submit">Catat kehadiran <span aria-hidden="true">↗</span></button>
       </form>
-      <p class="checkin-footnote">Tanpa unggah foto. Absensi tersedia saat pengurus membuka kegiatan hari ini.</p>
+      <p class="checkin-footnote">Foto hanya bisa dikirim saat kegiatan dibuka. Bukti dihapus otomatis setelah 24 jam; rekap kehadiran tetap tersimpan.</p>
     </section>
   </main>
 </body>
