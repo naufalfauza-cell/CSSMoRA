@@ -1530,3 +1530,237 @@
 .attendance-proof-dialog p{margin:10px 0 0;color:var(--muted);font-size:11px}
 .attendance-proof-dialog[open]{animation:proof-dialog-in .16s ease-out}
 @keyframes proof-dialog-in{from{opacity:0;transform:translateY(6px) scale(.99)}to{opacity:1;transform:none}}
+
+/* Admin workspace: AkunPro's compact shell and type scale, in CSSMoRA green. */
+.admin-page{
+  min-height:100vh;
+  background:#f6f8fc;
+  color:#142b49;
+  font:14px/1.55 'Plus Jakarta Sans',sans-serif;
+}
+.admin-page :is(button,input,select,textarea){font-family:'Plus Jakarta Sans',sans-serif}
+.admin-page :is(h1,h2,h3,h4){font-family:'DM Serif Display',Georgia,serif;font-weight:400;letter-spacing:-.025em}
+.admin-page .text-button,.admin-page .admin-button,.admin-page .record-actions button{font-family:'Plus Jakarta Sans',sans-serif}
+.admin-page :focus-visible{outline:3px solid #6b9b78;outline-offset:2px}
+
+/* The login remains a clean entry screen; the signed-in view becomes a full app shell. */
+.admin-page .site-header{height:60px;background:#fff;border-color:#e6edf5}
+.admin-page .header-inner{width:calc(100% - 48px);max-width:none;gap:16px}
+.admin-page .brand-logo{width:38px;height:38px}
+.admin-page .brand-copy strong{font:700 14px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#142b49}
+.admin-page .header-action{padding:7px 12px;border:1px solid #e6edf5;border-radius:8px;background:#fff;color:#244d3f;font-size:12px}
+.admin-page .header-action:hover{border-color:#c9d8ca;background:#f7faf7;color:#244d3f}
+.admin-page .admin-main.wrap{width:min(100% - 48px,1840px);max-width:1840px;padding-top:32px;padding-bottom:48px}
+.admin-page .admin-main:has(#auth-view:not([hidden])){min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center}
+.admin-page .auth-card{width:min(100%,430px);max-width:430px;margin:0;padding:32px;background:#fff;border:1px solid #e6edf5;border-radius:16px;box-shadow:0 4px 16px #142b490d}
+.admin-page .auth-kicker{margin-bottom:7px;color:#244d3f;font-size:10px;font-weight:700;letter-spacing:.08em}
+.admin-page .auth-card h1{font:400 27px/1.2 'DM Serif Display',Georgia,serif;letter-spacing:-.02em;color:#142b49}
+.admin-page .auth-help{margin-top:4px;color:#5b6f89;font-size:13px}
+.admin-page .auth-card form{gap:7px;margin-top:22px}
+.admin-page .auth-card label,.admin-page .editor-card label{margin:0;color:#5b6f89;font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:none}
+.admin-page .auth-card input{min-height:42px;padding:9px 12px;border:1px solid #cad6e5;border-radius:8px;background:#fff;color:#142b49;font-size:13px}
+.admin-page .auth-card .admin-button{min-height:40px;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:13px}
+.admin-page .auth-card .password-help{margin-top:10px;color:#244d3f;font-size:12px;text-decoration:none}
+.admin-page .auth-card .password-help:hover{text-decoration:underline;text-underline-offset:3px}
+
+.admin-page:has(#admin-view:not([hidden]))>.site-header{display:none}
+.admin-page:has(#admin-view:not([hidden]))>.admin-main.wrap{width:100%;max-width:none;min-height:100vh;margin:0;padding:0;display:block}
+.admin-page .admin-dashboard{width:100%;max-width:none;margin:0}
+.admin-page .admin-workspace-shell{grid-template-columns:240px minmax(0,1fr);gap:0;min-height:100vh;margin:0;align-items:stretch}
+.admin-page .admin-sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;padding:20px 14px 16px;border:0;border-right:1px solid #ffffff1a;border-radius:0;background:#244d3f;box-shadow:none;color:#fff}
+.admin-page .app-sidebar-brand{min-height:44px;padding:0 8px 18px;border-bottom:1px solid #ffffff20;color:#fff}
+.admin-page .app-sidebar-brand img{width:36px;height:36px;border-radius:50%;background:#fff}
+.admin-page .app-sidebar-brand strong{font:700 14px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:0}
+.admin-page .app-sidebar-brand small{font:500 10px/1.3 'Plus Jakarta Sans',sans-serif;color:#d7e5d9}
+.admin-page .sidebar-account-card{min-height:48px;margin:14px 0 18px;padding:8px;border:1px solid #ffffff20;border-radius:8px;background:#ffffff0b;color:#fff}
+.admin-page .sidebar-account-mark{width:30px;height:30px;background:#ffffff1a;color:#fff;font:700 10px 'Plus Jakarta Sans',sans-serif}
+.admin-page .sidebar-account-copy strong{font:600 11px/1.3 'Plus Jakarta Sans',sans-serif;color:#fff}
+.admin-page .sidebar-nav-label{padding:0 10px 8px;color:#ffffff80;font:700 9px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em}
+.admin-page .admin-sidebar .admin-tabs.module-grid{gap:3px}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab{min-height:42px;padding:5px 9px;border-color:transparent;border-radius:8px;color:#ffffffbf;transition:background .15s,color .15s}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab:hover{border-color:transparent;background:#ffffff12;color:#fff}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active{border-color:#ffffff20;background:#ffffff19;color:#fff;box-shadow:inset 3px 0 #d8f17c}
+.admin-page .admin-sidebar .admin-tabs.module-grid .module-icon{flex:0 0 28px;width:28px;height:28px;min-height:28px;border-radius:7px;background:#ffffff12;color:#d8f17c;font:600 12px 'Plus Jakarta Sans',sans-serif}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active .module-icon{background:#ffffff20;color:#fff}
+.admin-page .admin-sidebar .admin-tabs.module-grid .module-copy strong{font:600 12px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:0}
+.admin-page .admin-workspace-content{min-width:0;background:#f6f8fc}
+.admin-page .admin-topbar{position:sticky;top:0;z-index:20;min-height:60px;padding:0 32px;border-bottom:1px solid #e6edf5;background:#fff}
+.admin-page .admin-topbar-leading{gap:10px}
+.admin-page .admin-topbar-leading h2{font:400 20px/1.25 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
+.admin-page .sidebar-toggle{width:32px;height:32px;border-color:#e6edf5;border-radius:8px;background:#f1f5fb;color:#38506d;font-size:15px}
+.admin-page .admin-topbar-user{gap:11px}
+.admin-page .admin-user-copy span{color:#8090a3;font:700 8px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em}
+.admin-page .admin-user-copy strong{font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:#40556e}
+.admin-page .admin-user-avatar{width:32px;height:32px;flex-basis:32px;border:0;background:#e8f1e9;color:#244d3f;font:700 9px 'Plus Jakarta Sans',sans-serif}
+.admin-page .admin-topbar-user #logout{padding:7px 10px;border-color:#e6edf5;border-radius:8px;color:#41546b;font:600 11px 'Plus Jakarta Sans',sans-serif}
+.admin-page .admin-topbar-user #logout:hover{background:#f1f5fb}
+.admin-page .admin-content-area{padding:26px 32px 40px;background:#f6f8fc}
+.admin-page .admin-content-area>.management-panel{width:100%;max-width:none;margin:0}
+.admin-page .admin-content-area .admin-kicker{display:none}
+.admin-page .secretariat-management{margin:0}
+.admin-page .secretariat-tabs,.admin-page .agenda-admin-tabs{width:max-content;max-width:100%;margin:0 0 16px;padding:3px;gap:2px;border:0;border-radius:8px;background:#edf1f6}
+.admin-page .secretariat-tab,.admin-page .agenda-admin-tab{min-height:34px;padding:0 13px;border-radius:6px;color:#5b6f89;font:600 12px 'Plus Jakarta Sans',sans-serif}
+.admin-page .secretariat-tab:hover,.admin-page .agenda-admin-tab:hover{background:#e4eaf2;color:#244d3f}
+.admin-page .secretariat-tab.is-active,.admin-page .agenda-admin-tab.is-active{background:#fff;color:#244d3f;box-shadow:0 1px 4px #142b4912}
+.admin-page .secretariat-intro{margin:0 0 14px}
+.admin-page .secretariat-intro h3,.admin-page .program-library-heading h3{font:400 21px/1.25 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
+.admin-page .secretariat-intro p,.admin-page .admin-muted{margin-top:4px;color:#5b6f89;font-size:12px;line-height:1.45}
+.admin-page .member-intro{display:none}
+
+/* Consistent cards, compact controls, and readable tables across each module. */
+.admin-page :is(.editor-card,.records-card,.module-placeholder-card){min-width:0;padding:18px;border:1px solid #e6edf5;border-radius:12px;background:#fff;box-shadow:0 1px 3px #142b490d,0 4px 12px #142b4908}
+.admin-page .admin-columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:0}
+.admin-page .editor-heading{align-items:center;gap:12px;margin:0 0 12px}
+.admin-page .editor-heading h3,.admin-page .module-placeholder-card h3{margin:0;font:400 17px/1.3 'DM Serif Display',Georgia,serif;letter-spacing:0;color:#142b49}
+.admin-page .record-count,.admin-page .member-table-count{padding:4px 8px;border:0;border-radius:6px;background:#e8f1e9;color:#244d3f;font:600 11px 'Plus Jakarta Sans',sans-serif}
+.admin-page .editor-card form{gap:7px;margin-top:12px}
+.admin-page .editor-card label:not(.publish-toggle){margin-top:3px;color:#5b6f89;font-size:11px;font-weight:700;letter-spacing:0;text-transform:none}
+.admin-page :is(.editor-card input,.editor-card select,.editor-card textarea,.auth-card input,.member-tools input[type=search],.member-column-filter,.letter-archive-form input,.letter-archive-form select){min-height:36px;padding:8px 10px;border:1px solid #cad6e5;border-radius:8px;background:#fff;color:#142b49;font:400 12px/1.35 'Plus Jakarta Sans',sans-serif}
+.admin-page :is(.editor-card input,.editor-card select,.editor-card textarea,.auth-card input,.member-tools input[type=search],.member-column-filter,.letter-archive-form input,.letter-archive-form select):focus{outline:0;border-color:#6d9a78;box-shadow:0 0 0 3px #244d3f14}
+.admin-page .editor-card textarea{min-height:84px;resize:vertical}
+.admin-page .form-two{gap:10px}
+.admin-page .publish-toggle{gap:9px;margin-top:5px;padding:10px;border:1px solid #e6edf5;border-radius:8px;background:#f8fafc}
+.admin-page .publish-toggle input{width:15px;height:15px;accent-color:#244d3f}
+.admin-page .publish-toggle strong{font-size:11px;font-weight:600;color:#243b56}
+.admin-page .publish-toggle small{font-size:10px;line-height:1.4;color:#687e97}
+.admin-page .admin-button{min-height:38px;margin-top:7px;padding:9px 12px;border-radius:8px;background:#244d3f;color:#fff;font:600 12px 'Plus Jakarta Sans',sans-serif;transition:background .15s,transform .15s}
+.admin-page .admin-button:hover:not(:disabled){background:#1d4235;transform:translateY(-1px);filter:none}
+.admin-page .text-button{padding:6px 8px;border-radius:7px;color:#244d3f;font:600 11px 'Plus Jakarta Sans',sans-serif;text-decoration:none}
+.admin-page .text-button:hover{background:#edf4ee}
+.admin-page .record-list,.admin-page .program-record-list,.admin-page .secretariat-record-list{gap:7px;max-height:calc(100vh - 250px);padding-right:2px}
+.admin-page .record-row,.admin-page .program-record,.admin-page .attendance-event-card,.admin-page .letter-record{gap:10px;padding:10px;border:1px solid #e6edf5;border-radius:9px;background:#fff;box-shadow:none}
+.admin-page .record-row h4,.admin-page .program-record-copy>strong{font:600 13px/1.35 'Plus Jakarta Sans',sans-serif;letter-spacing:0;color:#142b49}
+.admin-page .record-row p,.admin-page .record-row p strong{margin-top:3px;color:#5b6f89;font:400 11px/1.5 'Plus Jakarta Sans',sans-serif}
+.admin-page .record-status{margin-top:6px;padding:3px 7px;border-radius:5px;background:#edf1f6;color:#5b6f89;font:600 9px/1.35 'Plus Jakarta Sans',sans-serif;letter-spacing:.02em}
+.admin-page .record-status.published{background:#e7f2e7;color:#2f6c43}
+.admin-page .record-actions{gap:5px}
+.admin-page .record-actions button,.admin-page .program-record-actions button{min-height:28px;padding:5px 9px;border:1px solid #e6edf5;border-radius:7px;background:#fff;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
+.admin-page .record-actions button:hover,.admin-page .program-record-actions button:hover{border-color:#c4d7c7;background:#f6faf6}
+.admin-page .record-actions button.delete{color:#a23e38}
+.admin-page .records-empty{padding:24px 12px;border:1px dashed #d8e1eb;border-radius:9px;background:#f8fafc;color:#687e97;font-size:12px}
+.admin-page .form-message{min-height:0;margin:4px 0 0;font-size:11px;line-height:1.45}
+.admin-page .form-message:empty{display:none}
+.admin-page .agenda-next-step{margin:14px 0 0;padding:12px 14px;border:1px solid #dce7dc;border-radius:9px;background:#f5f9f4}
+.admin-page .agenda-next-step>span{font-size:9px}
+.admin-page .agenda-next-step>strong{font-size:11px}
+.admin-page .agenda-next-step>button{padding:8px 11px;border-radius:7px;font:600 11px 'Plus Jakarta Sans',sans-serif}
+
+/* Secretary screens: filters beside the full table; compact entry and history panes. */
+.admin-page .member-workspace{grid-template-columns:minmax(0,1fr) 270px;gap:14px;font-size:13px}
+.admin-page .member-table-card,.admin-page .member-editor-card{padding:16px;border-radius:12px}
+.admin-page .member-table-heading{margin-bottom:10px}
+.admin-page .member-table-heading h3{font:400 17px/1.3 'DM Serif Display',Georgia,serif}
+.admin-page .member-tools{gap:8px;margin:0 0 10px}
+.admin-page .member-tools input[type=search]{flex:1 1 190px;min-height:36px;font-size:12px}
+.admin-page .member-data-actions{gap:5px}
+.admin-page .member-data-button{min-height:32px;padding:6px 9px;border:1px solid #e6edf5;border-radius:7px;background:#fff;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
+.admin-page .member-data-button:hover{border-color:#c4d7c7;background:#f6faf6}
+.admin-page .member-filter-label{margin:0 0 4px;color:#5b6f89;font-size:10px;font-weight:600;letter-spacing:0;text-transform:none}
+.admin-page .member-column-filter{min-width:110px;min-height:31px;padding:6px 22px 6px 8px;font-size:10px}
+.admin-page .member-table-card .member-data-table{min-width:700px}
+.admin-page .member-table-card .secretariat-table{font-size:12px}
+.admin-page .member-table-card .secretariat-table th{padding:9px 10px;background:#f1f5fb;color:#5b6f89;font-size:9px;letter-spacing:.04em}
+.admin-page .member-table-card .secretariat-table td{padding:9px 10px;border-color:#e6edf5;font-size:11px}
+.admin-page .member-table-card .secretariat-table td strong{font-size:12px;line-height:1.35}
+.admin-page .member-table-card .secretariat-table td small{font-size:10px;line-height:1.35}
+.admin-page .member-table-card .secretariat-table .record-status{font-size:9px}
+.admin-page .member-editor-card .editor-heading h3{font-size:16px}
+.admin-page .member-editor-card form{gap:6px;margin-top:10px}
+.admin-page .member-editor-card form>label:not(.publish-toggle){margin-top:2px;font-size:10px}
+.admin-page .member-editor-card :is(input:not([type=checkbox]),select){min-height:34px;padding:7px 9px;border-radius:7px;font-size:11px}
+.admin-page .member-editor-card .form-two{gap:7px}
+.admin-page .member-editor-card .publish-toggle{padding:8px}
+.admin-page .member-editor-card .publish-toggle strong{font-size:10px}
+.admin-page .member-editor-card .publish-toggle small{font-size:9px}
+.admin-page .member-editor-card .admin-button{min-height:36px;font-size:11px}
+.admin-page .member-options-card{padding:14px!important;border-radius:12px!important}
+.admin-page .member-option-label{margin:9px 0 5px;color:#5b6f89;font-size:10px}
+.admin-page .member-status-filter{min-height:34px;border-color:#cad6e5;border-radius:7px;font:400 11px 'Plus Jakarta Sans',sans-serif}
+.admin-page .member-stats>div{padding:8px;border-color:#e6edf5;border-radius:8px;background:#f8fafc}
+.admin-page .member-stats span{font-size:9px}
+.admin-page .member-stats strong{font:500 15px 'DM Mono',monospace;color:#244d3f}
+.admin-page .member-option-button{min-height:32px;padding:6px 8px;border-color:#e6edf5;border-radius:7px;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
+.admin-page .member-option-button>span{width:20px;height:20px;border-radius:6px;background:#e8f1e9}
+
+.admin-page .secretariat-workspace{grid-template-columns:168px minmax(0,1fr) 280px;gap:12px}
+.admin-page .secretariat-options-card,.admin-page .attendance-events-card,.admin-page .letter-register-card,.admin-page .attendance-editor-card,.admin-page .letter-editor-card{padding:14px!important;border-radius:12px!important}
+.admin-page .secretariat-options-card .editor-heading h3,.admin-page .attendance-events-card .editor-heading h3,.admin-page .letter-register-card .editor-heading h3,.admin-page .attendance-editor-card .editor-heading h3,.admin-page .letter-editor-card .editor-heading h3{font-size:15px!important}
+.admin-page .attendance-events-card .secretariat-record-list,.admin-page .letter-register-card .secretariat-record-list{max-height:calc(100vh - 290px);min-height:160px}
+.admin-page .attendance-event-card{grid-template-columns:minmax(0,1fr) auto;padding:9px}
+.admin-page .attendance-event-card .secretariat-record-select strong{font-size:11px}
+.admin-page .attendance-event-card .secretariat-record-select small{font-size:10px}
+.admin-page .attendance-event-actions button{padding:5px 8px;font-size:9px}
+.admin-page .attendance-editor-card form,.admin-page .letter-editor-card form{gap:7px;margin-top:10px}
+.admin-page .attendance-editor-card form>label:not(.publish-toggle),.admin-page .letter-editor-card form>label:not(.publish-toggle){font-size:10px}
+.admin-page .attendance-editor-card :is(input,select),.admin-page .letter-editor-card :is(input,select){min-height:34px;padding:7px 8px;font-size:11px}
+.admin-page .attendance-editor-card .admin-button,.admin-page .letter-editor-card .admin-button{min-height:36px;padding:8px 10px;font-size:11px}
+.admin-page .letter-total{font:500 17px 'DM Mono',monospace;color:#244d3f}
+.admin-page .letter-record{gap:5px;padding:9px}
+.admin-page .letter-record-heading>strong{font:600 11px 'DM Mono',monospace}
+.admin-page .letter-record>p{margin:1px 0;font:600 11px/1.4 'Plus Jakarta Sans',sans-serif}
+.admin-page .letter-record>small{font-size:10px;line-height:1.4}
+.admin-page .letter-archive-form{grid-template-columns:minmax(0,1fr) minmax(110px,auto);gap:5px;margin-top:5px}
+.admin-page .letter-archive-form input,.admin-page .letter-archive-form select{min-height:32px;padding:6px 7px;font-size:10px}
+.admin-page .letter-archive-form button{grid-column:1/-1;justify-self:start;padding:6px 9px;border-radius:7px;background:#e8f1e9;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
+.admin-page .attendance-roster-panel{margin-top:12px!important;padding:16px!important;border-radius:12px!important}
+.admin-page .attendance-summary{gap:7px;margin:10px 0}
+.admin-page .attendance-summary span{padding:6px 10px;border-color:#e6edf5;border-radius:7px;background:#f1f5fb;font-size:10px}
+.admin-page .attendance-summary strong{font:500 12px 'DM Mono',monospace;color:#244d3f}
+.admin-page .secretariat-table-wrap{border-color:#e6edf5;border-radius:9px}
+.admin-page .secretariat-table{font:400 12px 'Plus Jakarta Sans',sans-serif}
+.admin-page .secretariat-table th{padding:9px 10px;background:#f1f5fb;color:#5b6f89;font-size:9px;letter-spacing:.04em}
+.admin-page .secretariat-table td{padding:9px 10px;border-color:#e6edf5;font-size:11px}
+.admin-page .secretariat-table td strong{font-size:12px}
+.admin-page .secretariat-table td small{font-size:10px}
+.admin-page .secretariat-table td :is(select,input){min-height:31px;padding:6px 8px;font-size:11px}
+.admin-page .attendance-proof-button{padding:5px 8px;border-radius:7px;background:#e8f1e9;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
+.admin-page .module-placeholder-card{grid-template-columns:40px minmax(0,1fr) auto;padding:18px}
+.admin-page .module-placeholder-card>.module-icon{width:36px;height:36px;border-radius:8px;background:#e8f1e9;color:#244d3f}
+.admin-page .module-placeholder-card p{margin-top:4px;color:#5b6f89;font-size:12px}
+.admin-page .module-placeholder-card>.module-state{padding:4px 8px;border-radius:6px;font-size:10px}
+
+@media(max-width:1200px){
+ .admin-page .member-workspace{grid-template-columns:minmax(0,1fr) 250px}
+ .admin-page .secretariat-workspace{grid-template-columns:150px minmax(0,1fr) 250px;gap:9px}
+ .admin-page .admin-content-area{padding:22px 20px 32px}
+ .admin-page .admin-topbar{padding-inline:20px}
+}
+@media(max-width:1000px){
+ .admin-page .member-workspace{grid-template-columns:minmax(0,1fr)}
+ .admin-page .member-table-card,.admin-page .member-entry-rail{grid-column:1;grid-row:auto}
+ .admin-page .member-entry-rail{justify-self:end;width:min(100%,380px)}
+ .admin-page .secretariat-workspace{grid-template-columns:160px minmax(0,1fr)}
+ .admin-page .secretariat-workspace>.editor-card{grid-column:2}
+ .admin-page .admin-columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+@media(max-width:900px){
+ .admin-page:has(#admin-view:not([hidden]))>.admin-main.wrap{padding:0}
+ .admin-page .admin-workspace-shell{display:block;min-height:100vh}
+ .admin-page .admin-sidebar{position:fixed;inset:0 auto 0 0;z-index:40;width:min(292px,86vw);height:100dvh;padding:20px 14px;transform:translateX(-102%);transition:transform .22s ease;box-shadow:12px 0 36px #10201935}
+ .admin-page .admin-app-shell.is-sidebar-open .admin-sidebar{transform:translateX(0)}
+ .admin-page .admin-app-shell.is-sidebar-open .admin-sidebar-scrim{position:fixed;inset:0;z-index:39;display:block;width:100%;height:100%;border:0;background:#10201966}
+ .admin-page .admin-workspace-content{min-height:100vh}
+ .admin-page .admin-topbar{min-height:58px;padding-inline:16px}
+ .admin-page .admin-content-area{padding:20px 16px 30px}
+}
+@media(max-width:700px){
+ .admin-page .admin-columns,.admin-page .secretariat-workspace{grid-template-columns:minmax(0,1fr)}
+ .admin-page .secretariat-workspace>.editor-card{grid-column:1}
+ .admin-page .member-entry-rail{justify-self:stretch;width:100%}
+ .admin-page .secretariat-options-rail,.admin-page .secretariat-workspace>.records-card,.admin-page .secretariat-workspace>.editor-card{grid-column:1}
+ .admin-page .admin-topbar{gap:8px;padding-inline:12px}
+ .admin-page .admin-topbar-leading{gap:8px}
+ .admin-page .admin-topbar-leading h2{font-size:17px}
+ .admin-page .admin-topbar-user{gap:6px}
+ .admin-page .admin-user-copy span{display:none}
+ .admin-page .admin-user-copy strong{max-width:100px;font-size:9px}
+ .admin-page .admin-user-avatar{width:28px;height:28px;flex-basis:28px}
+ .admin-page .admin-topbar-user #logout{padding:6px 8px;font-size:10px}
+ .admin-page .admin-content-area{padding:16px 12px 24px}
+ .admin-page .secretariat-tabs,.admin-page .agenda-admin-tabs{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:8px}
+ .admin-page .agenda-admin-tabs{grid-template-columns:1fr 1fr}
+ .admin-page .secretariat-tab,.admin-page .agenda-admin-tab{padding-inline:5px;font-size:10px}
+ .admin-page .member-entry-rail{width:100%}
+ .admin-page .module-placeholder-card{grid-template-columns:36px minmax(0,1fr)}
+ .admin-page .module-placeholder-card>.module-state{grid-column:2;justify-self:start}
+}

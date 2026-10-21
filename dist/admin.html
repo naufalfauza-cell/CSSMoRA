@@ -7,10 +7,13 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Admin CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261021-photo24h">
+  <link rel="stylesheet" href="./admin.css?v=20261021-akunpro-ui">
   <script src="./supabase-config.js" defer></script>
-  <script src="./admin.js?v=20261021-photo24h" defer></script>
+  <script src="./admin.js?v=20261021-akunpro-ui" defer></script>
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -47,10 +50,10 @@
           </a>
           <div class="sidebar-account-card">
             <span class="sidebar-account-mark" aria-hidden="true">CM</span>
-            <span class="sidebar-account-copy"><strong>CSSMoRA UNAIR</strong><small>Ruang pengurus</small></span>
+            <span class="sidebar-account-copy"><strong>CSSMoRA UNAIR</strong></span>
             
           </div>
-          <div class="sidebar-nav-label">MENU PENGELOLAAN</div>
+          <div class="sidebar-nav-label">MENU</div>
           <nav class="admin-tabs module-grid" role="tablist" aria-label="Pilih bidang pengelolaan">
         <button class="admin-tab is-active" id="tab-competitions" type="button" role="tab" aria-selected="true" aria-controls="competitions-panel">
           <span class="module-icon" aria-hidden="true">↗</span><span class="module-copy"><strong>Lomba</strong><small>Poster, informasi, dan pendaftaran</small></span><span class="module-state is-ready">Aktif</span>
@@ -222,7 +225,7 @@
         </section>
 
         <section class="secretariat-subpanel" id="attendance-tools-panel" role="tabpanel" aria-labelledby="tab-attendance-tools" hidden>
-          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Buat kegiatan dan bagikan tautannya. Anggota memilih identitas lalu mengunggah foto bukti; foto disimpan privat dan dihapus otomatis setelah 24 jam.</p></div></div>
+          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Foto bukti dihapus otomatis setelah 24 jam.</p></div></div>
           <div class="secretariat-workspace attendance-workspace">
             <aside class="secretariat-options-rail" aria-label="Opsi absensi">
               <section class="records-card secretariat-options-card">
@@ -263,7 +266,7 @@
         </section>
 
         <section class="secretariat-subpanel" id="letters-panel" role="tabpanel" aria-labelledby="tab-letters" hidden>
-          <div class="secretariat-intro"><div><span class="admin-kicker">SURAT KELUAR</span><h3>Nomor surat dan arsip</h3><p>Nomor berikutnya mengikuti buku agenda. Pastikan surat siap diterbitkan; nomor yang dibatalkan tetap tercatat.</p></div></div>
+          <div class="secretariat-intro"><div><span class="admin-kicker">SURAT KELUAR</span><h3>Nomor surat dan arsip</h3><p>Nomor surat berikutnya mengikuti buku agenda.</p></div></div>
           <div class="secretariat-workspace letters-workspace">
             <aside class="secretariat-options-rail" aria-label="Opsi persuratan">
               <section class="records-card secretariat-options-card">
