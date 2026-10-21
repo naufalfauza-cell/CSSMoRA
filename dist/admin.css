@@ -97,3 +97,24 @@
  .record-actions{justify-content:flex-end}
  .admin-breadcrumb{margin-bottom:13px}
 }
+
+/* Switch between competition records and the public agenda calendar. */
+.admin-tabs{display:flex;gap:8px;margin:20px 0 14px;padding:5px;width:max-content;max-width:100%;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
+.admin-tab{min-height:39px;padding:0 17px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:.83rem;font-weight:800;cursor:pointer;transition:background .16s,color .16s,box-shadow .16s}
+.admin-tab:hover{color:var(--green);background:var(--bg)}
+.admin-tab.is-active{background:var(--green);color:#fff;box-shadow:0 4px 12px #173e2a20}
+.admin-tab:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.management-panel[hidden]{display:none!important}
+.management-panel>.admin-columns{margin-top:0}
+.agenda-record-tools{display:flex;align-items:center;gap:12px}
+.agenda-record-tools .text-button{font-size:.78rem}
+.agenda-record-row .record-actions{align-self:start}
+.agenda-record-row .record-row p{line-height:1.55}
+.agenda-management .editor-heading h3{font-size:1.4rem}
+.agenda-management input[type=datetime-local]{font:inherit}
+@media(max-width:600px){
+ .admin-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr;border-radius:15px}
+ .admin-tab{padding:0 9px}
+ .agenda-record-tools{gap:8px}
+ .agenda-record-tools .text-button{font-size:.72rem}
+}
