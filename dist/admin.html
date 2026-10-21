@@ -24,7 +24,7 @@
   </header>
   <main class="admin-main wrap">
     <section class="auth-card" id="auth-view" aria-labelledby="auth-title">
-      <p class="auth-kicker">RUANG PENGELOLAAN · LOMBA</p>
+      <p class="auth-kicker">RUANG PENGELOLAAN · CSSMoRA</p>
       <h1 id="auth-title">Masuk</h1>
       <p class="auth-help">Gunakan akun admin CSSMoRA untuk melanjutkan.</p>
       <form id="auth-form">
@@ -39,11 +39,16 @@
     </section>
 
     <section class="admin-dashboard" id="admin-view" hidden aria-labelledby="dashboard-title">
-      <nav class="admin-breadcrumb" aria-label="Breadcrumb"><a href="./">Beranda</a><span aria-hidden="true">/</span><span>Pengelolaan lomba</span></nav>
+      <nav class="admin-breadcrumb" aria-label="Breadcrumb"><a href="./">Beranda</a><span aria-hidden="true">/</span><span>Pengelolaan</span></nav>
       <div class="dashboard-top">
-        <div><span class="overline">DASHBOARD PENGURUS</span><h2 id="dashboard-title">Katalog lomba</h2><p id="signed-in-as"></p></div>
+        <div><span class="overline">DASHBOARD PENGURUS</span><h2 id="dashboard-title">Pusat pengelolaan</h2><p id="signed-in-as"></p></div>
         <button class="text-button" id="logout" type="button">Keluar</button>
       </div>
+      <nav class="admin-tabs" role="tablist" aria-label="Pilih data yang dikelola">
+        <button class="admin-tab is-active" id="tab-competitions" type="button" role="tab" aria-selected="true" aria-controls="competitions-panel">Kelola lomba</button>
+        <button class="admin-tab" id="tab-agenda" type="button" role="tab" aria-selected="false" aria-controls="agenda-panel">Kelola agenda</button>
+      </nav>
+      <div class="management-panel" id="competitions-panel" role="tabpanel" aria-labelledby="tab-competitions">
       <div class="admin-columns">
         <section class="editor-card" aria-labelledby="editor-title">
           <div class="editor-heading"><div><span class="admin-kicker">FORM LOMBA</span><h3 id="editor-title">Tambah lomba</h3></div><button class="text-button" id="form-reset" type="button">Kosongkan</button></div>
@@ -66,6 +71,28 @@
           <div class="record-list" id="record-list"><p class="records-empty">Memuat data…</p></div>
         </section>
       </div>
+      </div>
+      <section class="management-panel agenda-management" id="agenda-panel" role="tabpanel" aria-labelledby="tab-agenda" hidden>
+        <div class="admin-columns">
+          <section class="editor-card" aria-labelledby="agenda-editor-title">
+            <div class="editor-heading"><div><span class="admin-kicker">FORM AGENDA</span><h3 id="agenda-editor-title">Tambah agenda</h3></div><button class="text-button" id="agenda-form-reset" type="button">Kosongkan</button></div>
+            <form id="agenda-form">
+              <input id="agenda-record-id" name="recordId" type="hidden">
+              <label for="agenda-title-input">Nama agenda</label><input id="agenda-title-input" name="title" maxlength="140" required>
+              <div class="form-two"><div><label for="agenda-starts">Mulai (WIB)</label><input id="agenda-starts" name="startsAt" type="datetime-local" required></div><div><label for="agenda-ends">Selesai (opsional)</label><input id="agenda-ends" name="endsAt" type="datetime-local"></div></div>
+              <label for="agenda-location">Lokasi</label><input id="agenda-location" name="location" maxlength="180" placeholder="Contoh: Ruang rapat CSSMoRA">
+              <label for="agenda-description">Keterangan</label><textarea id="agenda-description" name="description" rows="4" maxlength="1500"></textarea>
+              <label class="publish-toggle"><input id="agenda-published" name="published" type="checkbox"><span><strong>Terbitkan agenda</strong><small>Agenda terbit akan muncul di kalender publik.</small></span></label>
+              <button class="admin-button" id="save-agenda" type="submit">Simpan agenda <span aria-hidden="true">↗</span></button>
+              <p class="form-message" id="agenda-editor-message" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+          <section class="records-card" aria-labelledby="agenda-records-title">
+            <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="agenda-records-title">Agenda tersimpan</h3></div><div class="agenda-record-tools"><span class="record-count" id="agenda-record-count">—</span><button class="text-button" id="agenda-refresh" type="button">Muat ulang</button></div></div>
+            <div class="record-list" id="agenda-record-list"><p class="records-empty">Memuat data…</p></div>
+          </section>
+        </div>
+      </section>
     </section>
   </main>
 </body>
