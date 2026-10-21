@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#123f2b">
   <meta name="description" content="Agenda terdekat, informasi lomba, dan informasi publik CSSMoRA UNAIR.">
-  <title>CSSMoRA UNAIR — Informasi Publik</title>
+  <title>CSSMoRA UNAIR | Informasi Publik</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="stylesheet" href="./dashboard.css">
   <link rel="stylesheet" href="./scene.css">
@@ -28,10 +28,7 @@
           <div class="screen-main">
             <p class="screen-kicker">AGENDA TERDEKAT</p>
             <h1 id="agenda-title">Jadwal CSSMoRA</h1>
-            <div class="event-empty">
-              <span class="event-icon" aria-hidden="true">▦</span>
-              <div><strong>Belum ada agenda terbit</strong><p>Agenda yang diumumkan pengurus akan tampil di sini.</p></div>
-            </div>
+            <div id="agenda-list" aria-live="polite"></div>
           </div>
           <div class="screen-footer"><span>INFORMASI KEGIATAN · CSSMoRA UNAIR</span><span aria-hidden="true">↗</span></div>
         </div>
@@ -72,6 +69,8 @@
     <p>Program dan capaian anggota akan ditampilkan di sini setelah dipublikasikan oleh pengurus.</p>
   </dialog>
 
+  <script src="./supabase-config.js"></script>
+  <script src="./agenda.js"></script>
   <script>
     document.querySelectorAll('[data-dialog]').forEach(button => {
       button.addEventListener('click', () => document.getElementById(button.dataset.dialog)?.showModal());
