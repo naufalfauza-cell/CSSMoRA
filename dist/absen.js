@@ -16,6 +16,7 @@ let activeEvents = [];
 let selectedEvent = null;
 let refreshTimer = null;
 let loadingOptions = false;
+let rosterOptionsRequest = 0;
 const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
 function setMessage(text, kind = "") {
   statusMessage.textContent = text;
@@ -43,6 +44,7 @@ function fillSelect(node, items, placeholder, valueOf = item => item, labelOf = 
   ).join("");
 }
 function resetMemberFields() {
+  rosterOptionsRequest++;
   const cohort = $("#checkin-cohort");
   const program = $("#checkin-program");
   const member = $("#checkin-member");
@@ -130,6 +132,7 @@ async function refreshActiveEvents(silent = false) {
 }
 eventSelect.addEventListener("change", () => { void chooseEvent(eventSelect.value); });
 $("#checkin-cohort").addEventListener("change", async event => {
+  const requestId = ++rosterOptionsRequest;
   const cohort = event.target.value;
   const program = $("#checkin-program");
   const member = $("#checkin-member");
@@ -140,11 +143,13 @@ $("#checkin-cohort").addEventListener("change", async event => {
   if (!cohort) { fillSelect(program, [], "Pilih prodi"); return; }
   try {
     const items = await loadRosterOptions("programs", { cohort });
+    if (requestId !== rosterOptionsRequest) return;
     fillSelect(program, items, items.length ? "Pilih prodi" : "Prodi tidak tersedia");
     program.disabled = false;
-  } catch (error) { setMessage(error.message, "error"); }
+  } catch (error) { if (requestId === rosterOptionsRequest) setMessage(error.message, "error"); }
 });
 $("#checkin-program").addEventListener("change", async event => {
+  const requestId = ++rosterOptionsRequest;
   const cohort = $("#checkin-cohort").value;
   const studyProgram = event.target.value;
   const member = $("#checkin-member");
@@ -153,10 +158,11 @@ $("#checkin-program").addEventListener("change", async event => {
   if (!cohort || !studyProgram) { fillSelect(member, [], "Pilih nama"); return; }
   try {
     const items = await loadRosterOptions("members", { cohort, study_program: studyProgram });
+    if (requestId !== rosterOptionsRequest) return;
     fillSelect(member, items, items.length ? "Pilih nama" : "Tidak ada nama", item => item.id, item => item.full_name);
     member.disabled = false;
     if (!items.length) setMessage("Tidak ada anggota yang belum tercatat untuk pilihan ini.", "");
-  } catch (error) { setMessage(error.message, "error"); }
+  } catch (error) { if (requestId === rosterOptionsRequest) setMessage(error.message, "error"); }
 });
 function resetPhoto() {
   compressedPhoto = null;

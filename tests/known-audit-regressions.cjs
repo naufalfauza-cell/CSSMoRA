@@ -45,7 +45,7 @@ const record = (name,e)=>{
   const before = { ...database };
   const saveNode = { addEventListener(_, callback) { saveHandler = callback; } };
   const save = vm.createContext({
-    $: () => saveNode, currentAttendanceEvent: { id: 'event', status: 'open' },
+    attendanceRosterLoading:false,attendanceRosterRequest:0, $: () => saveNode, currentAttendanceEvent: { id: 'event', status: 'open' },
     currentAttendanceRows: [{ event_id: 'event', member_id: 'member', status: 'belum', proof_path: null }],
     document: { querySelector: selector => selector.includes('status') ? { value: 'belum' } : { value: '' } },
     CSS: { escape: value => value }, session: { user: { id: 'admin' } }, Date,

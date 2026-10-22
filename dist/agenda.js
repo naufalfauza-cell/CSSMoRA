@@ -78,13 +78,8 @@
     const heading=document.querySelector('.screen-kicker');
     if(heading)heading.textContent='AGENDA '+bounds.label.toLocaleUpperCase('id-ID');
     const cacheKey='cssmora-videotron-agenda-'+bounds.first;
-    let hadCachedAgenda=false;
-    try{
-      const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
-      const cachedItems=Array.isArray(cached?.items)?cached.items.filter(event=>eventEnd(event).getTime()>=Date.now()).slice(0,6):[];
-      if(cachedItems.length){render(cachedItems,bounds.label);hadCachedAgenda=true;}
-      else if(cached&&Array.isArray(cached.items)){state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');hadCachedAgenda=true;}
-    }catch{}
+    // Publication must be verified before any agenda is displayed.
+    try{localStorage.removeItem(cacheKey);}catch{}
     try{
       const params=new URLSearchParams({
         select:'id,title,starts_at,ends_at,location,program_id',
@@ -105,12 +100,11 @@
       const programMap=new Map(programs.map(program=>[program.id,program]));
       const now=Date.now();
       const items=rows.filter(event=>eventEnd(event).getTime()>=now).map(event=>({...event,program:programMap.get(event.program_id)||null})).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).slice(0,6);
-      try{localStorage.setItem(cacheKey,JSON.stringify({items,updatedAt:Date.now()}));}catch{}
       if(!items.length)state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');
       else render(items,bounds.label);
     }catch(error){
       console.error('Gagal memuat agenda videotron:',error);
-      if(!hadCachedAgenda)state('!','Agenda belum tersedia','Coba muat ulang beberapa saat lagi.');
+      state('!','Agenda belum tersedia','Coba muat ulang beberapa saat lagi.');
     }
   })();
 })();
