@@ -2041,3 +2041,21 @@
 .achievement-payment-actions button:hover,.achievement-payment-actions a:hover{filter:brightness(.97)}
 .achievement-sent-at{display:block;margin-top:8px;color:#78877c;font-size:9px}
 @media(prefers-reduced-motion:reduce){.achievement-loading-spinner,.achievement-refresh-spinner{animation:none}}
+
+
+/* WhatsApp announcement composer inside the agenda editor. */
+.agenda-announcement-tools{display:grid;gap:8px;margin:14px 0;padding:12px;border:1px solid #e1eadf;border-radius:14px;background:linear-gradient(145deg,#f8fbf7,#f1f7ef)}
+.agenda-announcement-heading,.agenda-announcement-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.agenda-announcement-heading>div{display:grid;gap:3px}
+.agenda-announcement-heading strong{color:#244b34;font:700 11px/1.4 'Plus Jakarta Sans',sans-serif}
+.agenda-announcement-heading small{color:#77877a;font:500 9px/1.5 'Plus Jakarta Sans',sans-serif}
+.agenda-announcement-heading button,.agenda-announcement-footer button{flex:none;padding:7px 10px;border:1px solid #d7e5d7;border-radius:9px;background:#fff;color:#256a43;font:700 9px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.agenda-announcement-heading button:hover,.agenda-announcement-footer button:hover:not(:disabled){background:#eaf4e9}
+.agenda-announcement-tools textarea{width:100%;min-height:190px;padding:11px;border:1px solid #dfe8de;border-radius:10px;background:#fff;color:#33473a;font:500 11px/1.65 'Plus Jakarta Sans',sans-serif;resize:vertical}
+.agenda-announcement-tools textarea::placeholder{color:#9aa79b}
+.agenda-announcement-footer{min-height:22px}
+.agenda-announcement-footer span{color:#748278;font:500 9px/1.4 'Plus Jakarta Sans',sans-serif}
+.agenda-announcement-footer span[data-kind=error]{color:#a33e31}
+.agenda-announcement-footer span[data-kind=success]{color:#2c7548}
+.agenda-announcement-footer button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:600px){.agenda-announcement-heading{align-items:flex-start;flex-direction:column}.agenda-announcement-heading button{align-self:flex-start}}
