@@ -2024,3 +2024,20 @@
 .admin-page .drive-shortcut-arrow{margin-left:auto;color:#d8f17c;font-size:15px}
 .admin-app-shell.is-sidebar-collapsed .drive-shortcut{justify-content:center;padding:6px}
 .admin-app-shell.is-sidebar-collapsed .drive-shortcut-copy,.admin-app-shell.is-sidebar-collapsed .drive-shortcut-arrow,.admin-app-shell.is-sidebar-collapsed .drive-nav-label{display:none}
+
+/* Prestasi refresh progress and lightweight WhatsApp follow-up. */
+.achievement-application-list{position:relative;min-height:72px;transition:opacity .16s}
+.achievement-application-list[aria-busy=true]>.achievement-application-card,.achievement-application-list[aria-busy=true]>.achievement-approved-table-wrap{opacity:.55;pointer-events:none}
+.achievement-loading-overlay{position:absolute;inset:0;z-index:3;display:flex;align-items:flex-start;justify-content:center;gap:10px;padding:28px 14px;background:#ffffffdf;backdrop-filter:blur(2px);color:#44584a}
+.achievement-loading-overlay>span:last-child{display:grid;gap:3px}
+.achievement-loading-overlay strong{font-size:11px;font-weight:700}
+.achievement-loading-overlay small{color:#78877c;font-size:9px}
+.achievement-loading-spinner,.achievement-refresh-spinner{display:inline-block;width:17px;height:17px;border:2px solid #d9e5da;border-top-color:#2b7549;border-radius:50%;animation:achievement-spin .75s linear infinite}
+.achievement-refresh-spinner{width:12px;height:12px;vertical-align:-2px}
+@keyframes achievement-spin{to{transform:rotate(360deg)}}
+.achievement-payment-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.achievement-payment-actions a,.achievement-payment-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 11px;border:1px solid #dce7dc;border-radius:9px;background:#f8faf7;color:#23633e;text-decoration:none;font:700 9px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.achievement-payment-actions a{border-color:#246c43;background:#246c43;color:#fff}
+.achievement-payment-actions button:hover,.achievement-payment-actions a:hover{filter:brightness(.97)}
+.achievement-sent-at{display:block;margin-top:8px;color:#78877c;font-size:9px}
+@media(prefers-reduced-motion:reduce){.achievement-loading-spinner,.achievement-refresh-spinner{animation:none}}
