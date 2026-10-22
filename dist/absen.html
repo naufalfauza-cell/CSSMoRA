@@ -37,14 +37,14 @@
         <select id="checkin-member" name="member_id" required disabled><option value="">Pilih nama</option></select>
         <label for="checkin-photo">Foto bukti kehadiran</label>
         <input id="checkin-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required aria-describedby="checkin-photo-hint">
-        <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat, maksimal 500 KB. File disimpan 24 jam.</small>
+        <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat, maksimal 500 KB. File disimpan 5 hari.</small>
         <div class="checkin-photo-preview" id="photo-preview" hidden>
           <img id="photo-preview-image" alt="Pratinjau foto bukti kehadiran">
           <span id="photo-size"></span>
         </div>
         <button class="admin-button" id="checkin-submit" type="submit">Catat kehadiran <span aria-hidden="true">↗</span></button>
       </form>
-      <p class="checkin-footnote">Foto hanya bisa dikirim saat kegiatan dibuka. Bukti dihapus otomatis setelah 24 jam; rekap kehadiran tetap tersimpan.</p>
+      <p class="checkin-footnote">Foto hanya bisa dikirim saat kegiatan dibuka. Bukti dihapus otomatis setelah 5 hari; rekap kehadiran tetap tersimpan.</p>
     </section>
   </main>
 </body>
