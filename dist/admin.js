@@ -999,7 +999,8 @@ function renderAchievementApplications(){
       <div class="achievement-application-grid"><div><small>Ketua / peserta</small><strong>${escapeHTML(app.leader_name)}</strong></div><div><small>Kontak &amp; email resmi</small><strong>${escapeHTML(app.leader_phone)} · ${escapeHTML(app.official_email)}</strong></div><div><small>Biaya lomba</small><strong>${achievementMoney(app.fee_amount)}</strong></div><div><small>Subsidi ${Math.round(Number(app.subsidy_rate)*100)}%</small><strong>${achievementMoney(app.requested_amount)}</strong></div><div><small>Rekening pencairan</small><strong>${escapeHTML(app.bank_name)} · ${escapeHTML(app.account_number)} · ${escapeHTML(app.account_name)}</strong></div><div><small>Pengembalian hadiah</small><strong>Setuju 5% ke kas CSSMoRA</strong></div></div>
       ${app.participation_type==='tim'?`<div class="achievement-team-row"><small>Anggota tim</small><span>${team.map(m=>`${escapeHTML(m.member_name)} · ${escapeHTML(m.cohort)}`).join(' &nbsp;·&nbsp; ')}</span></div>`:''}
       <div class="achievement-application-links"><a href="${escapeHTML(app.information_url)}" target="_blank" rel="noopener">Buka informasi lomba ↗</a><button type="button" data-achievement-proof="${escapeHTML(app.proof_path)}">Lihat bukti pendaftaran ↗</button></div>
-      <div class="achievement-approval-trail"><span class="${app.treasurer_decision?'is-done':''}"><b>1</b><strong>Bendahara</strong><small>${app.treasurer_decision?`${app.treasurer_decision==='approved'?'Disetujui':'Ditolak'} oleh ${escapeHTML(app.treasurer_email)}${app.treasurer_note?' · '+escapeHTML(app.treasurer_note):''}`:'Menunggu pemeriksaan bukti'}</small></span><span class="${app.chair_decision?'is-done':''}"><b>2</b><strong>Ketua</strong><small>${app.chair_decision?`${app.chair_decision==='approved'?'Disetujui':'Ditolak'} oleh ${escapeHTML(app.chair_email)}${app.chair_note?' · '+escapeHTML(app.chair_note):''}`:app.status==='pending_ketua'?'Menunggu persetujuan Ketua':'Menunggu tahap Bendahara'}</small></span></div>
+      <div class="achievement-approval-trail"><span class="${app.treasurer_decision?'is-done':''}"><b>1</b><strong>Bendahara</strong><small>${app.treasurer_decision?`${app.treasurer_decision==='approved'?'Disetujui':'Ditolak'} oleh Bendahara${app.treasurer_note?' · '+escapeHTML(app.treasurer_note):''}`:'Menunggu pemeriksaan bukti'}</small></span><span class="${app.chair_decision?'is-done':''}"><b>2</b><strong>Ketua</strong><small>${app.chair_decision?`${app.chair_decision==='approved'?'Disetujui':'Ditolak'} oleh Ketua${app.chair_note?' · '+escapeHTML(app.chair_note):''}`:app.status==='pending_ketua'?'Menunggu persetujuan Ketua':'Menunggu tahap Bendahara'}</small></span></div>
+      ${app.status==='pending_ketua'&&app.treasurer_email?.toLowerCase()===session?.user?.email?.toLowerCase()?'<p class="admin-muted achievement-review-blocked">Persetujuan Bendahara dan Ketua harus dilakukan oleh dua akun berbeda.</p>':''}
       ${canReview?`<div class="achievement-review-controls"><label>Catatan peninjauan <input type="text" maxlength="1000" data-review-note placeholder="Catatan singkat (opsional)"></label><button type="button" data-achievement-decision="rejected" class="achievement-reject">Tolak</button><button type="button" data-achievement-decision="approved" class="achievement-approve">Setujui ${role==='bendahara'?'&amp; teruskan ke Ketua':''}</button></div>`:''}
       ${app.status==='approved'?`<a class="achievement-wa-link" href="https://wa.me/${phone}?text=${waText}" target="_blank" rel="noopener">Konfirmasi persetujuan lewat WhatsApp ↗</a>`:''}
     </article>`;
@@ -1012,18 +1013,7 @@ async function loadAchievementDashboard(){
     const ids=achievementApplications.map(row=>row.id);
     achievementMembers=ids.length?await api('cssmora_achievement_application_members?select=application_id,member_name,cohort,role&application_id=in.('+ids.join(',')+')&order=cohort.desc,member_name.asc'):[];
     renderAchievementApplications();
-    const reviewerAside=$('#achievement-reviewer-aside');
-    reviewerAside.hidden=!hasAchievementRole('ketua');
-    if(hasAchievementRole('ketua'))await loadAchievementReviewers();
   }catch(error){achievementList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
-}
-async function loadAchievementReviewers(){
-  const list=$('#achievement-reviewer-list');list.innerHTML='<p class="records-empty">Memuat peninjau…</p>';
-  try{
-    const rows=await api('cssmora_achievement_reviewers?select=email,role,is_active&order=email.asc');
-    const treasurers=rows.filter(row=>row.role==='bendahara');
-    list.innerHTML=treasurers.length?treasurers.map(row=>`<div class="achievement-reviewer-row"><span><strong>${escapeHTML(row.email)}</strong><small>${row.is_active?'Bendahara · dapat meninjau':'Akses dinonaktifkan'}</small></span><button type="button" data-remove-reviewer="${escapeHTML(row.email)}" aria-label="Hapus akses ${escapeHTML(row.email)}">Hapus</button></div>`).join(''):'<p class="records-empty">Belum ada akun Bendahara yang ditugaskan.</p>';
-  }catch(error){list.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
 }
 $('#achievement-refresh').addEventListener('click',loadAchievementDashboard);
 document.querySelectorAll('[data-achievement-filter]').forEach(button=>button.addEventListener('click',()=>{
@@ -1052,24 +1042,6 @@ achievementList.addEventListener('click',async event=>{
     showMessage('#achievement-action-message',`Status pengajuan diperbarui: ${achievementStatusLabels[result]||result}.`,'success');
     await loadAchievementDashboard();
   }catch(error){alert(error.message);controls.forEach(button=>button.disabled=false);}
-});
-$('#achievement-reviewer-form').addEventListener('submit',async event=>{
-  event.preventDefault();const input=$('#achievement-reviewer-email'),email=input.value.trim().toLowerCase(),button=event.submitter;
-  button.disabled=true;showMessage('#achievement-reviewer-message','Menambahkan akses Bendahara…');
-  try{
-    const existing=await api(`cssmora_achievement_reviewers?select=email&email=eq.${encodeURIComponent(email)}&role=eq.bendahara`);
-    if(existing.length)throw new Error('Email ini sudah memiliki akses Bendahara.');
-    await api('cssmora_achievement_reviewers',{method:'POST',body:{email,role:'bendahara',is_active:true},extraHeaders:{Prefer:'return=minimal'}});
-    input.value='';showMessage('#achievement-reviewer-message','Akses peninjau Bendahara berhasil ditambahkan.','success');await loadAchievementReviewers();
-  }catch(error){showMessage('#achievement-reviewer-message',error.message,'error');}
-  finally{button.disabled=false;}
-});
-$('#achievement-reviewer-list').addEventListener('click',async event=>{
-  const button=event.target.closest('[data-remove-reviewer]');if(!button)return;
-  if(!confirm(`Hapus akses peninjau untuk ${button.dataset.removeReviewer}?`))return;
-  button.disabled=true;
-  try{await api(`cssmora_achievement_reviewers?email=eq.${encodeURIComponent(button.dataset.removeReviewer)}&role=eq.bendahara`,{method:'DELETE'});await loadAchievementReviewers();}
-  catch(error){alert(error.message);button.disabled=false;}
 });
 
 async function initialize(){
