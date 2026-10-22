@@ -1,6 +1,6 @@
 # CSSMoRA Lomba
 
-Situs publik informasi perlombaan dan panel pengelolaan untuk CSSMoRA UNAIR.
+Situs publik informasi dan panel pengelolaan untuk CSSMoRA UNAIR.
 
 **Situs:** https://cssmora.vercel.app  
 **Panel admin:** https://cssmora.vercel.app/admin.html
