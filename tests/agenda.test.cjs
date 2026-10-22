@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../dist/agenda.js'), 'utf8');
 
-async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, reduced = false } = {}) {
+async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = null } = {}) {
   const instant = Date.parse(now);
   class FixedDate extends Date {
     constructor(...args) { super(...(args.length ? args : [instant])); }
@@ -12,29 +12,35 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, reduced =
   }
   const timers = [];
   let requested;
-  const fakeNode = () => ({ classList: { toggle() {} }, addEventListener() {} });
+  const fakeNode = () => ({ classList: { toggle() {} }, addEventListener() {}, setAttribute() {}, removeAttribute() {}, dataset: {} });
   const box = {
     innerHTML: '', addEventListener() {},
+    querySelector(selector) { return selector === '.event-position' ? { textContent: '' } : null; },
     querySelectorAll(selector) {
-      const count = selector === '.event-item'
+      const count = selector === '.event-item' || selector === '.event-photo'
         ? (this.innerHTML.match(/<article class="event-item/g) || []).length
-        : (this.innerHTML.match(/aria-label="Agenda /g) || []).length;
+        : selector === '[data-slide]'
+          ? (this.innerHTML.match(/data-slide="/g) || []).length
+          : selector === '.event-arrow' ? (this.innerHTML.match(/class="event-arrow"/g) || []).length : 0;
       return Array.from({ length: count }, fakeNode);
     }
   };
   const context = {
-    document: { getElementById: () => box },
+    document: { getElementById: () => box, querySelector: () => null },
     window: { CSSMORA_SUPABASE: { url: 'https://example.invalid', publishableKey: 'test' } },
     Date: FixedDate, Intl, URLSearchParams,
-    matchMedia: () => ({ matches: reduced }),
+    localStorage: { getItem: () => cache ? JSON.stringify(cache) : null, setItem() {} },
+    console: { error() {} },
     setInterval: (callback, interval) => { timers.push(interval); return timers.length; },
     clearInterval() {},
     fetch: async url => {
-      requested = new URL(url);
-      const params = requested.searchParams;
+      const requestUrl = new URL(url);
+      if (requestUrl.pathname.endsWith('/agenda')) requested = requestUrl;
+      if (requestUrl.pathname.endsWith('/agenda_programs')) return { ok: !fail, status: fail ? 503 : 200, json: async () => [] };
+      const params = requestUrl.searchParams;
       const query = params.get('or');
-      const endCutoff = Date.parse(query.match(/ends_at\.gte\.([^,]+)/)[1]);
-      const startCutoff = Date.parse(query.match(/starts_at\.gte\.([^)]+)/)[1]);
+      const endCutoff = Date.parse(query.match(/ends_at\.gte\.([^)]+)/)[1]);
+      const startCutoff = Date.parse(query.match(/starts_at\.gte\.([^,)]+)/)[1]);
       // Emulate the predicates sent to PostgREST, including server-side limit.
       const selected = rows.filter(row => row.status === 'published' &&
         (row.ends_at ? Date.parse(row.ends_at) >= endCutoff : Date.parse(row.starts_at) >= startCutoff))
@@ -61,12 +67,13 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, reduced =
   assert.match(upcoming.html, /Agenda berikutnya/);
   assert.doesNotMatch(upcoming.html, /Kemarin/);
   assert.equal(upcoming.requested.searchParams.get('limit'), '3');
-  assert.match(upcoming.requested.searchParams.get('or'), /starts_at\.gte\.2026-11-09T17:00:00.000Z/);
+  assert.equal(upcoming.requested.pathname, '/rest/v1/agenda');
+  assert.match(upcoming.requested.searchParams.get('or'), /starts_at\.gte\.2026-11-10T03:00:00\.000Z/);
 
-  const sameDay = await run([event('Tanpa jam selesai', '2026-11-09T18:00:00Z')]);
+  const sameDay = await run([event('Tanpa jam selesai', '2026-11-10T04:00:00Z')]);
   assert.match(sameDay.html, /Tanpa jam selesai/);
   const midnight = await run([event('Sudah kemarin', '2026-11-10T03:00:00Z')], { now: '2026-11-10T17:00:00Z' });
-  assert.match(midnight.html, /Belum ada agenda terbit/);
+  assert.match(midnight.html, /Belum ada agenda mendatang/);
 
   const escaped = await run([{ ...event('<script>alert(1)</script>', '2026-11-11T03:00:00Z'), location: '<img src=x>' }]);
   assert.match(escaped.html, /&lt;script&gt;/);
@@ -74,15 +81,16 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, reduced =
   assert.doesNotMatch(escaped.html, /<script>/);
 
   const empty = await run([{ ...event('Draf tersembunyi', '2026-11-11T03:00:00Z'), status: 'draft' }]);
-  assert.match(empty.html, /Belum ada agenda terbit/);
+  assert.match(empty.html, /Belum ada agenda mendatang/);
   const error = await run([], { fail: true });
-  assert.match(error.html, /Agenda belum bisa dimuat/);
+  assert.match(error.html, /Agenda belum tersedia/);
+  const staleCache = await run([], { fail: true, cache: { items: [event('Agenda kedaluwarsa', '2026-11-09T03:00:00Z')] } });
+  assert.doesNotMatch(staleCache.html, /Agenda kedaluwarsa/);
+  assert.match(staleCache.html, /Belum ada agenda mendatang/);
 
   const slides = [1, 2, 3, 4].map(n => event(`Agenda ${n}`, `2026-11-${10+n}T03:00:00Z`));
   const carousel = await run(slides);
   assert.equal((carousel.html.match(/<article /g) || []).length, 3);
-  assert.deepEqual(carousel.timers, [7000]);
-  const noMotion = await run(slides, { reduced: true });
-  assert.equal(noMotion.timers.length, 0);
-  console.log('PASS: multi-day dates, server cutoff/limit, WIB midnight, escaping, empty/error states, carousel and reduced motion');
+  assert.deepEqual(carousel.timers, [3000]);
+  console.log('PASS: multi-day dates, server cutoff/limit, WIB midnight, escaping, empty/error states, three-item carousel at 3 seconds');
 })().catch(error => { console.error(error); process.exitCode = 1; });

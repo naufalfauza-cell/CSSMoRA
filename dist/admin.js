@@ -9,6 +9,11 @@ let session = null;
 let isCompetitionAdmin = false;
 let isSecretariatAdmin = false;
 let achievementRoles = [];
+let isLeadership = false;
+let canManageRoles = false;
+let assignedRoles = [];
+const roleForm = $('#role-form');
+const roleList = $('#role-list');
 let achievementApplications = [];
 let achievementMembers = [];
 let achievementFilter = 'all';
@@ -112,6 +117,10 @@ async function loadAdminPanel(panelId) {
   }
   if(panelId==='achievements-panel') {
     await loadAchievementDashboard();
+    return;
+  }
+  if(panelId==='access-panel'&&canManageRoles) {
+    await loadRoleAssignments();
   }
 }
 
@@ -119,27 +128,33 @@ async function checkAdmin() {
   const user=session?.user;
   if(!user?.email)throw new Error('Akun tidak memiliki alamat email yang terverifikasi.');
   const email=user.email.toLowerCase();
-  const [admins,secretariat,roles]=await Promise.all([
-    api(`competition_admins?select=email&email=eq.${encodeURIComponent(email)}`).catch(()=>[]),
-    api(`secretariat_admins?select=email&email=eq.${encodeURIComponent(email)}`).catch(()=>[]),
-    api(`cssmora_achievement_reviewers?select=role&email=eq.${encodeURIComponent(email)}&is_active=eq.true`).catch(()=>[])
-  ]);
-  isCompetitionAdmin=Boolean(admins?.length);
-  isSecretariatAdmin=Boolean(secretariat?.length);
-  achievementRoles=(roles||[]).map(row=>row.role);
-  if(!isCompetitionAdmin&&!isSecretariatAdmin&&!achievementRoles.length)throw new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.');
+  const rows=await api(`cssmora_user_roles?select=role&email=eq.${encodeURIComponent(email)}&is_active=eq.true`);
+  const roleSet=new Set((rows||[]).map(row=>row.role));
+  isLeadership=roleSet.has('ketua')||roleSet.has('wakil');
+  canManageRoles=isLeadership;
+  isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen');
+  isSecretariatAdmin=isLeadership||roleSet.has('sekretaris');
+  achievementRoles=isLeadership?['ketua','bendahara']:(roleSet.has('bendahara')?['bendahara']:[]);
+  if(!roleSet.size)throw new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.');
+
   $('#signed-in-as').textContent=user.email;
   authView.hidden=true;
   adminView.hidden=false;
-  if(!isCompetitionAdmin){
-    document.querySelectorAll('.admin-tab').forEach(tab=>{
-      tab.hidden=!(tab.id==='tab-secretariat'&&isSecretariatAdmin)&&!(tab.id==='tab-achievements'&&achievementRoles.length>0);
-    });
-    if(isSecretariatAdmin)document.querySelector('#tab-secretariat').click();
-    else document.querySelector('#tab-achievements').click();
-  }else void loadAdminPanel('competitions-panel');
-}
 
+  const allowed=new Set();
+  if(isCompetitionAdmin){allowed.add('tab-competitions');allowed.add('tab-agenda');}
+  if(isLeadership||roleSet.has('bendahara')){allowed.add('tab-finance');allowed.add('tab-achievements');}
+  if(isSecretariatAdmin)allowed.add('tab-secretariat');
+  if(canManageRoles)allowed.add('tab-access');
+  document.querySelectorAll('.admin-tab').forEach(tab=>{tab.hidden=!allowed.has(tab.id);});
+
+  const savedTab=(()=>{try{return localStorage.getItem('cssmora-admin-active-tab');}catch{return null;}})();
+  const preferred=isCompetitionAdmin?'tab-competitions':isLeadership?'tab-finance':roleSet.has('bendahara')?'tab-achievements':isSecretariatAdmin?'tab-secretariat':'tab-access';
+  const target=Array.from(document.querySelectorAll('.admin-tab')).find(tab=>tab.id===savedTab&&!tab.hidden)
+    ||Array.from(document.querySelectorAll('.admin-tab')).find(tab=>tab.id===preferred&&!tab.hidden)
+    ||Array.from(document.querySelectorAll('.admin-tab')).find(tab=>!tab.hidden);
+  if(target)target.click();
+}
 async function signIn(email,password) {
   const result=await authRequest('token?grant_type=password',{email,password});
   saveSession({...result,expires_at:Date.now()+Number(result.expires_in||3600)*1000});
@@ -1122,6 +1137,52 @@ async function loadAchievementDashboard(){
     refresh.disabled=false;refresh.innerHTML=previousLabel;
   }
 }
+const roleLabels={ketua:'Ketua',wakil:'Wakil Ketua',bendahara:'Bendahara',sekretaris:'Sekretaris',bph_departemen:'BPH / Departemen'};
+function renderRoleAssignments(){
+  if(!assignedRoles.length){roleList.innerHTML='<p class="records-empty">Belum ada akses pengurus.</p>';return;}
+  roleList.innerHTML='<div class="access-table-wrap"><table class="access-table"><thead><tr><th>Akun</th><th>Peran</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+
+    assignedRoles.map(row=>'<tr><td><strong>'+escapeHTML(row.email)+'</strong></td><td>'+escapeHTML(roleLabels[row.role]||row.role)+'</td><td><span class="access-status '+(row.is_active?'is-active':'')+'">'+(row.is_active?'Aktif':'Nonaktif')+'</span></td><td><button type="button" class="access-toggle" data-role-email="'+escapeHTML(row.email)+'" data-role-name="'+escapeHTML(row.role)+'" data-role-enable="'+(!row.is_active)+'">'+(row.is_active?'Nonaktifkan':'Aktifkan')+'</button></td></tr>').join('')+
+    '</tbody></table></div>';
+}
+async function loadRoleAssignments(){
+  roleList.setAttribute('aria-busy','true');
+  roleList.innerHTML='<p class="records-empty">Memuat akses…</p>';
+  try{
+    assignedRoles=await api('cssmora_user_roles?select=email,role,is_active,created_at&order=email.asc,role.asc');
+    renderRoleAssignments();
+  }catch(error){
+    roleList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';
+  }finally{roleList.removeAttribute('aria-busy');}
+}
+roleForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const button=$('#save-role');
+  const email=roleForm.elements.email.value.trim().toLowerCase();
+  const role=roleForm.elements.role.value;
+  button.disabled=true;
+  showMessage('#role-message','Menyimpan akses…');
+  try{
+    await api('rpc/set_cssmora_user_role',{method:'POST',body:{p_email:email,p_role:role,p_enabled:true}});
+    roleForm.reset();
+    showMessage('#role-message','Akses '+(roleLabels[role]||role)+' tersimpan.','success');
+    await loadRoleAssignments();
+  }catch(error){showMessage('#role-message',error.message,'error');}
+  finally{button.disabled=false;}
+});
+$('#role-refresh').addEventListener('click',loadRoleAssignments);
+roleList.addEventListener('click',async event=>{
+  const button=event.target.closest('[data-role-email]');
+  if(!button)return;
+  button.disabled=true;
+  try{
+    await api('rpc/set_cssmora_user_role',{method:'POST',body:{
+      p_email:button.dataset.roleEmail,p_role:button.dataset.roleName,p_enabled:button.dataset.roleEnable==='true'
+    }});
+    showMessage('#role-message','Perubahan akses berhasil disimpan.','success');
+    await loadRoleAssignments();
+  }catch(error){showMessage('#role-message',error.message,'error');button.disabled=false;}
+});
+
 $('#achievement-refresh').addEventListener('click',loadAchievementDashboard);
 document.querySelectorAll('[data-achievement-filter]').forEach(button=>button.addEventListener('click',()=>{
   achievementFilter=button.dataset.achievementFilter;

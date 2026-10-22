@@ -49,31 +49,33 @@ form.addEventListener('submit',async event=>{
   const teamIds=[...selectedTeamIds].filter(id=>id!==rosterSelect.value);
   if(type==='tim'&&!teamIds.length){message.textContent='Pilih minimal satu anggota tim dari roster CSSMoRA.';message.dataset.kind='error';return;}
   const id=crypto.randomUUID();
-  button.disabled=true;button.textContent='Mengirim pengajuan…';message.textContent=sourceFile.type==='application/pdf'?'Mengunggah bukti PDF…':'Mengompres bukti gambar…';
-  let uploaded=false,path='';
+  button.disabled=true;button.textContent='Mengirim pengajuan…';message.textContent=sourceFile.type==='application/pdf'?'Menyiapkan bukti PDF…':'Mengompres bukti gambar…';
   try{
     const file=sourceFile.type==='application/pdf'?sourceFile:await window.CSSMoRAUpload.compressImage(sourceFile,{maxBytes:2*1024*1024});
     if(file.size>5*1024*1024)throw new Error('Ukuran bukti maksimal 5 MB.');
     const ext={'image/jpeg':'jpg','image/png':'png','application/pdf':'pdf'}[file.type];
-    path=`applications/${id}/proof.${ext}`;
-    message.textContent=sourceFile.type==='application/pdf'?'Mengunggah bukti PDF…':'Mengunggah bukti terkompres…';
-    const upload=await fetch(`${config.url}/storage/v1/object/cssmora-prestasi-proofs/${path}`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':file.type,'x-upsert':'false'},body:file});
-    if(!upload.ok){const err=await upload.json().catch(()=>({}));throw new Error(err.message||'Bukti pendaftaran gagal diunggah.');}
-    uploaded=true;
+    if(!ext)throw new Error('Format bukti harus JPG, PNG, atau PDF.');
+    const path=`applications/${id}/proof.${ext}`;
     const payload={p_id:id,p_competition_name:form.elements.competition_name.value.trim(),p_competition_type:form.elements.competition_type.value,
       p_participation_type:type,p_leader_member_id:rosterSelect.value,p_leader_phone:form.elements.leader_phone.value.trim(),
       p_official_email:form.elements.official_email.value.trim(),p_fee_amount:Number(form.elements.fee_amount.value),
       p_information_url:form.elements.information_url.value.trim(),p_proof_path:path,p_bank_name:form.elements.bank_name.value.trim(),
       p_account_number:form.elements.account_number.value.trim(),p_account_name:form.elements.account_name.value.trim(),
       p_return_agreement:form.elements.return_agreement.checked,p_team_member_ids:teamIds};
-    const submit=await fetch(`${config.url}/rest/v1/rpc/submit_cssmora_achievement_application`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    message.textContent=sourceFile.type==='application/pdf'?'Mengirim bukti PDF…':'Mengirim bukti terkompres…';
+    const body=new FormData();
+    body.append('payload',JSON.stringify(payload));
+    body.append('proof',file,sourceFile.name||('proof.'+ext));
+    const submit=await fetch(`${config.url}/functions/v1/submit-achievement`,{
+      method:'POST',headers:{apikey:config.publishableKey},body
+    });
     const result=await submit.json().catch(()=>({}));
-    if(!submit.ok)throw new Error(result.message||'Pengajuan belum berhasil disimpan.');
+    if(!submit.ok)throw new Error(result.error||result.message||'Pengajuan belum berhasil disimpan.');
     message.innerHTML=`Pengajuan <strong>${escapeHTML(result.request_number)}</strong> terkirim. Nilai subsidi yang diajukan ${fmtMoney(result.requested_amount)}. Bendahara akan meninjau bukti terlebih dahulu.`;
     message.dataset.kind='success';form.reset();selectedTeamIds.clear();$('#team-fields').hidden=true;renderLeaderOptions();renderTeamOptions();updateSubsidy();
   }catch(error){
-    if(uploaded)fetch(`${config.url}/storage/v1/object/cssmora-prestasi-proofs/${path}`,{method:'DELETE',headers:{apikey:config.publishableKey}}).catch(()=>{});
     message.textContent=error.message;message.dataset.kind='error';
   }finally{button.disabled=false;button.innerHTML='Kirim pengajuan <span aria-hidden="true">↗</span>';}
+
 });
 updateSubsidy();void loadRoster();
