@@ -991,7 +991,7 @@ const achievementStatusLabels={pending_bendahara:'Menunggu Bendahara',pending_ke
 const hasAchievementRole=role=>achievementRoles.includes(role);
 const achievementMoney=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
 function achievementDetailMarkup(app,team,{canReview=false,role=''}={}){
-  const phone=String(app.leader_phone||'').replace(/\\D/g,'').replace(/^0/,'62');
+  const phone=String(app.leader_phone||'').replace(/\D/g,'').replace(/^0/,'62');
   const waText=encodeURIComponent(`Halo ${app.leader_name}, pengajuan bantuan biaya lomba “${app.competition_name}” telah disetujui CSSMoRA UNAIR dengan subsidi ${achievementMoney(app.requested_amount)}. Bukti transfer saya lampirkan pada pesan ini.`);
   const waLink='https://wa.me/'+phone+'?text='+waText;
   const approvalTrail=`<div class="achievement-approval-trail"><span class="${app.treasurer_decision?'is-done':''}"><b>1</b><strong>Bendahara</strong><small>${app.treasurer_decision?`${app.treasurer_decision==='approved'?'Disetujui':'Ditolak'} oleh Bendahara${app.treasurer_note?' · '+escapeHTML(app.treasurer_note):''}`:'Menunggu pemeriksaan bukti'}</small></span><span class="${app.chair_decision?'is-done':''}"><b>2</b><strong>Ketua</strong><small>${app.chair_decision?`${app.chair_decision==='approved'?'Disetujui':'Ditolak'} oleh Ketua${app.chair_note?' · '+escapeHTML(app.chair_note):''}`:app.status==='pending_ketua'?'Menunggu persetujuan Ketua':'Menunggu tahap Bendahara'}</small></span></div>`;
