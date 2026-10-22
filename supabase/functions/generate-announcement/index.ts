@@ -101,16 +101,16 @@ Deno.serve(async (req: Request) => {
     const result = await groqResponse.json();
     const announcement = result?.choices?.[0]?.message?.content?.trim();
     if (!announcement) return json({ error: "Groq mengembalikan jarkoman kosong. Coba sekali lagi." }, 502, origin);
-    const announcementLines = announcement.replace(/\\*/g, "").split(/\\r?\\n/);
+    const announcementLines = announcement.replace(/\*/g, "").split(/\r?\n/);
     const titleIndex = announcementLines.findIndex(line => line.trim());
-    if (titleIndex >= 0 && /^\\[[^\\]]+\\]$/.test(announcementLines[titleIndex].trim())) {
-      announcementLines[titleIndex] = `*${announcementLines[titleIndex].trim()}*`;
+    if (titleIndex >= 0 && /^\[[^\]]+\]$/.test(announcementLines[titleIndex].trim())) {
+      announcementLines[titleIndex] = "*" + announcementLines[titleIndex].trim() + "*";
     }
     for (let i = 0; i < announcementLines.length; i++) {
-      const match = announcementLines[i].match(/^(\\s*(?:📅|🗓️|⏰|📍)?\\s*)(Hari\\s*&\\s*Tanggal|Waktu|Tempat)(\\s*:)(.*)$/i);
-      if (match) announcementLines[i] = `${match[1]}*${match[2]}${match[3]}*${match[4]}`;
+      const match = announcementLines[i].match(/^(\s*(?:📅|🗓️|⏰|📍)?\s*)(Hari\s*&\s*Tanggal|Waktu|Tempat)(\s*:)(.*)$/i);
+      if (match) announcementLines[i] = match[1] + "*" + match[2] + match[3] + "*" + match[4];
     }
-    return json({ announcement: announcementLines.join("\\n") }, 200, origin);
+    return json({ announcement: announcementLines.join("\n") }, 200, origin);
   } catch (error) {
     console.error("Announcement generation request failed", error instanceof Error ? error.name : "unknown");
     return json({ error: "Jarkoman belum dapat dibuat. Periksa koneksi lalu coba lagi." }, 500, origin);
