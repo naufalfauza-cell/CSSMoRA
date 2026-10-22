@@ -581,6 +581,70 @@ agendaRecordList.addEventListener('click',async event=>{
   }
 });
 
+
+const generateAnnouncementButton=$('#generate-announcement');
+const announcementPreview=$('#agenda-announcement-preview');
+const announcementStatus=$('#agenda-announcement-status');
+generateAnnouncementButton.addEventListener('click',async()=>{
+  const title=agendaForm.elements.title.value.trim();
+  const starts=agendaForm.elements.startsAt.value;
+  if(!title||!starts){
+    announcementStatus.textContent='Isi nama kegiatan dan waktu mulai terlebih dahulu.';
+    announcementStatus.dataset.kind='error';
+    return;
+  }
+  const date=new Date(agendaIso(starts));
+  const endValue=agendaForm.elements.endsAt.value;
+  const end=endValue?new Date(agendaIso(endValue)):null;
+  const dateFmt=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:agendaTimeZone});
+  const timeFmt=new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:agendaTimeZone});
+  const program=programs.find(item=>item.id===agendaForm.elements.programId.value);
+  generateAnnouncementButton.disabled=true;
+  generateAnnouncementButton.textContent='Menyusun…';
+  announcementStatus.textContent='AI sedang merapikan jarkoman…';
+  announcementStatus.dataset.kind='';
+  try{
+    const response=await fetchTimed(`${config.url}/functions/v1/generate-announcement`,{
+      method:'POST',
+      headers:{...baseHeaders(),Authorization:`Bearer ${session.access_token}`},
+      body:JSON.stringify({
+        title,
+        programName:program?.name||'',
+        date:dateFmt.format(date),
+        time:timeFmt.format(date)+' WIB'+(end?'–'+timeFmt.format(end)+' WIB':'–selesai'),
+        location:agendaForm.elements.location.value.trim(),
+        description:agendaForm.elements.description.value.trim()
+      })
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Jarkoman belum berhasil dibuat. Coba lagi.');
+    announcementPreview.value=result.announcement||'';
+    announcementPreview.dispatchEvent(new Event('input',{bubbles:true}));
+    announcementStatus.textContent='Jarkoman siap ditinjau. Silakan sesuaikan sebelum dibagikan.';
+    announcementStatus.dataset.kind='success';
+  }catch(error){
+    announcementStatus.textContent=error.message;
+    announcementStatus.dataset.kind='error';
+  }finally{
+    generateAnnouncementButton.disabled=false;
+    generateAnnouncementButton.textContent='Buat jarkoman ✦';
+  }
+});
+announcementPreview.addEventListener('input',()=>{$('#copy-announcement').disabled=!announcementPreview.value.trim();});
+$('#copy-announcement').addEventListener('click',async()=>{
+  if(!announcementPreview.value.trim())return;
+  try{
+    await navigator.clipboard.writeText(announcementPreview.value);
+    announcementStatus.textContent='Teks jarkoman disalin.';
+    announcementStatus.dataset.kind='success';
+  }catch{
+    announcementPreview.focus();announcementPreview.select();
+    const copied=document.execCommand('copy');
+    announcementStatus.textContent=copied?'Teks jarkoman disalin.':'Pilih teks lalu salin secara manual.';
+    announcementStatus.dataset.kind=copied?'success':'error';
+  }
+});
+
 agendaForm.addEventListener('submit',async event=>{
   event.preventDefault();
   const submit=$('#save-agenda');

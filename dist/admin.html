@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261022-prestasi-whatsapp-v1">
+  <link rel="stylesheet" href="./admin.css?v=20261022-agenda-jarkoman-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
     #session-restoring{display:none;min-height:44vh;align-items:center;justify-content:center;color:#315d43;font:600 14px/1.5 "Plus Jakarta Sans",sans-serif}
@@ -22,7 +22,7 @@
   </script>
   <script src="./supabase-config.js" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261022-prestasi-whatsapp-v1" defer></script>
+  <script src="./admin.js?v=20261022-agenda-jarkoman-v1" defer></script>
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -164,6 +164,11 @@
                 <div class="form-two"><div><label for="agenda-starts">Mulai (WIB)</label><input id="agenda-starts" name="startsAt" type="datetime-local" required></div><div><label for="agenda-ends">Selesai (opsional)</label><input id="agenda-ends" name="endsAt" type="datetime-local"></div></div>
                 <label for="agenda-location">Lokasi</label><input id="agenda-location" name="location" maxlength="180" placeholder="Contoh: Ruang rapat CSSMoRA">
                 <label for="agenda-description">Keterangan</label><textarea id="agenda-description" name="description" rows="4" maxlength="1500"></textarea>
+                <div class="agenda-announcement-tools">
+                  <div class="agenda-announcement-heading"><div><strong>Jarkoman WhatsApp</strong><small>Disusun dari detail agenda. Periksa dan edit sebelum dibagikan.</small></div><button class="text-button" id="generate-announcement" type="button">Buat jarkoman ✦</button></div>
+                  <textarea id="agenda-announcement-preview" rows="10" maxlength="4000" placeholder="Jarkoman yang dibuat akan muncul di sini…" aria-label="Pratinjau jarkoman WhatsApp"></textarea>
+                  <div class="agenda-announcement-footer"><span id="agenda-announcement-status" role="status" aria-live="polite"></span><button class="text-button" id="copy-announcement" type="button" disabled>Salin teks</button></div>
+                </div>
                 <label class="publish-toggle"><input id="agenda-published" name="published" type="checkbox"><span><strong>Terbitkan agenda</strong><small>Agenda terbit akan muncul di daftar bulanan dan kalender publik.</small></span></label>
                 <button class="admin-button" id="save-agenda" type="submit">Simpan agenda <span aria-hidden="true">↗</span></button>
                 <p class="form-message" id="agenda-editor-message" role="status" aria-live="polite"></p>
