@@ -2059,3 +2059,26 @@
 .agenda-announcement-footer span[data-kind=success]{color:#2c7548}
 .agenda-announcement-footer button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:600px){.agenda-announcement-heading{align-items:flex-start;flex-direction:column}.agenda-announcement-heading button{align-self:flex-start}}
+
+
+.access-management-panel{display:grid;gap:18px}
+.access-heading h3{margin:.2rem 0;font-size:1.35rem}
+.access-heading p{margin:0;color:var(--muted,#68756c);font-size:.9rem}
+.access-layout{display:grid;grid-template-columns:minmax(250px,.36fr) minmax(0,1fr);gap:16px;align-items:start}
+.access-form-card,.access-list-card{padding:18px;min-width:0}
+.access-form{display:grid;gap:9px}
+.access-form label{font-size:.82rem;font-weight:650;color:#37473c}
+.access-form input,.access-form select{width:100%;min-height:42px;border:1px solid #dce5dc;border-radius:10px;padding:9px 11px;background:#fff;font:inherit;font-size:.9rem}
+.access-form .admin-button{margin-top:7px}
+.access-table-wrap{width:100%;overflow:auto}
+.access-table{width:100%;border-collapse:collapse;font-size:.86rem}
+.access-table th,.access-table td{text-align:left;vertical-align:middle;padding:11px 10px;border-bottom:1px solid #edf1ed}
+.access-table th{font-size:.73rem;color:#667168;font-weight:650}
+.access-table td strong{overflow-wrap:anywhere}
+.access-status{display:inline-flex;align-items:center;border-radius:999px;background:#f1f2f1;padding:4px 9px;font-size:.74rem;color:#687168}
+.access-status.is-active{background:#e7f4e9;color:#23743d}
+.access-toggle{border:0;border-radius:8px;background:#edf5ee;padding:7px 10px;color:#28633b;font:inherit;font-size:.78rem;font-weight:650;cursor:pointer}
+.access-toggle:hover{background:#dceedd}
+.access-toggle:disabled{opacity:.55;cursor:wait}
+@media(max-width:900px){.access-layout{grid-template-columns:1fr}}
+@media(max-width:600px){.access-form-card,.access-list-card{padding:13px}.access-table{min-width:620px}}

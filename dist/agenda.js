@@ -26,7 +26,7 @@
     const year = Number(currentDay.slice(0,4)), month = Number(currentDay.slice(5,7))-1;
     const first = year+'-'+String(month+1).padStart(2,'0')+'-01';
     const after = new Date(Date.UTC(year,month+1,1)).toISOString().slice(0,10);
-    return {first, after, start:first+'T00:00:00+07:00', end:after+'T00:00:00+07:00', label:monthLabel(new Date(Date.UTC(year,month,15,12)))};
+    return {first, after, start:now.toISOString(), end:after+'T00:00:00+07:00', label:monthLabel(new Date(Date.UTC(year,month,15,12)))};
   };
   const state = (icon,title,copy) => {
     box.innerHTML='<div class="event-empty"><span class="event-icon" aria-hidden="true">'+icon+'</span><div><strong>'+title+'</strong><p>'+copy+'</p></div></div>';
@@ -77,7 +77,8 @@
     let hadCachedAgenda=false;
     try{
       const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
-      if(cached?.items?.length){render(cached.items,bounds.label);hadCachedAgenda=true;}
+      const cachedItems=Array.isArray(cached?.items)?cached.items.filter(event=>eventEnd(event).getTime()>=Date.now()).slice(0,6):[];
+      if(cachedItems.length){render(cachedItems,bounds.label);hadCachedAgenda=true;}
       else if(cached&&Array.isArray(cached.items)){state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');hadCachedAgenda=true;}
     }catch{}
     try{
@@ -87,7 +88,7 @@
         starts_at:'lt.'+bounds.end,
         or:'(starts_at.gte.'+bounds.start+',ends_at.gte.'+bounds.start+')',
         order:'starts_at.asc',
-        limit:'1000'
+        limit:'6'
       });
       const headers={apikey:cfg.publishableKey,Authorization:'Bearer '+cfg.publishableKey};
       const programsQuery=new URLSearchParams({select:'id,name,photo_url'});
@@ -99,7 +100,7 @@
       const [rows,programs]=await Promise.all([response.json(),programResponse.json()]);
       const programMap=new Map(programs.map(program=>[program.id,program]));
       const now=Date.now();
-      const items=rows.filter(event=>eventEnd(event).getTime()>=now).map(event=>({...event,program:programMap.get(event.program_id)||null})).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
+      const items=rows.filter(event=>eventEnd(event).getTime()>=now).map(event=>({...event,program:programMap.get(event.program_id)||null})).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).slice(0,6);
       try{localStorage.setItem(cacheKey,JSON.stringify({items,updatedAt:Date.now()}));}catch{}
       if(!items.length)state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');
       else render(items,bounds.label);

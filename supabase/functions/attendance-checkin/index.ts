@@ -38,9 +38,9 @@ async function adminProofUrl(request: Request, url: URL, supabaseUrl: string, se
   const user = await userResponse.json();
   const email = String(user.email ?? "").trim().toLowerCase();
   if (!email) return json({ error: "Akun pengurus tidak memiliki email." }, 403);
-  const adminResponse = await fetch(supabaseUrl + "/rest/v1/competition_admins?select=email&email=eq." + encodeURIComponent(email) + "&limit=1", { headers });
-  if (!adminResponse.ok) return json({ error: "Akses pengurus tidak dapat diperiksa." }, 500);
-  if (!(await adminResponse.json()).length) return json({ error: "Akun ini tidak memiliki akses pengurus." }, 403);
+  const adminResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_admins?select=email&email=eq." + encodeURIComponent(email) + "&limit=1", { headers });
+  if (!adminResponse.ok) return json({ error: "Akses sekretariat tidak dapat diperiksa." }, 500);
+  if (!(await adminResponse.json()).length) return json({ error: "Akun ini tidak memiliki akses sekretariat." }, 403);
   const eventId = url.searchParams.get("event_id") ?? "";
   const memberId = url.searchParams.get("member_id") ?? "";
   if (!isUuid(eventId) || !isUuid(memberId)) return json({ error: "Data foto bukti tidak valid." }, 400);
