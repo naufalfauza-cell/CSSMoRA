@@ -13,7 +13,8 @@
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./prestasi.css?v=20261022-form-v1">
   <script src="./supabase-config.js" defer></script>
-  <script src="./prestasi.js?v=20261022-form-v1" defer></script>
+  <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
+  <script src="./prestasi.js?v=20261022-upload-v1" defer></script>
 </head>
 <body class="achievement-page">
   <header class="achievement-header">
@@ -60,7 +61,7 @@
         <div class="achievement-section-heading"><span>02</span><div><h2 id="proof-title">Bukti &amp; rekening</h2><p>Bukti pendaftaran dan tujuan pencairan subsidi.</p></div></div>
         <label for="proof-file">Bukti sudah submit pendaftaran</label>
         <input id="proof-file" name="proof_file" type="file" accept="image/jpeg,image/png,application/pdf" required>
-        <p class="achievement-hint">JPG, PNG, atau PDF · maksimal 5 MB.</p>
+        <p class="achievement-hint">Gambar dikompres otomatis di perangkat · PDF tetap asli · maksimal 5 MB.</p>
         <div class="achievement-grid-two">
           <div><label for="bank-name">Nama bank</label><input id="bank-name" name="bank_name" maxlength="80" required placeholder="Contoh: BSI"></div>
           <div><label for="account-number">Nomor rekening</label><input id="account-number" name="account_number" inputmode="numeric" pattern="[0-9]{5,30}" maxlength="30" required placeholder="Nomor rekening"></div>
