@@ -253,35 +253,33 @@
         </section>
 
         <section class="secretariat-subpanel" id="attendance-tools-panel" role="tabpanel" aria-labelledby="tab-attendance-tools" hidden>
-          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Foto bukti dihapus otomatis setelah 5 hari.</p></div></div>
+          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Daftar hadir mengikuti agenda kalender yang sudah diterbitkan.</p></div></div>
           <div class="secretariat-workspace attendance-workspace">
             <aside class="secretariat-options-rail" aria-label="Opsi absensi">
               <section class="records-card secretariat-options-card">
                 <div class="editor-heading"><div><span class="admin-kicker">PENGATURAN</span><h3>Opsi absensi</h3></div></div>
                 <button class="member-option-button" id="events-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang</button>
                 <div class="member-options-divider"></div>
-                <span class="member-option-label">Alur rekap</span>
-                <ol class="workspace-steps"><li>Pilih kegiatan</li><li>Tinjau bukti foto</li><li>Simpan atau ekspor</li></ol>
+                <span class="member-option-label">Alur absensi</span>
+                <ol class="workspace-steps"><li>Terbitkan agenda di Kalender</li><li>Buka absensi dari kegiatan</li><li>Tinjau dan rekap kehadiran</li></ol>
               </section>
             </aside>
             <section class="records-card attendance-events-card" aria-labelledby="attendance-events-title">
-              <div class="editor-heading"><div><span class="admin-kicker">DAFTAR KEGIATAN</span><h3 id="attendance-events-title">Pilih untuk direkap</h3></div></div>
+              <div class="editor-heading"><div><span class="admin-kicker">SUMBER KALENDER</span><h3 id="attendance-events-title">Pilih agenda</h3></div><input class="table-search attendance-event-search" id="attendance-event-filter" type="search" placeholder="Cari kegiatan" aria-label="Cari agenda absensi"></div>
               <div class="secretariat-record-list" id="attendance-event-list"><p class="records-empty">Memuat kegiatan…</p></div>
             </section>
-            <section class="editor-card attendance-editor-card" aria-labelledby="event-editor-title">
-              <div class="editor-heading"><div><span class="admin-kicker">KEGIATAN BARU</span><h3 id="event-editor-title">Buat daftar hadir</h3></div><button class="text-button" id="event-form-reset" type="button">Kosongkan</button></div>
-              <form id="attendance-event-form">
-                <label for="attendance-event-title">Nama kegiatan</label><input id="attendance-event-title" maxlength="160" required>
-                <div class="form-two"><div><label for="attendance-event-date">Tanggal</label><input id="attendance-event-date" type="date" required></div><div><label for="attendance-event-session">Sesi</label><input id="attendance-event-session" maxlength="100" value="Umum"></div></div>
-                <label for="attendance-event-location">Tempat (opsional)</label><input id="attendance-event-location" maxlength="180">
-                <button class="admin-button" id="save-attendance-event" type="submit">Buat daftar hadir <span aria-hidden="true">↗</span></button>
-                <p class="form-message" id="event-message" role="status" aria-live="polite"></p>
-              </form>
-            </section>
           </div>
+          <section class="records-card attendance-recap-card" aria-labelledby="attendance-recap-title">
+            <div class="editor-heading"><div><span class="admin-kicker">AKUMULASI KEHADIRAN</span><h3 id="attendance-recap-title">Rekap anggota</h3></div></div>
+            <div class="attendance-summary" id="attendance-recap-summary"></div>
+            <div class="table-toolbar"><input class="table-search" id="attendance-recap-filter" type="search" placeholder="Cari nama atau NIA" aria-label="Cari anggota pada rekap kehadiran"></div>
+            <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Hadir</th><th>Agenda selesai</th><th>Persentase</th></tr></thead><tbody id="attendance-recap"><tr><td colspan="5" class="records-empty">Memuat rekap…</td></tr></tbody></table></div>
+          </section>
+          <p class="form-message" id="event-message" role="status" aria-live="polite"></p>
           <section class="records-card attendance-roster-panel" id="attendance-roster-panel" hidden aria-labelledby="attendance-roster-title">
             <div class="editor-heading"><div><span class="admin-kicker">REKAP KEGIATAN</span><h3 id="attendance-roster-title">Daftar hadir</h3><p class="admin-muted" id="attendance-event-meta"></p></div><div class="attendance-actions"><button class="text-button" id="attendance-export" type="button">Ekspor CSV</button><button class="admin-button attendance-save" id="attendance-save" type="button">Simpan status</button></div></div>
             <div class="attendance-summary" id="attendance-summary"></div>
+            <div class="table-toolbar"><input class="table-search" id="attendance-roster-filter" type="search" placeholder="Cari nama atau NIA" aria-label="Cari anggota pada daftar hadir"></div>
             <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Status kehadiran</th><th>Bukti foto</th></tr></thead><tbody id="attendance-roster"><tr><td colspan="4" class="records-empty">Pilih kegiatan untuk mulai.</td></tr></tbody></table></div>
             <p class="form-message" id="attendance-message" role="status" aria-live="polite"></p>
           </section>

@@ -45,13 +45,13 @@ const record = (name,e)=>{
   const before = { ...database };
   const saveNode = { addEventListener(_, callback) { saveHandler = callback; } };
   const save = vm.createContext({
-    attendanceRosterLoading:false,attendanceRosterRequest:0, $: () => saveNode, currentAttendanceEvent: { id: 'event', status: 'open' },
+    attendanceRosterLoading:false,attendanceRosterRequest:0,attendanceRosterDirty:true,attendanceRosterDrafts:new Map([['member',{status:'hadir',reason:''}]]), $: () => saveNode, currentAttendanceEvent: { id: 'event', status: 'open', agenda:{status:'published'} },
     currentAttendanceRows: [{ event_id: 'event', member_id: 'member', status: 'belum', proof_path: null }],
     document: { querySelector: selector => selector.includes('status') ? { value: 'belum' } : { value: '' } },
     CSS: { escape: value => value }, session: { user: { id: 'admin' } }, Date,
-    showMessage() {}, renderAttendanceRoster() {},
+    showMessage() {}, renderAttendanceRoster() {},loadAttendanceRecap:async()=>{},
     api: async (_, options) => {
-      if (options?.method === 'POST') { database = { ...database, ...options.body[0] }; return null; }
+      if (options?.method === 'POST') { database = { ...database, ...options.body.p_changes[0] }; return null; }
       return [database];
     }
   });
@@ -59,12 +59,13 @@ const record = (name,e)=>{
   await saveHandler();
   record('Attendance stale save overwrites fresh check-in', { before, after: database });
   const proofButton = { disabled: false }, nodes = new Map();
-  const node = key => { if (!nodes.has(key)) nodes.set(key, {}); return nodes.get(key); };
+  const node = key => { if (!nodes.has(key)) nodes.set(key, {addEventListener(){}}); return nodes.get(key); };
   const render = vm.createContext({
-    $: node, currentAttendanceEvent: { status: 'closed' },
+    $: node, currentAttendanceEvent: { status: 'closed',agenda:{status:'published'} },attendanceRosterDirty:false,attendanceRosterDrafts:new Map(),attendanceEventIsPublished:()=>true,
     currentAttendanceRows: [{ member_id: 'member', status: 'hadir', proof_path: 'p', proof_uploaded_at: 'date' }],
     memberById: () => ({ full_name: 'Contoh', cohort: 2024, nia: '001' }),
     escapeHTML: value => String(value ?? ''), attendanceStatusLabel: value => value,
+    setInterval() {},
     document: { querySelectorAll: selector => selector.includes('[data-attendance-proof]') ? [proofButton] : [] }
   });
   vm.runInContext(admin.slice(admin.indexOf('function renderAttendanceRoster'), admin.indexOf('async function getAttendanceProofUrl')), render);
