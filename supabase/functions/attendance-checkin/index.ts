@@ -54,7 +54,7 @@ async function adminProofUrl(request: Request, url: URL, supabaseUrl: string, se
   if (!recordResponse.ok) return json({ error: "Rekap absensi belum dapat dimuat." }, 500);
   const record = (await recordResponse.json())[0];
   if (!record) return json({ error: "Rekap absensi tidak ditemukan." }, 404);
-  if (record.proof_deleted_at) return json({ error: "Foto bukti sudah dihapus otomatis setelah 24 jam." }, 410);
+  if (record.proof_deleted_at) return json({ error: "Foto bukti sudah dihapus otomatis setelah 5 hari." }, 410);
   if (!record.proof_path) return json({ error: "Foto bukti tidak tersedia." }, 404);
   const safePath = String(record.proof_path).split("/").map(encodeURIComponent).join("/");
   const signResponse = await fetch(supabaseUrl + "/storage/v1/object/sign/attendance-proofs/" + safePath, {
@@ -180,7 +180,7 @@ async function preparePhotoUpload(request: Request, supabaseUrl: string, service
     if (existing.ok) return json({ path, already_uploaded: true });
   }
 
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
   const reserveQuery = new URLSearchParams({ event_id: "eq." + event.id, member_id: "eq." + member.id, status: "eq.belum" });
   const reserveResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + reserveQuery, {
     method: "PATCH",
@@ -224,7 +224,7 @@ async function finalizeAttendance(request: Request, supabaseUrl: string, service
   const contentType = String(info.contentType ?? info.content_type ?? info.metadata?.mimetype ?? "").toLowerCase();
   if (!size || size > 512000 || contentType !== "image/jpeg") return json({ error: "Foto harus berupa JPG dengan ukuran maksimal 500 KB." }, 400);
   const uploadedAt = new Date(info.createdAt ?? info.created_at ?? Date.now()).toISOString();
-  const expiresAt = new Date(Date.parse(uploadedAt) + 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.parse(uploadedAt) + 5 * 24 * 60 * 60 * 1000).toISOString();
 
   const windowStart = new Date(Math.floor(Date.now() / 30000) * 30000).toISOString();
   const ipHash = toHex(await hmacBytes(serviceKey, "cssmora-ip:" + requestIp(request)));
