@@ -40,20 +40,23 @@ $('#member-search').addEventListener('input',renderTeamOptions);
 memberList.addEventListener('change',event=>{const box=event.target.closest('input[name="team_member_ids"]');if(!box)return;if(box.checked)selectedTeamIds.add(box.value);else selectedTeamIds.delete(box.value);});
 form.addEventListener('submit',async event=>{
   event.preventDefault();
-  const message=$('#achievement-message'),button=$('#submit-achievement'),file=$('#proof-file').files[0];
+  const message=$('#achievement-message'),button=$('#submit-achievement'),sourceFile=$('#proof-file').files[0];
   message.textContent='';message.dataset.kind='';
   if(!form.reportValidity())return;
-  if(!file){message.textContent='Lampirkan bukti pendaftaran terlebih dahulu.';message.dataset.kind='error';return;}
-  if(file.size>5*1024*1024){message.textContent='Ukuran bukti maksimal 5 MB.';message.dataset.kind='error';return;}
-  const ext={'image/jpeg':'jpg','image/png':'png','application/pdf':'pdf'}[file.type];
-  if(!ext){message.textContent='Format bukti harus JPG, PNG, atau PDF.';message.dataset.kind='error';return;}
+  if(!sourceFile){message.textContent='Lampirkan bukti pendaftaran terlebih dahulu.';message.dataset.kind='error';return;}
+  if(!['image/jpeg','image/png','application/pdf'].includes(sourceFile.type)){message.textContent='Format bukti harus JPG, PNG, atau PDF.';message.dataset.kind='error';return;}
   const type=form.elements.participation_type.value;
   const teamIds=[...selectedTeamIds].filter(id=>id!==rosterSelect.value);
   if(type==='tim'&&!teamIds.length){message.textContent='Pilih minimal satu anggota tim dari roster CSSMoRA.';message.dataset.kind='error';return;}
-  const id=crypto.randomUUID(),path=`applications/${id}/proof.${ext}`;
-  button.disabled=true;button.textContent='Mengirim pengajuan…';message.textContent='Mengunggah bukti dan menyimpan pengajuan…';
-  let uploaded=false;
+  const id=crypto.randomUUID();
+  button.disabled=true;button.textContent='Mengirim pengajuan…';message.textContent=sourceFile.type==='application/pdf'?'Mengunggah bukti PDF…':'Mengompres bukti gambar…';
+  let uploaded=false,path='';
   try{
+    const file=sourceFile.type==='application/pdf'?sourceFile:await window.CSSMoRAUpload.compressImage(sourceFile,{maxBytes:2*1024*1024});
+    if(file.size>5*1024*1024)throw new Error('Ukuran bukti maksimal 5 MB.');
+    const ext={'image/jpeg':'jpg','image/png':'png','application/pdf':'pdf'}[file.type];
+    path=`applications/${id}/proof.${ext}`;
+    message.textContent=sourceFile.type==='application/pdf'?'Mengunggah bukti PDF…':'Mengunggah bukti terkompres…';
     const upload=await fetch(`${config.url}/storage/v1/object/cssmora-prestasi-proofs/${path}`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':file.type,'x-upsert':'false'},body:file});
     if(!upload.ok){const err=await upload.json().catch(()=>({}));throw new Error(err.message||'Bukti pendaftaran gagal diunggah.');}
     uploaded=true;
