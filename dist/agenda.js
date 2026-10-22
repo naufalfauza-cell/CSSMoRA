@@ -77,7 +77,7 @@
     let hadCachedAgenda=false;
     try{
       const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
-      const cachedItems=Array.isArray(cached?.items)?cached.items.filter(event=>eventEnd(event).getTime()>=Date.now()).slice(0,3):[];
+      const cachedItems=Array.isArray(cached?.items)?cached.items.filter(event=>eventEnd(event).getTime()>=Date.now()).slice(0,6):[];
       if(cachedItems.length){render(cachedItems,bounds.label);hadCachedAgenda=true;}
       else if(cached&&Array.isArray(cached.items)){state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');hadCachedAgenda=true;}
     }catch{}
@@ -88,7 +88,7 @@
         starts_at:'lt.'+bounds.end,
         or:'(starts_at.gte.'+bounds.start+',ends_at.gte.'+bounds.start+')',
         order:'starts_at.asc',
-        limit:'3'
+        limit:'6'
       });
       const headers={apikey:cfg.publishableKey,Authorization:'Bearer '+cfg.publishableKey};
       const programsQuery=new URLSearchParams({select:'id,name,photo_url'});
@@ -100,7 +100,7 @@
       const [rows,programs]=await Promise.all([response.json(),programResponse.json()]);
       const programMap=new Map(programs.map(program=>[program.id,program]));
       const now=Date.now();
-      const items=rows.filter(event=>eventEnd(event).getTime()>=now).map(event=>({...event,program:programMap.get(event.program_id)||null})).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).slice(0,3);
+      const items=rows.filter(event=>eventEnd(event).getTime()>=now).map(event=>({...event,program:programMap.get(event.program_id)||null})).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).slice(0,6);
       try{localStorage.setItem(cacheKey,JSON.stringify({items,updatedAt:Date.now()}));}catch{}
       if(!items.length)state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');
       else render(items,bounds.label);
