@@ -21,7 +21,8 @@
     try{if(localStorage.getItem('cssmora-admin-session')||sessionStorage.getItem('cssmora-admin-session'))document.documentElement.classList.add('admin-session-restoring')}catch{}
   </script>
   <script src="./supabase-config.js" defer></script>
-  <script src="./admin.js?v=20261022-payment-share-v4" defer></script>
+  <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
+  <script src="./admin.js?v=20261022-upload-v1" defer></script>
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -79,6 +80,11 @@
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.9L12 3Z"/><path d="m9.5 20-1 2m6-2 1 2"/></svg></span><span class="module-copy"><strong>Prestasi</strong><small>Pengajuan biaya &amp; persetujuan</small></span><span class="module-state is-ready">Aktif</span>
         </button>
           </nav>
+          <div class="sidebar-nav-label drive-nav-label">ARSIP</div>
+          <a class="drive-shortcut" href="https://drive.google.com/drive/folders/1iy4I-aUxExVtJi77LD_YfKRlIexhvfBf" target="_blank" rel="noopener noreferrer" aria-label="Buka Drive CSSMoRA di tab baru">
+            <span class="drive-shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#00832d" d="M8.1 3h5.2l7.2 12.4h-5.2z"/><path fill="#0066da" d="M3.5 15.4 8.1 7.5l2.6 4.5-4.6 7.9z"/><path fill="#ffba00" d="M6.1 19.9h9.2l2.6-4.5H8.7z"/></svg></span>
+            <span class="drive-shortcut-copy"><strong>Drive CSSMoRA</strong><small>Buka arsip Google Drive</small></span><span class="drive-shortcut-arrow" aria-hidden="true">↗</span>
+          </a>
         </aside>
         <button class="admin-sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Tutup navigasi"></button>
         <div class="admin-workspace-content">
