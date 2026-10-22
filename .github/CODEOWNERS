@@ -1,0 +1,8 @@
+# Meminta tinjauan pemilik untuk aturan, tes, akses, dan migrasi yang dilindungi.
+/PROJECT_RULES.md @naufalfauza-cell
+/AGENTS.md @naufalfauza-cell
+/CLAUDE.md @naufalfauza-cell
+/GEMINI.md @naufalfauza-cell
+/.github/ @naufalfauza-cell
+/tests/ @naufalfauza-cell
+/supabase/migrations/ @naufalfauza-cell

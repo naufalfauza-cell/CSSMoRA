@@ -22,7 +22,7 @@ Situs publik informasi dan panel pengelolaan untuk CSSMoRA UNAIR.
     └── supabase-config.js      # URL dan publishable key Supabase
 ```
 
-## Supabase
+## Aturan proyek & agen AI\n\nPerilaku yang sudah dikunci, instruksi Codex/Claude/Gemini/Copilot, perlindungan Code Owner, dan tes regresi dijelaskan di [PROJECT_RULES.md](PROJECT_RULES.md). CI menjalankan tes tersebut pada pull request ke `main`.\n\n## Supabase
 
 Katalog publik membaca data berstatus `published`. Pengurus dapat mengelola draf dan menerbitkan lomba dari `/admin.html`.
 
