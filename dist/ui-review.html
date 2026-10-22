@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#087443">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pratinjau desain pengurus</title>
+  <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./admin.css?v=20261022-agenda-jarkoman-v1">
+  <style>
+    html.admin-session-restoring #auth-view{display:none!important}
+    #session-restoring{display:none;min-height:calc(100vh - 120px);align-items:center;justify-content:center;gap:10px;color:#315d43;font:600 13px/1.5 "Plus Jakarta Sans",sans-serif}
+    html.admin-session-restoring #session-restoring{display:flex}
+    .session-loading-spinner{width:18px;height:18px;border:2px solid #dce9df;border-top-color:#247448;border-radius:50%;animation:session-loading-spin .75s linear infinite}
+    @keyframes session-loading-spin{to{transform:rotate(360deg)}}
+    @media(prefers-reduced-motion:reduce){.session-loading-spinner{animation:none}}
+  </style>
+  
+  
+  
+  
+  <link rel="stylesheet" href="./ui-refresh.css?v=20261022-soft-ui">
+<style>#auth-view{display:none!important}#admin-view{display:block!important}#competitions-panel,#agenda-panel,#finance-panel,#achievements-panel,#access-panel{display:none!important}#secretariat-panel,#members-panel{display:block!important}</style></head>
+<body class="admin-page">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="./" aria-label="Kembali ke beranda CSSMoRA UNAIR">
+        <img class="brand-logo" src="./assets/cssmora-logo.png" alt="" width="58" height="58">
+        <span class="brand-copy"><strong>CSSMoRA <i>UNAIR</i></strong></span>
+      </a>
+      <a class="header-action" href="./lomba.html">Katalog <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+  <main class="admin-main wrap">
+    <div id="session-restoring" role="status" aria-live="polite"><span class="session-loading-spinner" aria-hidden="true"></span><span>Memuat</span></div>
+    <section class="auth-card" hidden id="auth-view" aria-labelledby="auth-title">
+      <span class="flow-emblem" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4v5c0 4.6-5 7.6-8 9-3-1.4-8-4.4-8-9V7l8-4Z"/><path d="m8.5 12 2.3 2.3 4.7-4.8"/></svg></span>
+      <p class="auth-kicker">RUANG PENGELOLAAN · CSSMoRA</p>
+      <h1 id="auth-title">Masuk</h1>
+      <p class="auth-help">Gunakan akun admin CSSMoRA untuk melanjutkan.</p>
+      <form id="auth-form">
+        <label for="admin-email">Email</label>
+        <input id="admin-email" name="email" type="email" autocomplete="username" required>
+        <label for="admin-password">Kata sandi</label>
+        <input id="admin-password" name="password" type="password" autocomplete="current-password" minlength="8" required>
+        <button class="admin-button" id="auth-submit" type="submit">Masuk <span aria-hidden="true">↗</span></button>
+      </form>
+      <a class="text-button password-help" href="./set-password.html">Atur / lupa kata sandi</a>
+      <p class="form-message" id="auth-message" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="admin-dashboard" id="admin-view" aria-labelledby="dashboard-title">
+      <div class="admin-workspace-shell admin-app-shell">
+        <aside class="admin-sidebar" id="admin-sidebar" aria-label="Navigasi pengelolaan CSSMoRA">
+          <a class="app-sidebar-brand" href="./" aria-label="CSSMoRA UNAIR, beranda publik">
+            <img src="./assets/cssmora-logo.png" alt="" width="38" height="38">
+            <span><strong>CSSMoRA</strong><small>UNAIR</small></span>
+          </a>
+          <div class="sidebar-account-card">
+            <span class="sidebar-account-mark" aria-hidden="true">CM</span>
+            <span class="sidebar-account-copy"><strong>CSSMoRA UNAIR</strong></span>
+            
+          </div>
+          <div class="sidebar-nav-label">MENU</div>
+          <nav class="admin-tabs module-grid" role="tablist" aria-label="Pilih bidang pengelolaan">
+        <button class="admin-tab is-active" id="tab-competitions" hidden type="button" role="tab" aria-selected="true" aria-controls="competitions-panel">
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v2a4 4 0 0 0 4 4"/><path d="M16 6h3v2a4 4 0 0 1-4 4"/><path d="M12 12v4m-3 4h6m-5-4h4l1 4H9l1-4Z"/></svg></span><span class="module-copy"><strong>Lomba</strong><small>Poster, informasi, dan pendaftaran</small></span><span class="module-state is-ready">Aktif</span>
+        </button>
+        <button class="admin-tab" id="tab-agenda" type="button" role="tab" aria-selected="false" aria-controls="agenda-panel">
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 9h17"/><path d="M12 12v3l2 1"/></svg></span><span class="module-copy"><strong>Kegiatan</strong><small>Proker, agenda, dan kalender</small></span><span class="module-state is-ready">Aktif</span>
+        </button>
+        <button class="admin-tab" id="tab-finance" type="button" role="tab" aria-selected="false" aria-controls="finance-panel">
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M7 14h4m3 0h3"/></svg></span><span class="module-copy"><strong>Bendahara</strong><small>Kas, anggaran, dan laporan</small></span><span class="module-state">Disiapkan</span>
+        </button>
+        <button class="admin-tab" id="tab-secretariat" type="button" role="tab" aria-selected="false" aria-controls="secretariat-panel">
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 5 20m10-16-2 16M3 9h17M2 15h17"/><path d="M18 4h3v16h-4"/></svg></span><span class="module-copy"><strong>Sekretaris</strong><small>Anggota, absensi, dan persuratan</small></span><span class="module-state is-ready">Aktif</span>
+        </button>
+        <button class="admin-tab" id="tab-achievements" type="button" role="tab" aria-selected="false" aria-controls="achievements-panel">
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.9L12 3Z"/><path d="m9.5 20-1 2m6-2 1 2"/></svg></span><span class="module-copy"><strong>Prestasi</strong><small>Pengajuan biaya &amp; persetujuan</small></span><span class="module-state is-ready">Aktif</span>
+        </button>
+          <button class="admin-tab" id="tab-access" type="button" role="tab" aria-selected="false" aria-controls="access-panel" hidden>
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M17 14a5 5 0 0 1 3.5 5"/></svg></span><span class="module-copy"><strong>Akses pengurus</strong><small>Kelola peran dan hak akses</small></span><span class="module-state">Ketua/Wakil</span>
+        </button>
+        </nav>
+          <div class="sidebar-nav-label drive-nav-label">ARSIP</div>
+          <a class="drive-shortcut" href="https://drive.google.com/drive/folders/1iy4I-aUxExVtJi77LD_YfKRlIexhvfBf" target="_blank" rel="noopener noreferrer" aria-label="Buka Drive CSSMoRA di tab baru">
+            <span class="drive-shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#00832d" d="M8.1 3h5.2l7.2 12.4h-5.2z"/><path fill="#0066da" d="M3.5 15.4 8.1 7.5l2.6 4.5-4.6 7.9z"/><path fill="#ffba00" d="M6.1 19.9h9.2l2.6-4.5H8.7z"/></svg></span>
+            <span class="drive-shortcut-copy"><strong>Drive CSSMoRA</strong><small>Buka arsip Google Drive</small></span><span class="drive-shortcut-arrow" aria-hidden="true">↗</span>
+          </a>
+        </aside>
+        <button class="admin-sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Tutup navigasi"></button>
+        <div class="admin-workspace-content">
+          <header class="admin-topbar">
+            <div class="admin-topbar-leading">
+              <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Ciutkan atau tampilkan navigasi" aria-controls="admin-sidebar" aria-expanded="true"><span aria-hidden="true">☰</span></button>
+              <h2 id="dashboard-title">Lomba</h2>
+            </div>
+            <div class="admin-topbar-user">
+              <div class="admin-user-copy"><span>RUANG PENGURUS</span><strong id="signed-in-as"></strong></div>
+              <span class="admin-user-avatar" aria-hidden="true">CM</span>
+              <button class="text-button" id="logout" type="button">Keluar</button>
+            </div>
+          </header>
+          <div class="admin-content-area">
+      <div class="management-panel" id="competitions-panel" role="tabpanel" aria-labelledby="tab-competitions" hidden>
+      <div class="admin-columns">
+        <section class="editor-card" aria-labelledby="editor-title">
+          <div class="editor-heading"><div><span class="admin-kicker">FORM LOMBA</span><h3 id="editor-title">Tambah lomba</h3></div><button class="text-button" id="form-reset" type="button">Kosongkan</button></div>
+          <form id="competition-form">
+            <input id="record-id" name="recordId" type="hidden">
+            <label for="title">Nama lomba</label><input id="title" name="title" maxlength="120" required>
+            <label for="subtitle">Nama program / subjudul</label><input id="subtitle" name="subtitle" maxlength="160">
+            <div class="form-two"><div><label for="category">Bidang</label><select id="category" name="category" required><option>Esai &amp; Riset</option><option>Bisnis &amp; Inovasi</option><option>Desain &amp; Media</option><option>Debat &amp; Public Speaking</option></select></div><div><label for="organizer">Penyelenggara</label><input id="organizer" name="organizer" maxlength="160" required></div></div>
+            <div class="form-two"><div><label for="deadline">Batas pendaftaran</label><input id="deadline" name="deadline" type="date" required></div><div><label for="fee">Biaya pendaftaran</label><input id="fee" name="fee" placeholder="Gratis / Rp50.000 per tim" maxlength="80" required></div></div>
+            <label for="competition-poster-file">Poster lomba</label><input id="competition-poster-file" type="file" accept="image/jpeg,image/png,image/webp"><input id="poster" name="poster" type="hidden"><small>JPG, PNG, atau WebP. Gambar dikompres otomatis.</small>
+            <label for="registration">Tautan pendaftaran resmi</label><input id="registration" name="registration" type="url" placeholder="https://…">
+            <label for="description">Deskripsi dan catatan</label><textarea id="description" name="description" rows="4" maxlength="1200"></textarea>
+            <label class="publish-toggle"><input id="published" name="published" type="checkbox"><span><strong>Terbitkan sekarang</strong><small>Lomba berstatus draft hanya terlihat oleh admin.</small></span></label>
+            <button class="admin-button" id="save-competition" type="submit">Simpan lomba <span aria-hidden="true">↗</span></button>
+            <p class="form-message" id="editor-message" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+        <section class="records-card" aria-labelledby="records-title">
+          <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="records-title">Lomba tersimpan</h3></div><span class="record-count" id="record-count">—</span></div>
+          <div class="record-list" id="record-list"><p class="records-empty">Memuat data…</p></div>
+        </section>
+      </div>
+      </div>
+      <section class="management-panel agenda-management" id="agenda-panel" role="tabpanel" aria-labelledby="tab-agenda" hidden>
+        <nav class="agenda-admin-tabs" role="tablist" aria-label="Kelola proker dan agenda">
+          <button class="agenda-admin-tab is-active" id="tab-programs" type="button" role="tab" aria-selected="true" aria-controls="programs-panel">1 · Daftar proker &amp; foto</button>
+          <button class="agenda-admin-tab" id="tab-schedule" type="button" role="tab" aria-selected="false" aria-controls="schedule-panel">2 · Jadwal agenda</button>
+        </nav>
+        <section class="agenda-admin-subpanel" id="programs-panel" role="tabpanel" aria-labelledby="tab-programs">
+          <div class="editor-heading program-library-heading"><div><span class="admin-kicker">PERPUSTAKAAN PROKER</span><h3>Program kerja dan fotonya</h3><p class="admin-muted">Tambahkan foto proker sekali. Pengurus dapat memilih proker yang sama saat membuat agenda baru.</p></div></div>
+          <div class="admin-columns program-library-grid">
+            <section class="editor-card" aria-labelledby="program-editor-title">
+              <div class="editor-heading"><div><span class="admin-kicker">DATA PROKER</span><h3 id="program-editor-title">Tambah proker</h3></div><button class="text-button" id="program-form-reset" type="button">Kosongkan</button></div>
+              <form id="program-form">
+                <input id="program-record-id" name="recordId" type="hidden">
+                <label for="program-name">Nama proker</label><input id="program-name" name="name" maxlength="100" placeholder="Contoh: CSS Sport" required>
+                <label for="program-photo">Foto kegiatan</label><input id="program-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required>
+                <p class="field-hint">Format JPG, PNG, atau WebP. Maksimal 8 MB.</p>
+                <div class="program-photo-preview" id="program-photo-preview" hidden><img id="program-photo-preview-image" alt="Pratinjau foto proker"><span id="program-photo-preview-label"></span></div>
+                <label class="publish-toggle"><input id="program-active" name="active" type="checkbox" checked><span><strong>Aktif untuk agenda baru</strong><small>Proker nonaktif tetap menyimpan foto pada agenda sebelumnya.</small></span></label>
+                <button class="admin-button" id="save-program" type="submit">Simpan proker <span aria-hidden="true">↗</span></button>
+                <p class="form-message" id="program-editor-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
+            <section class="records-card" aria-labelledby="program-records-title">
+              <div class="editor-heading"><div><span class="admin-kicker">PERPUSTAKAAN</span><h3 id="program-records-title">Proker tersimpan</h3></div><div class="agenda-record-tools"><span class="record-count" id="program-record-count">—</span><button class="text-button" id="program-refresh" type="button">Muat ulang</button></div></div>
+              <div class="program-record-list" id="program-record-list"><p class="records-empty">Memuat proker…</p></div>
+            </section>
+          </div>
+          <div class="agenda-next-step"><span>Langkah berikutnya</span><strong>Pilih tab “Jadwal agenda” untuk memasukkan tanggal dan memilih foto prokernya.</strong><button type="button" data-open-schedule>Lanjut ke jadwal <b aria-hidden="true">→</b></button></div>
+        </section>
+        <section class="agenda-admin-subpanel" id="schedule-panel" role="tabpanel" aria-labelledby="tab-schedule" hidden>
+          <div class="editor-heading program-library-heading"><div><span class="admin-kicker">JADWAL KEGIATAN</span><h3>Agenda dan hitung mundur</h3><p class="admin-muted">Pilih proker dari daftar di atas. Foto yang sudah diunggah akan otomatis dipakai di agenda publik.</p></div></div>
+          <div class="admin-columns">
+            <section class="editor-card" aria-labelledby="agenda-editor-title">
+              <div class="editor-heading"><div><span class="admin-kicker">FORM AGENDA</span><h3 id="agenda-editor-title">Tambah agenda</h3></div><button class="text-button" id="agenda-form-reset" type="button">Kosongkan</button></div>
+              <form id="agenda-form">
+                <input id="agenda-record-id" name="recordId" type="hidden">
+                <label for="agenda-program">Program kerja</label><select id="agenda-program" name="programId" required><option value="">Pilih proker aktif…</option></select>
+                <label for="agenda-title-input">Nama kegiatan</label><input id="agenda-title-input" name="title" maxlength="140" required>
+                <div class="form-two"><div><label for="agenda-starts">Mulai (WIB)</label><input id="agenda-starts" name="startsAt" type="datetime-local" required></div><div><label for="agenda-ends">Selesai (opsional)</label><input id="agenda-ends" name="endsAt" type="datetime-local"></div></div>
+                <label for="agenda-location">Lokasi</label><input id="agenda-location" name="location" maxlength="180" placeholder="Contoh: Ruang rapat CSSMoRA">
+                <label for="agenda-description">Keterangan</label><textarea id="agenda-description" name="description" rows="4" maxlength="1500"></textarea>
+                <div class="agenda-announcement-tools">
+                  <div class="agenda-announcement-heading"><div><strong>Jarkoman WhatsApp</strong><small>Disusun dari detail agenda. Periksa dan edit sebelum dibagikan.</small></div><button class="text-button" id="generate-announcement" type="button">Buat jarkoman ✦</button></div>
+                  <textarea id="agenda-announcement-preview" rows="10" maxlength="4000" placeholder="Jarkoman yang dibuat akan muncul di sini…" aria-label="Pratinjau jarkoman WhatsApp"></textarea>
+                  <div class="agenda-announcement-footer"><span id="agenda-announcement-status" role="status" aria-live="polite"></span><button class="text-button" id="copy-announcement" type="button" disabled>Salin teks</button></div>
+                </div>
+                <label class="publish-toggle"><input id="agenda-published" name="published" type="checkbox"><span><strong>Terbitkan agenda</strong><small>Agenda terbit akan muncul di daftar bulanan dan kalender publik.</small></span></label>
+                <button class="admin-button" id="save-agenda" type="submit">Simpan agenda <span aria-hidden="true">↗</span></button>
+                <p class="form-message" id="agenda-editor-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
+            <section class="records-card" aria-labelledby="agenda-records-title">
+              <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="agenda-records-title">Agenda tersimpan</h3></div><div class="agenda-record-tools"><span class="record-count" id="agenda-record-count">—</span><button class="text-button" id="agenda-refresh" type="button">Muat ulang</button></div></div>
+              <div class="record-list" id="agenda-record-list"><p class="records-empty">Memuat data…</p></div>
+            </section>
+          </div>
+        </section>
+      </section>
+      <section class="management-panel module-placeholder" id="finance-panel" role="tabpanel" aria-labelledby="tab-finance" hidden>
+        <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">Rp</span><div><span class="admin-kicker">MODUL KEUANGAN</span><h3>Pengelolaan bendahara</h3><p>Ruang untuk pencatatan kas, anggaran, prognosa, dan laporan keuangan sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
+      </section>
+      <section class="management-panel secretariat-management" id="secretariat-panel" role="tabpanel" aria-labelledby="tab-secretariat">
+        <nav class="secretariat-tabs" role="tablist" aria-label="Ruang kerja sekretaris">
+          <button class="secretariat-tab is-active" id="tab-members" type="button" role="tab" aria-selected="true" aria-controls="members-panel">Anggota</button>
+          <button class="secretariat-tab" id="tab-attendance-tools" type="button" role="tab" aria-selected="false" aria-controls="attendance-tools-panel">Absensi</button>
+          <button class="secretariat-tab" id="tab-letters" type="button" role="tab" aria-selected="false" aria-controls="letters-panel">Persuratan</button>
+        </nav>
+
+        <section class="secretariat-subpanel" id="members-panel" role="tabpanel" aria-labelledby="tab-members">
+          <div class="secretariat-intro member-intro"><div><span class="admin-kicker">DATA INDUK</span><h3>Data anggota</h3></div><span class="record-count" id="member-count" aria-live="polite">Memuat…</span></div>
+          <div class="member-workspace">
+            <section class="records-card member-table-card" aria-labelledby="members-list-title">
+              <div class="editor-heading member-table-heading">
+                <div><span class="admin-kicker">DAFTAR ANGGOTA</span><h3 id="members-list-title">Anggota tersimpan</h3></div>
+                <span class="member-table-count" id="member-visible-count">132 data</span>
+              </div>
+              <div class="member-tools">
+                <input id="member-search" type="search" placeholder="Cari nama atau NIA…" aria-label="Cari anggota">
+                <div class="member-data-actions">
+                  <button class="member-data-button" id="members-refresh" type="button" title="Muat ulang data"><span aria-hidden="true">↻</span><span>Muat ulang</span></button>
+                  <label class="member-data-button member-import-button" for="member-csv"><span aria-hidden="true">↑</span><span>Impor</span></label>
+                  <input id="member-csv" type="file" accept=".csv,text/csv" hidden>
+                  <button class="member-data-button" id="member-export" type="button"><span aria-hidden="true">↓</span><span>Ekspor</span></button>
+                </div>
+              </div>
+              <div class="secretariat-table-wrap"><table class="secretariat-table member-data-table"><thead><tr>
+                <th>Anggota</th>
+                <th><label class="member-filter-label" for="member-cohort-filter">Angkatan</label><select id="member-cohort-filter" class="member-column-filter"><option value="all">Semua</option></select></th>
+                <th><label class="member-filter-label" for="member-program-filter">Program studi</label><select id="member-program-filter" class="member-column-filter"><option value="all">Semua prodi</option></select></th>
+                <th><label class="member-filter-label" for="member-study-status-filter">Status studi</label><select id="member-study-status-filter" class="member-column-filter"><option value="all">Semua status</option><option value="mahasiswa">Masih mahasiswa</option><option value="lulus">Lulus</option><option value="belum_ditentukan">Belum diisi</option></select></th>
+                <th>Aksi</th>
+              </tr></thead><tbody id="member-record-list"><tr><td colspan="5" class="records-empty">Memuat data…</td></tr></tbody></table></div>
+              <p class="form-message" id="member-list-message" role="status" aria-live="polite"></p>
+            </section>
+
+            <aside class="member-entry-rail" aria-label="Form anggota">
+              <section class="editor-card member-editor-card" aria-labelledby="member-editor-title">
+                <div class="editor-heading"><div><span class="admin-kicker">ENTRI DATA</span><h3 id="member-editor-title">Tambah anggota</h3></div><button class="text-button" id="member-form-reset" type="button">Kosongkan</button></div>
+                <form id="member-form">
+                  <input id="member-record-id" type="hidden">
+                  <div class="form-two"><div><label for="member-nia">NIA</label><input id="member-nia" maxlength="40" required></div><div><label for="member-cohort">Angkatan</label><input id="member-cohort" type="number" min="2000" max="2100" required></div></div>
+                  <label for="member-name">Nama lengkap</label><input id="member-name" maxlength="140" required>
+                  <label for="member-faculty">Fakultas</label><input id="member-faculty" maxlength="120">
+                  <label for="member-program">Program studi</label><input id="member-program" maxlength="120">
+                  <label for="member-study-status">Status studi</label>
+                  <select id="member-study-status" required>
+                    <option value="">Pilih status</option>
+                    <option value="mahasiswa">Masih mahasiswa</option>
+                    <option value="lulus">Lulus</option>
+                    <option value="belum_ditentukan">Belum ditentukan</option>
+                  </select>
+                  <label class="publish-toggle"><input id="member-active" type="checkbox" checked><span><strong>Masuk roster absensi</strong><small>Anggota ini muncul pada daftar hadir baru.</small></span></label>
+                  <button class="admin-button" id="save-member" type="submit">Simpan anggota <span aria-hidden="true">↗</span></button>
+                  <p class="form-message" id="member-message" role="status" aria-live="polite"></p>
+                </form>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section class="secretariat-subpanel" id="attendance-tools-panel" role="tabpanel" aria-labelledby="tab-attendance-tools" hidden>
+          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Foto bukti dihapus otomatis setelah 5 hari.</p></div></div>
+          <div class="secretariat-workspace attendance-workspace">
+            <aside class="secretariat-options-rail" aria-label="Opsi absensi">
+              <section class="records-card secretariat-options-card">
+                <div class="editor-heading"><div><span class="admin-kicker">PENGATURAN</span><h3>Opsi absensi</h3></div></div>
+                <button class="member-option-button" id="events-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang</button>
+                <div class="member-options-divider"></div>
+                <span class="member-option-label">Alur rekap</span>
+                <ol class="workspace-steps"><li>Pilih kegiatan</li><li>Tinjau bukti foto</li><li>Simpan atau ekspor</li></ol>
+              </section>
+            </aside>
+            <section class="records-card attendance-events-card" aria-labelledby="attendance-events-title">
+              <div class="editor-heading"><div><span class="admin-kicker">DAFTAR KEGIATAN</span><h3 id="attendance-events-title">Pilih untuk direkap</h3></div></div>
+              <div class="secretariat-record-list" id="attendance-event-list"><p class="records-empty">Memuat kegiatan…</p></div>
+            </section>
+            <section class="editor-card attendance-editor-card" aria-labelledby="event-editor-title">
+              <div class="editor-heading"><div><span class="admin-kicker">KEGIATAN BARU</span><h3 id="event-editor-title">Buat daftar hadir</h3></div><button class="text-button" id="event-form-reset" type="button">Kosongkan</button></div>
+              <form id="attendance-event-form">
+                <label for="attendance-event-title">Nama kegiatan</label><input id="attendance-event-title" maxlength="160" required>
+                <div class="form-two"><div><label for="attendance-event-date">Tanggal</label><input id="attendance-event-date" type="date" required></div><div><label for="attendance-event-session">Sesi</label><input id="attendance-event-session" maxlength="100" value="Umum"></div></div>
+                <label for="attendance-event-location">Tempat (opsional)</label><input id="attendance-event-location" maxlength="180">
+                <button class="admin-button" id="save-attendance-event" type="submit">Buat daftar hadir <span aria-hidden="true">↗</span></button>
+                <p class="form-message" id="event-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
+          </div>
+          <section class="records-card attendance-roster-panel" id="attendance-roster-panel" hidden aria-labelledby="attendance-roster-title">
+            <div class="editor-heading"><div><span class="admin-kicker">REKAP KEGIATAN</span><h3 id="attendance-roster-title">Daftar hadir</h3><p class="admin-muted" id="attendance-event-meta"></p></div><div class="attendance-actions"><button class="text-button" id="attendance-export" type="button">Ekspor CSV</button><button class="admin-button attendance-save" id="attendance-save" type="button">Simpan status</button></div></div>
+            <div class="attendance-summary" id="attendance-summary"></div>
+            <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Status kehadiran</th><th>Bukti foto</th></tr></thead><tbody id="attendance-roster"><tr><td colspan="4" class="records-empty">Pilih kegiatan untuk mulai.</td></tr></tbody></table></div>
+            <p class="form-message" id="attendance-message" role="status" aria-live="polite"></p>
+          </section>
+          <dialog class="attendance-proof-dialog" id="attendance-proof-dialog" aria-labelledby="attendance-proof-title">
+            <form method="dialog"><button class="attendance-proof-close" aria-label="Tutup foto bukti">×</button></form>
+            <h3 id="attendance-proof-title">Foto bukti kehadiran</h3>
+            <img id="attendance-proof-image" alt="Foto bukti kehadiran anggota">
+            <p>Foto dihapus otomatis 5 hari setelah diunggah.</p>
+          </dialog>
+        </section>
+
+        <section class="secretariat-subpanel" id="letters-panel" role="tabpanel" aria-labelledby="tab-letters" hidden>
+          <div class="secretariat-intro"><div><span class="admin-kicker">SURAT KELUAR</span><h3>Nomor surat dan arsip</h3><p>Nomor surat berikutnya mengikuti buku agenda.</p></div></div>
+          <div class="secretariat-workspace letters-workspace">
+            <aside class="secretariat-options-rail" aria-label="Opsi persuratan">
+              <section class="records-card secretariat-options-card">
+                <div class="editor-heading"><div><span class="admin-kicker">PENGATURAN</span><h3>Opsi surat</h3></div></div>
+                <span class="member-option-label">Jumlah surat</span>
+                <strong class="letter-total" id="letter-count">0 surat</strong>
+                <button class="member-option-button" id="letters-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang</button>
+                <div class="member-options-divider"></div>
+                <span class="member-option-label">Arsip surat</span>
+                <p class="field-hint">Tambahkan tautan Drive pada baris surat, lalu pilih status arsipnya.</p>
+              </section>
+            </aside>
+            <section class="records-card letter-register-card" aria-labelledby="letter-register-title">
+              <div class="editor-heading"><div><span class="admin-kicker">BUKU AGENDA SURAT KELUAR</span><h3 id="letter-register-title">Surat tersimpan</h3></div></div>
+              <div class="secretariat-record-list" id="letter-record-list"><p class="records-empty">Memuat data…</p></div>
+            </section>
+            <section class="editor-card letter-editor-card" aria-labelledby="letter-editor-title">
+              <div class="editor-heading"><div><span class="admin-kicker">PENOMORAN OTOMATIS · PERIODE 2026/2027</span><h3 id="letter-editor-title">Terbitkan nomor surat</h3></div></div>
+              <form id="letter-form">
+                <label for="letter-subject">Perihal surat</label><input id="letter-subject" maxlength="240" required>
+                <div class="form-two"><div><label for="letter-issued-on">Tanggal surat</label><input id="letter-issued-on" type="date" required></div><div><label for="letter-scope">Cakupan</label><select id="letter-scope"><option value="i">Internal (i)</option><option value="e">Eksternal (e)</option></select></div></div>
+                <div class="form-two"><div><label for="letter-type">Jenis surat</label><select id="letter-type" required><option value="" disabled selected>Pilih jenis surat</option><option value="SK">Surat Keputusan/Ketetapan (SK)</option><option value="SB">Surat Keputusan Bersama (SB)</option><option value="SR">Surat Rekomendasi Keputusan (SR)</option><option value="SG">Surat Pengangkatan/Pemberhentian (SG)</option><option value="SM">Surat Mandat (SM)</option><option value="ST">Surat Tugas (ST)</option><option value="SP">Surat Pengantar (SP)</option><option value="SN">Surat Keterangan (SN)</option><option value="SU">Surat Undangan (SU)</option><option value="SO">Surat Permohonan (SO)</option><option value="SH">Surat Penghargaan (SH)</option><option value="SA">Surat Pemberitahuan (SA)</option></select></div><div><label for="letter-department">Divisi penerbit</label><select id="letter-department" required><option value="" disabled selected>Pilih divisi</option><option value="BPH">BPH · CSSMoRA-UNAIR</option><option value="PSDM">PSDM · XI.01</option><option value="P3M">P3M · XI.02</option><option value="ADVO">Advo · XI.03</option><option value="MEDINFO">Medinfo · XI.04</option></select></div></div>
+                <label for="letter-recipient">Tujuan surat (opsional)</label><input id="letter-recipient" maxlength="180">
+                <div class="form-two"><div><label for="letter-attachments">Jumlah lampiran</label><input id="letter-attachments" type="number" min="0" max="99" value="0"></div><div><label for="letter-archive-url">Tautan arsip (opsional)</label><input id="letter-archive-url" type="url" placeholder="https://drive.google.com/…"></div></div>
+                <button class="admin-button" id="issue-letter" type="submit">Terbitkan nomor <span aria-hidden="true">↗</span></button>
+                <p class="form-message" id="letter-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
+          </div>
+        </section>
+      </section>
+      <section class="management-panel achievement-admin-panel" id="achievements-panel" role="tabpanel" aria-labelledby="tab-achievements" hidden>
+        <div class="achievement-admin-heading"><div><span class="admin-kicker">PENGAJUAN BANTUAN LOMBA</span><h3>Peninjauan prestasi</h3><p>Setiap pengajuan disetujui Bendahara terlebih dahulu, lalu Ketua.</p></div><button class="member-option-button" id="achievement-refresh" type="button">↻ Muat ulang</button></div>
+        <p class="form-message achievement-action-message" id="achievement-action-message" role="status" aria-live="polite"></p>
+        <div class="achievement-admin-toolbar"><div class="achievement-admin-filters" role="group" aria-label="Filter status pengajuan"><button type="button" class="achievement-filter is-active" data-achievement-filter="all">Semua</button><button type="button" class="achievement-filter" data-achievement-filter="pending_bendahara">Menunggu Bendahara</button><button type="button" class="achievement-filter" data-achievement-filter="pending_ketua">Menunggu Ketua</button><button type="button" class="achievement-filter" data-achievement-filter="approved">Disetujui</button><button type="button" class="achievement-filter" data-achievement-filter="rejected">Ditolak</button></div><span class="record-count" id="achievement-count">—</span></div>
+        <div class="achievement-admin-layout">
+          <div class="achievement-application-list" id="achievement-application-list"><p class="records-empty">Masuk ke sistem untuk memuat pengajuan.</p></div>
+
+
+        </div>
+      </section>
+      <section class="management-panel access-management-panel" id="access-panel" role="tabpanel" aria-labelledby="tab-access" hidden>
+        <div class="access-heading">
+          <div><span class="admin-kicker">PENGATURAN AKUN</span><h3>Akses pengurus</h3><p>Ketua dan Wakil Ketua mengatur peran berdasarkan tugas.</p></div>
+        </div>
+        <div class="access-layout">
+          <section class="records-card access-form-card" aria-labelledby="access-form-title">
+            <div class="editor-heading"><div><span class="admin-kicker">TAMBAH AKSES</span><h3 id="access-form-title">Tetapkan peran</h3></div></div>
+            <form id="role-form" class="access-form">
+              <label for="role-email">Email akun Supabase</label>
+              <input id="role-email" name="email" type="email" autocomplete="off" placeholder="nama@email.com" required>
+              <label for="role-name">Peran</label>
+              <select id="role-name" name="role" required>
+                <option value="">Pilih peran</option>
+                <option value="ketua">Ketua</option>
+                <option value="wakil">Wakil Ketua</option>
+                <option value="bendahara">Bendahara</option>
+                <option value="sekretaris">Sekretaris</option>
+                <option value="bph_departemen">BPH / Departemen</option>
+              </select>
+              <button class="admin-button" id="save-role" type="submit">Simpan akses <span aria-hidden="true">↗</span></button>
+              <p class="form-message" id="role-message" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+          <section class="records-card access-list-card" aria-labelledby="access-list-title">
+            <div class="editor-heading"><div><span class="admin-kicker">AKUN TERDAFTAR</span><h3 id="access-list-title">Peran pengurus</h3></div><button type="button" class="member-option-button" id="role-refresh">↻ Muat ulang</button></div>
+            <div class="access-list" id="role-list"><p class="records-empty">Pilih menu ini untuk memuat peran.</p></div>
+          </section>
+        </div>
+      </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
