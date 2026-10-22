@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261022-payment-share-v4">
+  <link rel="stylesheet" href="./admin.css?v=20261022-upload-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
     #session-restoring{display:none;min-height:44vh;align-items:center;justify-content:center;color:#315d43;font:600 14px/1.5 "Plus Jakarta Sans",sans-serif}
@@ -239,7 +239,7 @@
         </section>
 
         <section class="secretariat-subpanel" id="attendance-tools-panel" role="tabpanel" aria-labelledby="tab-attendance-tools" hidden>
-          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Foto bukti dihapus otomatis setelah 24 jam.</p></div></div>
+          <div class="secretariat-intro"><div><span class="admin-kicker">KEHADIRAN</span><h3>Absensi kegiatan</h3><p>Foto bukti dihapus otomatis setelah 5 hari.</p></div></div>
           <div class="secretariat-workspace attendance-workspace">
             <aside class="secretariat-options-rail" aria-label="Opsi absensi">
               <section class="records-card secretariat-options-card">
@@ -275,7 +275,7 @@
             <form method="dialog"><button class="attendance-proof-close" aria-label="Tutup foto bukti">×</button></form>
             <h3 id="attendance-proof-title">Foto bukti kehadiran</h3>
             <img id="attendance-proof-image" alt="Foto bukti kehadiran anggota">
-            <p>Foto dihapus otomatis 24 jam setelah diunggah.</p>
+            <p>Foto dihapus otomatis 5 hari setelah diunggah.</p>
           </dialog>
         </section>
 
