@@ -1047,17 +1047,18 @@ async function removeAchievementPaymentObject(path){
   if(!response.ok)throw new Error('File lama belum dapat dihapus.');
 }
 async function uploadAchievementPaymentProof(input){
-  const appId=input.dataset.paymentProofUpload, file=input.files?.[0];
-  if(!file)return;
-  if(!['image/jpeg','image/png','application/pdf'].includes(file.type)){alert('Pilih file JPG, PNG, atau PDF.');input.value='';return;}
-  if(file.size>5*1024*1024){alert('Ukuran bukti pembayaran maksimal 5 MB.');input.value='';return;}
+  const appId=input.dataset.paymentProofUpload, sourceFile=input.files?.[0];
+  if(!sourceFile)return;
+  if(!['image/jpeg','image/png','application/pdf'].includes(sourceFile.type)){alert('Pilih file JPG, PNG, atau PDF.');input.value='';return;}
   const app=achievementApplications.find(row=>row.id===appId);
   if(!app||app.status!=='approved'){alert('Bukti hanya dapat diunggah untuk pengajuan yang sudah disetujui.');input.value='';return;}
-  const ext=file.type==='image/jpeg'?'jpg':file.type==='image/png'?'png':'pdf';
-  const path=`payments/${appId}/payment-proof-${Date.now()}.${ext}`;
   const previousPath=app.payment_proof_path;
-  input.disabled=true;showMessage('#achievement-action-message','Mengunggah bukti transfer…');
+  input.disabled=true;showMessage('#achievement-action-message',sourceFile.type==='application/pdf'?'Mengunggah PDF bukti transfer…':'Mengompres bukti transfer…');
   try{
+    const file=sourceFile.type==='application/pdf'?sourceFile:await window.CSSMoRAUpload.compressImage(sourceFile,{maxBytes:2*1024*1024});
+    if(file.size>5*1024*1024)throw new Error('Ukuran bukti pembayaran maksimal 5 MB.');
+    const ext={'image/jpeg':'jpg','image/png':'png','application/pdf':'pdf'}[file.type];
+    const path=`payments/${appId}/payment-proof-${Date.now()}.${ext}`;
     const response=await fetchTimed(`${config.url}/storage/v1/object/cssmora-prestasi-proofs/${path.split('/').map(encodeURIComponent).join('/')}`,{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${session.access_token}`,'Content-Type':file.type},body:file});
     if(!response.ok){const error=await response.json().catch(()=>({}));throw new Error(error.message||'Bukti transfer gagal diunggah.');}
     await api('rpc/set_cssmora_achievement_payment_proof',{method:'POST',body:{p_id:appId,p_path:path}});
