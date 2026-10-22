@@ -12,6 +12,14 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./admin.css?v=20261022-achievement-review-v1">
+  <style>
+    html.admin-session-restoring #auth-view{display:none!important}
+    #session-restoring{display:none;min-height:44vh;align-items:center;justify-content:center;color:#315d43;font:600 14px/1.5 "Plus Jakarta Sans",sans-serif}
+    html.admin-session-restoring #session-restoring{display:flex}
+  </style>
+  <script>
+    try{if(localStorage.getItem('cssmora-admin-session')||sessionStorage.getItem('cssmora-admin-session'))document.documentElement.classList.add('admin-session-restoring')}catch{}
+  </script>
   <script src="./supabase-config.js" defer></script>
   <script src="./admin.js?v=20261022-session-restore-v2" defer></script>
 </head>
@@ -25,7 +33,7 @@
       <a class="header-action" href="./lomba.html">Katalog <span aria-hidden="true">↗</span></a>
     </div>
   </header>
-  <main class="admin-main wrap">
+  <main class="admin-main wrap">\n    <div id="session-restoring" role="status">Memulihkan sesi pengurus…</div>
     <section class="auth-card" id="auth-view" aria-labelledby="auth-title">
       <p class="auth-kicker">RUANG PENGELOLAAN · CSSMoRA</p>
       <h1 id="auth-title">Masuk</h1>
