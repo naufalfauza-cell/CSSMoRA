@@ -38,8 +38,8 @@
       const date = '<div class="event-date"><b>'+parts(start,{day:'numeric'})+'</b><span>'+parts(start,{month:'short'})+'</span></div>';
       const program=event.program||null;
       const photo=program?.photo_url||'./assets/cssmora-logo.png';
-      const photoName=program?.name||'CSSMoRA UNAIR';
-      return '<article class="event-item'+(index===0?' on':'')+'" role="group" aria-roledescription="slide" aria-label="Agenda '+(index+1)+' dari '+items.length+'"><img class="event-photo" src="'+esc(photo)+'" alt="Foto '+esc(photoName)+'" loading="eager" decoding="async" fetchpriority="'+(index===0?'high':'auto')+'"><div class="event-content">'+date+'<div class="event-body"><span class="event-when">'+esc(eventTime(event))+'</span><strong>'+esc(event.title)+'</strong><p>'+esc(event.location||'CSSMoRA UNAIR')+'</p></div></div></article>';
+      const photoName=program?.name||event.title;
+      return '<article class="event-item'+(index===0?' on':'')+'" role="group" aria-roledescription="slide" aria-label="Agenda '+(index+1)+' dari '+items.length+'"><img class="event-photo" src="'+esc(photo)+'" alt="Foto '+esc(photoName)+'" loading="eager" decoding="async" fetchpriority="'+(index===0?'high':'auto')+'"><div class="event-content">'+date+'<div class="event-body"><span class="event-when">'+esc(eventTime(event))+'</span><strong>'+esc(event.title)+'</strong>'+(event.location?'<p>'+esc(event.location)+'</p>':'')+'</div></div></article>';
     }).join('') + (items.length>1 ? '<div class="event-carousel-tools"><button type="button" class="event-arrow" data-step="-1" aria-label="Agenda sebelumnya">‹</button><span class="event-position" aria-live="polite">1 dari '+items.length+' · '+esc(month)+'</span><button type="button" class="event-arrow" data-step="1" aria-label="Agenda berikutnya">›</button></div><div class="event-dots" aria-label="Pilih agenda">'+items.map((_,index)=>'<button type="button" data-slide="'+index+'" aria-label="Tampilkan agenda '+(index+1)+'"'+(index===0?' class="on" aria-current="true"':'')+'></button>').join('')+'</div>' : '');
     box.querySelectorAll('.event-photo').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
     if(items.length<2) return;
@@ -73,7 +73,13 @@
     const bounds=monthBounds();
     const heading=document.querySelector('.screen-kicker');
     if(heading)heading.textContent='AGENDA '+bounds.label.toLocaleUpperCase('id-ID');
-    state('…','Memuat agenda','Mohon tunggu sebentar.');
+    const cacheKey='cssmora-videotron-agenda-'+bounds.first;
+    let hadCachedAgenda=false;
+    try{
+      const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
+      if(cached?.items?.length){render(cached.items,bounds.label);hadCachedAgenda=true;}
+      else if(cached&&Array.isArray(cached.items)){state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');hadCachedAgenda=true;}
+    }catch{}
     try{
       const params=new URLSearchParams({
         select:'id,title,starts_at,ends_at,location,program_id',
@@ -94,11 +100,12 @@
       const programMap=new Map(programs.map(program=>[program.id,program]));
       const now=Date.now();
       const items=rows.filter(event=>eventEnd(event).getTime()>=now).map(event=>({...event,program:programMap.get(event.program_id)||null})).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
+      try{localStorage.setItem(cacheKey,JSON.stringify({items,updatedAt:Date.now()}));}catch{}
       if(!items.length)state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');
       else render(items,bounds.label);
     }catch(error){
       console.error('Gagal memuat agenda videotron:',error);
-      state('!','Agenda belum bisa dimuat','Muat ulang halaman beberapa saat lagi.');
+      if(!hadCachedAgenda)state('!','Agenda belum tersedia','Coba muat ulang beberapa saat lagi.');
     }
   })();
 })();
