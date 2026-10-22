@@ -19,20 +19,24 @@
     if (end && startDay !== endDay) return datePart(start)+' '+timeLabel(start)+' sampai '+datePart(end)+' '+timeLabel(end)+' WIB';
     return parts(start,{weekday:'long',day:'numeric',month:'long'})+' · '+timeLabel(start)+' WIB'+(end?'–'+timeLabel(end)+' WIB':'');
   };
-  const eventEnd = event => event.ends_at ? new Date(event.ends_at) : new Date(event.starts_at);
+  const eventEnd = event => event.ends_at ? new Date(event.ends_at) : new Date(dateKey(new Date(event.starts_at))+'T23:59:59.999+07:00');
   const monthBounds = () => {
     const now = new Date();
     const currentDay = dateKey(now);
     const year = Number(currentDay.slice(0,4)), month = Number(currentDay.slice(5,7))-1;
     const first = year+'-'+String(month+1).padStart(2,'0')+'-01';
     const after = new Date(Date.UTC(year,month+1,1)).toISOString().slice(0,10);
-    return {first, after, start:now.toISOString(), end:after+'T00:00:00+07:00', label:monthLabel(new Date(Date.UTC(year,month,15,12)))};
+    return {first, after, dayStart:currentDay+'T00:00:00+07:00', start:now.toISOString(), end:after+'T00:00:00+07:00', label:monthLabel(new Date(Date.UTC(year,month,15,12)))};
   };
+  let carouselTimer=null;
+  const stopCarousel=()=>{if(carouselTimer!==null){clearInterval(carouselTimer);carouselTimer=null;}};
   const state = (icon,title,copy) => {
+    stopCarousel();
     box.innerHTML='<div class="event-empty"><span class="event-icon" aria-hidden="true">'+icon+'</span><div><strong>'+title+'</strong><p>'+copy+'</p></div></div>';
   };
 
   const render = (items, month) => {
+    stopCarousel();
     box.innerHTML = items.map((event,index) => {
       const start = new Date(event.starts_at);
       const date = '<div class="event-date"><b>'+parts(start,{day:'numeric'})+'</b><span>'+parts(start,{month:'short'})+'</span></div>';
@@ -59,14 +63,14 @@
     };
     box.querySelectorAll('.event-arrow').forEach(button=>button.addEventListener('click',()=>show(index+Number(button.dataset.step))));
     dots.forEach((button,i)=>button.addEventListener('click',()=>show(i)));
-    box.addEventListener('pointerdown',event=>{if(event.pointerType==='touch')pointerStart=event.clientX;},{passive:true});
-    box.addEventListener('pointerup',event=>{
+    box.onpointerdown=event=>{if(event.pointerType==='touch')pointerStart=event.clientX;};
+    box.onpointerup=event=>{
       if(pointerStart===null)return;
       const distance=event.clientX-pointerStart;pointerStart=null;
       if(Math.abs(distance)>42)show(index+(distance<0?1:-1));
-    },{passive:true});
-    box.addEventListener('pointercancel',()=>{pointerStart=null;},{passive:true});
-    setInterval(()=>show(index+1),3000);
+    };
+    box.onpointercancel=()=>{pointerStart=null;};
+    carouselTimer=setInterval(()=>show(index+1),3000);
   };
 
   (async()=>{
@@ -86,7 +90,7 @@
         select:'id,title,starts_at,ends_at,location,program_id',
         status:'eq.published',
         starts_at:'lt.'+bounds.end,
-        or:'(starts_at.gte.'+bounds.start+',ends_at.gte.'+bounds.start+')',
+        or:'(and(ends_at.is.null,starts_at.gte.'+bounds.dayStart+'),ends_at.gte.'+bounds.start+')',
         order:'starts_at.asc',
         limit:'6'
       });

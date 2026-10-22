@@ -18,7 +18,7 @@ create or replace function public.cssmora_user_has_role(p_role text)
 returns boolean
 language sql stable security invoker
 set search_path = ''
-as $
+as $$
   select auth.uid() is not null
     and p_role in ('ketua','wakil','bendahara','sekretaris','bph_departemen')
     and exists (

@@ -12,16 +12,16 @@ const MAX_BODY_BYTES = MAX_FILE_BYTES + 64 * 1024;
 const json = (body: unknown, status: number, origin: string) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders(origin) });
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-const allowedOrigin = (origin: string) => {
-  if (!origin) return true;
-  try {
-    const url = new URL(origin);
-    return url.protocol === "https:" &&
-      (url.hostname === "cssmora.vercel.app" ||
-       (url.hostname.startsWith("cssmora-") && url.hostname.endsWith(".vercel.app")));
-  } catch {
-    return false;
-  }
+const allowedOrigin = (origin: string | null) => {
+  if(!origin)return true;
+  try{
+    const u=new URL(origin),h=u.hostname;
+    return (u.protocol==="https:" && (
+      h==="cssmora.vercel.app" || h==="cssmora.netlify.app" ||
+      (h.startsWith("cssmora-") && h.endsWith("-naufalalmaroqi-2669s-projects.vercel.app")) ||
+      h.endsWith("--cssmora.netlify.app")
+    )) || u.origin==="http://localhost:4173";
+  }catch{return false;}
 };
 const storageObjectUrl = (base: string, path: string) =>
   base + "/storage/v1/object/cssmora-prestasi-proofs/" + path.split("/").map(encodeURIComponent).join("/");

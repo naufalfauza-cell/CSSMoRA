@@ -7,13 +7,15 @@ const publishableKeys = (() => {
 })();
 const publishableKey = publishableKeys.default ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const allowedOrigin = (origin: string | null) => {
-  if (!origin) return true;
-  try {
-    const url = new URL(origin);
-    return url.origin === "https://cssmora.vercel.app" ||
-      (url.protocol === "https:" && url.hostname.startsWith("cssmora-") && url.hostname.endsWith(".vercel.app")) ||
-      url.origin === "http://localhost:4173";
-  } catch { return false; }
+  if(!origin)return true;
+  try{
+    const u=new URL(origin),h=u.hostname;
+    return (u.protocol==="https:" && (
+      h==="cssmora.vercel.app" || h==="cssmora.netlify.app" ||
+      (h.startsWith("cssmora-") && h.endsWith("-naufalalmaroqi-2669s-projects.vercel.app")) ||
+      h.endsWith("--cssmora.netlify.app")
+    )) || u.origin==="http://localhost:4173";
+  }catch{return false;}
 };
 const json = (body: unknown, status = 200, origin: string | null = null) => new Response(JSON.stringify(body), {
   status,

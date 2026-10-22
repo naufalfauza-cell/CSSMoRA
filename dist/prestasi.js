@@ -32,7 +32,7 @@ async function loadRoster(){
   }catch(error){rosterSelect.innerHTML='<option value="">Roster tidak dapat dimuat</option>';$('#achievement-message').textContent=error.message;$('#achievement-message').dataset.kind='error';}
 }
 document.querySelectorAll('input[name="participation_type"]').forEach(input=>input.addEventListener('change',()=>{
-  $('#team-fields').hidden=input.value!=='tim';updateSubsidy();
+  $('#team-fields').hidden=input.value!=='tim';if(input.value!=='tim'){selectedTeamIds.clear();renderTeamOptions();}updateSubsidy();
 }));
 $('#fee-amount').addEventListener('input',updateSubsidy);
 rosterSelect.addEventListener('change',renderTeamOptions);
@@ -46,7 +46,7 @@ form.addEventListener('submit',async event=>{
   if(!sourceFile){message.textContent='Lampirkan bukti pendaftaran terlebih dahulu.';message.dataset.kind='error';return;}
   if(!['image/jpeg','image/png','application/pdf'].includes(sourceFile.type)){message.textContent='Format bukti harus JPG, PNG, atau PDF.';message.dataset.kind='error';return;}
   const type=form.elements.participation_type.value;
-  const teamIds=[...selectedTeamIds].filter(id=>id!==rosterSelect.value);
+  const teamIds=type==='tim'?[...selectedTeamIds].filter(id=>id!==rosterSelect.value):[];
   if(type==='tim'&&!teamIds.length){message.textContent='Pilih minimal satu anggota tim dari roster CSSMoRA.';message.dataset.kind='error';return;}
   const id=crypto.randomUUID();
   button.disabled=true;button.textContent='Mengirim pengajuan…';message.textContent=sourceFile.type==='application/pdf'?'Menyiapkan bukti PDF…':'Mengompres bukti gambar…';

@@ -25,7 +25,7 @@
   let selectedDay=null;
 
   const monthKey=()=>`${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
-  const eventEnd=event=>event.ends_at?new Date(event.ends_at):new Date(event.starts_at);
+  const eventEnd=event=>event.ends_at?new Date(event.ends_at):new Date(dayKey(new Date(event.starts_at))+'T23:59:59.999+07:00');
   const overlapsDay=(event,key)=>dayKey(new Date(event.starts_at))<=key&&dayKey(eventEnd(event))>=key;
   const eventsInView=()=>{
     const first=keyOf(viewYear,viewMonth,1);
@@ -46,7 +46,8 @@
     const ms=start-now,days=dayDiff(dayKey(new Date()),dayKey(new Date(start)));
     const hours=Math.floor(ms/3600000),minutes=Math.floor((ms%3600000)/60000);
     const day=days<=0?'Hari ini':`H-${days}`;
-    const time=days>0?`${days} hari ${hours%24} jam lagi`:hours>0?`${hours} jam ${minutes} menit lagi`:`${Math.max(minutes,1)} menit lagi`;
+    const durationDays=Math.floor(ms/86400000);
+    const time=durationDays>0?`${durationDays} hari ${hours%24} jam lagi`:hours>0?`${hours} jam ${minutes} menit lagi`:`${Math.max(minutes,1)} menit lagi`;
     return {day,time,live:false};
   };
   const dateRange=event=>{
