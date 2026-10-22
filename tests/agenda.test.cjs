@@ -98,5 +98,25 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   assert.match(ongoingNoEnd.html,/Masih berlangsung/);
   const cached=await run(slides,{cache:{items:slides}});
   assert.equal(cached.activeTimers.length,1);
-  console.log('PASS: multi-day dates, server cutoff/limit, WIB midnight, escaping, empty/error states, six-item carousel at 3 seconds');
+
+  const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+  const attendanceMigration=read('supabase/migrations/20261022181500_attendance_agenda_sync_recap_delete.sql');
+  const attendanceAdmin=read('dist/admin.js');
+  const attendanceHtml=read('dist/admin.html');
+  const attendanceFunction=read('supabase/functions/attendance-checkin/index.ts');
+  assert.match(attendanceMigration,/unique index if not exists secretariat_attendance_events_agenda_id_key/);
+  assert.match(attendanceMigration,/agenda_sync_secretariat_attendance/);
+  assert.match(attendanceMigration,/if v_agenda_status <> 'published' then\s+new\.status := 'closed'/);
+  assert.match(attendanceMigration,/coalesce\(a\.ends_at, a\.starts_at\) <= statement_timestamp\(\)/);
+  assert.match(attendanceMigration,/public\.is_secretariat_admin\(\)/);
+  assert.doesNotMatch(attendanceHtml,/attendance-event-form|Buat daftar hadir/);
+  assert.match(attendanceHtml,/attendance-recap-filter/);
+  assert.match(attendanceHtml,/attendance-roster-filter/);
+  assert.match(attendanceAdmin,/data-delete-event/);
+  assert.match(attendanceAdmin,/Number\(b\.status==='hadir'\)-Number\(a\.status==='hadir'\)/);
+  assert.match(attendanceAdmin,/setInterval\(\(\)=>\{if\(!\$\('#attendance-tools-panel'\)\.hidden\)void refreshOpenAttendanceRoster\(\);\},5000\)/);
+  assert.match(attendanceFunction,/mode === "delete-event"/);
+  assert.match(attendanceFunction,/status: "eq\.published"/);
+  assert.match(attendanceFunction,/event\.agenda_id/);
+  console.log('PASS: agenda carousel and attendance source, recap, delete, search, live refresh, and arrival ordering');
 })().catch(error => { console.error(error); process.exitCode = 1; });

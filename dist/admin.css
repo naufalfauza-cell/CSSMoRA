@@ -2082,3 +2082,32 @@
 .access-toggle:disabled{opacity:.55;cursor:wait}
 @media(max-width:900px){.access-layout{grid-template-columns:1fr}}
 @media(max-width:600px){.access-form-card,.access-list-card{padding:13px}.access-table{min-width:620px}}
+
+/* Agenda-linked attendance and searchable member recaps. */
+.admin-page .attendance-workspace{grid-template-columns:minmax(170px,205px) minmax(0,1fr);align-items:stretch}
+.admin-page .attendance-workspace .attendance-events-card{min-width:0}
+.admin-page .attendance-events-card .editor-heading{align-items:center;flex-wrap:wrap}
+.admin-page .attendance-event-search{width:min(190px,100%);min-height:34px}
+.admin-page .attendance-event-card{grid-template-columns:minmax(0,1fr) auto}
+.admin-page .attendance-event-card[data-agenda-state="unpublished"]{background:#fbfcfa}
+.admin-page .attendance-event-card .record-status{white-space:nowrap}
+.admin-page .attendance-event-actions button[data-delete-event]{border-color:#f0ddda;background:#fff8f6;color:#9b493e}
+.admin-page .attendance-event-actions button[data-delete-event]:hover{background:#ffefeb}
+.admin-page .attendance-recap-card,.admin-page .attendance-roster-panel{margin-top:14px;padding:14px!important;border-radius:12px!important}
+.admin-page .attendance-recap-card .editor-heading,.admin-page .attendance-roster-panel .editor-heading{margin-bottom:8px}
+.admin-page .attendance-recap-card .editor-heading h3,.admin-page .attendance-roster-panel .editor-heading h3{font-size:15px!important}
+.admin-page .table-toolbar{display:flex;justify-content:flex-end;gap:8px;margin:8px 0}
+.admin-page .table-search{width:min(260px,100%);height:34px;min-width:0;padding:0 10px;border:1px solid #dfe7df;border-radius:9px;background:#fff;color:#34493b;font:500 10px 'Plus Jakarta Sans',sans-serif}
+.admin-page .table-search:focus{outline:2px solid #b9d6bb;outline-offset:1px}
+.admin-page .attendance-event-search{margin-left:auto}
+.admin-page .attendance-recap-card .secretariat-table,.admin-page .attendance-roster-panel .secretariat-table{min-width:620px}
+.admin-page .attendance-recap-card .secretariat-table td:nth-child(3),.admin-page .attendance-recap-card .secretariat-table td:nth-child(4),.admin-page .attendance-recap-card .secretariat-table td:nth-child(5){font-variant-numeric:tabular-nums}
+.admin-page .attendance-rate{display:inline-flex;align-items:center;gap:7px;color:#2e6744;font-weight:700}
+.admin-page .attendance-rate-track{display:inline-block;width:54px;height:5px;overflow:hidden;border-radius:99px;background:#e8eee7;vertical-align:middle}
+.admin-page .attendance-rate-track i{display:block;height:100%;border-radius:inherit;background:#4d8e5a}
+.admin-page .attendance-event-meta-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.admin-page .attendance-event-badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#edf5eb;color:#3d7047;font:700 8px 'Plus Jakarta Sans',sans-serif}
+.admin-page .attendance-event-badge.is-muted{background:#f0f2ef;color:#768077}
+.admin-page .attendance-empty-note{margin:0;padding:10px;border-radius:10px;background:#f8faf7;color:#718075;font-size:10px;line-height:1.5}
+@media(max-width:900px){.admin-page .attendance-workspace{grid-template-columns:minmax(0,1fr)}.admin-page .attendance-events-card .secretariat-record-list{max-height:360px}}
+@media(max-width:600px){.admin-page .attendance-event-card{grid-template-columns:minmax(0,1fr)}.admin-page .attendance-event-actions{justify-content:flex-start}.admin-page .attendance-event-search{width:100%;margin:4px 0 0}.admin-page .attendance-actions{align-items:center;flex-direction:row;flex-wrap:wrap}.admin-page .table-toolbar{justify-content:stretch}.admin-page .table-search{width:100%}}

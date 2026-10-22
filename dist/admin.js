@@ -757,7 +757,6 @@ agendaForm.addEventListener('submit',async event=>{
 
 const memberForm=$('#member-form');
 const memberList=$('#member-record-list');
-const attendanceEventForm=$('#attendance-event-form');
 const attendanceEventList=$('#attendance-event-list');
 const attendanceRosterPanel=$('#attendance-roster-panel');
 const letterForm=$('#letter-form');
@@ -802,7 +801,6 @@ function showSecretaryTab(tab){
 }
 function initializeSecretaryForms(){
   if(!$('#letter-issued-on').value)$('#letter-issued-on').value=localDateInput();
-  if(!$('#attendance-event-date').value)$('#attendance-event-date').value=localDateInput();
 }
 async function loadSecretarySection(tab){
   if(!tab)return;
@@ -811,8 +809,9 @@ async function loadSecretarySection(tab){
     await ensureAdminData('members',loadMembers);
   } else if(panel==='attendance-tools-panel') {
     await Promise.all([
-      ensureAdminData('members',loadMembers),
-      ensureAdminData('attendanceEvents',loadAttendanceEvents)
+      loadMembers(),
+      loadAttendanceEvents(),
+      loadAttendanceRecap()
     ]);
   } else if(panel==='letters-panel') {
     await ensureAdminData('letters',loadLetters);
@@ -964,65 +963,150 @@ $('#member-csv').addEventListener('change',async event=>{
 });
 
 async function loadAttendanceEvents(){
-  loadedAdminData.delete('attendanceEvents');
-  attendanceEventList.innerHTML='<p class="records-empty">Memuat kegiatan…</p>';
+  attendanceEventList.innerHTML='<p class="records-empty">Memuat agenda…</p>';
   try{
-    attendanceEvents=await api('secretariat_attendance_events?select=*&order=event_date.desc,created_at.desc');
+    const rows=await api('secretariat_attendance_events?select=*,agenda(id,title,starts_at,ends_at,status)&order=event_date.desc,created_at.desc');
+    attendanceEvents=(rows||[]).map(row=>({...row,agenda:Array.isArray(row.agenda)?row.agenda[0]||null:row.agenda||null}));
     renderAttendanceEvents();
     loadedAdminData.add('attendanceEvents');
-  }catch(error){attendanceEventList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
+    if(currentAttendanceEvent)currentAttendanceEvent=attendanceEvents.find(row=>row.id===currentAttendanceEvent.id)||null;
+  }catch(error){
+    loadedAdminData.delete('attendanceEvents');
+    attendanceEventList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';
+  }
 }
+function attendanceEventIsPublished(event){return event?.agenda?.status==='published';}
 function renderAttendanceEvents(){
-  if(!attendanceEvents.length){attendanceEventList.innerHTML='<p class="records-empty">Belum ada kegiatan absensi.</p>';return;}
-  attendanceEventList.innerHTML=attendanceEvents.map(e=>'<article class="attendance-event-card"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(e.id)+'"><span><strong>'+escapeHTML(e.title)+'</strong><small>'+escapeHTML(e.event_date)+' · '+escapeHTML(e.session_name||'Umum')+(e.location?' · '+escapeHTML(e.location):'')+'</small></span><span class="record-status '+(e.status==='open'?'published':'')+'">'+(e.status==='open'?'TERBUKA':'DITUTUP')+'</span></button><div class="attendance-event-actions"><button type="button" data-copy-event="'+escapeHTML(e.id)+'">Salin tautan</button><button type="button" data-toggle-event="'+escapeHTML(e.id)+'">'+(e.status==='open'?'Tutup absensi':'Buka lagi')+'</button></div></article>').join('');
+  const search=($('#attendance-event-filter').value||'').trim().toLocaleLowerCase('id-ID');
+  const visible=attendanceEvents.filter(event=>!search||[event.title,event.agenda?.title,event.event_date,event.location].some(value=>String(value||'').toLocaleLowerCase('id-ID').includes(search)));
+  if(!attendanceEvents.length){attendanceEventList.innerHTML='<p class="records-empty">Belum ada agenda terbit untuk absensi.</p>';return;}
+  if(!visible.length){attendanceEventList.innerHTML='<p class="records-empty">Agenda yang cocok tidak ditemukan.</p>';return;}
+  attendanceEventList.innerHTML=visible.map(event=>{
+    const published=attendanceEventIsPublished(event);
+    const source=published?'AGENDA TERBIT':event.agenda_id?'AGENDA TIDAK TERBIT':'TANPA AGENDA';
+    const sourceClass=published?'':' is-muted';
+    const title=event.agenda?.title||event.title;
+    const status=event.status==='open'?'ABSENSI DIBUKA':'DITUTUP';
+    const copy=published?'<button type="button" data-copy-event="'+escapeHTML(event.id)+'">Salin tautan</button>':'';
+    const toggle=published?'<button type="button" data-toggle-event="'+escapeHTML(event.id)+'">'+(event.status==='open'?'Tutup absensi':'Buka absensi')+'</button>':'';
+    const remove=!published?'<button type="button" data-delete-event="'+escapeHTML(event.id)+'">Hapus data</button>':'';
+    return '<article class="attendance-event-card" data-agenda-state="'+(published?'published':'unpublished')+'"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(event.id)+'"><span><strong>'+escapeHTML(title)+'</strong><small class="attendance-event-meta-line">'+escapeHTML(event.event_date)+' · '+escapeHTML(event.session_name||'Umum')+(event.location?' · '+escapeHTML(event.location):'')+' <span class="attendance-event-badge'+sourceClass+'">'+source+'</span></small></span><span class="record-status '+(event.status==='open'&&published?'published':'')+'">'+status+'</span></button><div class="attendance-event-actions">'+copy+toggle+remove+'</div></article>';
+  }).join('');
 }
-$('#events-refresh').addEventListener('click',loadAttendanceEvents);
+$('#attendance-event-filter').addEventListener('input',renderAttendanceEvents);
+async function refreshAttendanceData(){
+  const selectedId=currentAttendanceEvent?.id;
+  await Promise.all([loadMembers(),loadAttendanceEvents(),loadAttendanceRecap()]);
+  if(selectedId){
+    if(attendanceEvents.some(row=>row.id===selectedId)){
+      if(!attendanceRosterDirty)await loadAttendanceRoster(selectedId);
+    }else{currentAttendanceEvent=null;attendanceRosterPanel.hidden=true;}
+  }
+}
+$('#events-refresh').addEventListener('click',refreshAttendanceData);
+async function deleteAttendanceEvent(eventId){
+  const endpoint=config.url+'/functions/v1/attendance-checkin?mode=delete-event&event_id='+encodeURIComponent(eventId);
+  const response=await authenticatedFetch(endpoint,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:'{}'});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||'Data absensi belum dapat dihapus.');
+  return result;
+}
 attendanceEventList.addEventListener('click',async event=>{
   const copy=event.target.closest('[data-copy-event]');
   if(copy){
     const item=attendanceEvents.find(row=>row.id===copy.dataset.copyEvent);
-    if(!item)return;
+    if(!item||!attendanceEventIsPublished(item))return;
     const link=window.location.origin+'/absen.html?t='+encodeURIComponent(item.public_token);
-    try{await navigator.clipboard.writeText(link);showMessage('#event-message','Tautan absensi tersalin. Bagikan kepada peserta kegiatan.','success');}
+    try{await navigator.clipboard.writeText(link);showMessage('#event-message','Tautan absensi tersalin.','success');}
     catch{showMessage('#event-message','Salin tautan ini: '+link,'success');}
     return;
   }
   const toggle=event.target.closest('[data-toggle-event]');
   if(toggle){
-    const item=attendanceEvents.find(row=>row.id===toggle.dataset.toggleEvent);if(!item)return;
+    const item=attendanceEvents.find(row=>row.id===toggle.dataset.toggleEvent);if(!item||!attendanceEventIsPublished(item))return;
+    if(currentAttendanceEvent?.id===item.id&&attendanceRosterDirty){showMessage('#event-message','Simpan atau buang perubahan rekap sebelum mengubah status absensi.','error');return;}
     toggle.disabled=true;
-    try{await api('secretariat_attendance_events?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',body:{status:item.status==='open'?'closed':'open'}});await loadAttendanceEvents();if(currentAttendanceEvent?.id===item.id){currentAttendanceEvent=attendanceEvents.find(row=>row.id===item.id);await loadAttendanceRoster(item.id);}}
-    catch(error){showMessage('#event-message',error.message,'error');toggle.disabled=false;}
+    try{
+      await api('secretariat_attendance_events?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',body:{status:item.status==='open'?'closed':'open'}});
+      await loadAttendanceEvents();
+      if(currentAttendanceEvent?.id===item.id)await loadAttendanceRoster(item.id);
+    }catch(error){showMessage('#event-message',error.message,'error');toggle.disabled=false;}
     return;
   }
-  const select=event.target.closest('[data-event-id]');if(select)loadAttendanceRoster(select.dataset.eventId);
+  const remove=event.target.closest('[data-delete-event]');
+  if(remove){
+    const item=attendanceEvents.find(row=>row.id===remove.dataset.deleteEvent);
+    if(!item||attendanceEventIsPublished(item))return;
+    if(!window.confirm('Hapus daftar hadir, seluruh rekap, dan foto buktinya? Agenda kalender tetap tersimpan.'))return;
+    remove.disabled=true;showMessage('#event-message','Menghapus data absensi…');
+    try{
+      await deleteAttendanceEvent(item.id);
+      if(currentAttendanceEvent?.id===item.id){currentAttendanceEvent=null;currentAttendanceRows=[];attendanceRosterDrafts.clear();attendanceRosterDirty=false;attendanceRosterPanel.hidden=true;}
+      await Promise.all([loadAttendanceEvents(),loadAttendanceRecap()]);
+      showMessage('#event-message','Daftar hadir dan datanya berhasil dihapus.','success');
+    }catch(error){showMessage('#event-message',error.message,'error');remove.disabled=false;}
+    return;
+  }
+  const select=event.target.closest('[data-event-id]');if(select)await loadAttendanceRoster(select.dataset.eventId);
 });
-attendanceEventForm.addEventListener('submit',async event=>{
-  event.preventDefault();
-  const button=$('#save-attendance-event');button.disabled=true;
-  showMessage('#event-message','Membuat kegiatan dan menyalin roster aktif…');
+let attendanceRecapRows=[];
+async function loadAttendanceRecap(){
+  const list=$('#attendance-recap');
+  list.innerHTML='<tr><td colspan="5" class="records-empty">Memuat rekap kehadiran…</td></tr>';
   try{
-    const result=await api('rpc/create_secretariat_attendance_event',{method:'POST',body:{
-      p_title:$('#attendance-event-title').value.trim(),p_event_date:$('#attendance-event-date').value,
-      p_session_name:$('#attendance-event-session').value.trim()||'Umum',p_location:$('#attendance-event-location').value.trim()||null
-    }});
-    const id=typeof result==='string'?result:(Array.isArray(result)?result[0]:result?.id);
-    attendanceEventForm.reset();$('#attendance-event-session').value='Umum';$('#attendance-event-date').value=localDateInput();
-    await loadAttendanceEvents();showMessage('#event-message','Daftar hadir dibuat untuk '+members.filter(m=>m.is_active).length+' anggota aktif.','success');
-    if(id)await loadAttendanceRoster(id);
-  }catch(error){showMessage('#event-message',error.message,'error');}
-  finally{button.disabled=false;}
-});
+    attendanceRecapRows=await api('rpc/get_secretariat_attendance_recap',{method:'POST',body:{}})||[];
+    renderAttendanceRecap();
+  }catch(error){
+    attendanceRecapRows=[];
+    $('#attendance-recap-summary').innerHTML='';
+    list.innerHTML='<tr><td colspan="5" class="records-empty">'+escapeHTML(error.message)+'</td></tr>';
+  }
+}
+function renderAttendanceRecap(){
+  const totalEvents=Number(attendanceRecapRows[0]?.completed_event_count||0);
+  const attended=attendanceRecapRows.reduce((sum,row)=>sum+Number(row.attended_count||0),0);
+  const eligible=attendanceRecapRows.reduce((sum,row)=>sum+Number(row.eligible_count||0),0);
+  const rate=eligible?Math.round(attended*1000/eligible)/10:0;
+  $('#attendance-recap-summary').innerHTML='<span><strong>'+totalEvents+'</strong> agenda selesai</span><span><strong>'+rate+'%</strong> rata-rata kehadiran</span><span><strong>'+attendanceRecapRows.length+'</strong> anggota</span>';
+  if(!attendanceRecapRows.length){$('#attendance-recap').innerHTML='<tr><td colspan="5" class="records-empty">Belum ada data anggota untuk direkap.</td></tr>';return;}
+  const search=($('#attendance-recap-filter').value||'').trim().toLocaleLowerCase('id-ID');
+  const rows=attendanceRecapRows.filter(row=>!search||String(row.full_name||'').toLocaleLowerCase('id-ID').includes(search)||String(row.nia||'').toLocaleLowerCase('id-ID').includes(search));
+  if(!rows.length){$('#attendance-recap').innerHTML='<tr><td colspan="5" class="records-empty">Anggota yang cocok tidak ditemukan.</td></tr>';return;}
+  $('#attendance-recap').innerHTML=rows.map(row=>{
+    const percent=Math.max(0,Math.min(100,Number(row.attendance_percent)||0));
+    return '<tr><td><strong>'+escapeHTML(row.full_name)+'</strong><small>Angkatan '+escapeHTML(row.cohort)+'</small></td><td>'+escapeHTML(row.nia)+'</td><td>'+Number(row.attended_count||0)+'</td><td>'+Number(row.eligible_count||0)+'</td><td><span class="attendance-rate"><span class="attendance-rate-track" aria-hidden="true"><i style="width:'+percent+'%"></i></span>'+percent+'%</span></td></tr>';
+  }).join('');
+}
+$('#attendance-recap-filter').addEventListener('input',renderAttendanceRecap);
 function attendanceStatusLabel(status){return({hadir:'Hadir',izin:'Izin',sakit:'Sakit',alpa:'Tanpa keterangan',belum:'Belum dicatat'})[status]||status;}
 let attendanceRosterRequest=0;
 let attendanceRosterLoading=false;
+let attendanceRosterDirty=false;
+const attendanceRosterDrafts=new Map();
+function captureAttendanceRosterDrafts(){
+  currentAttendanceRows.forEach(row=>{
+    const select=document.querySelector('[data-attendance-status="'+CSS.escape(row.member_id)+'"]');
+    const reason=document.querySelector('[data-attendance-reason="'+CSS.escape(row.member_id)+'"]');
+    if(!select||!reason)return;
+    const draft={status:select.value,reason:reason.value.trim()};
+    if(draft.status===row.status&&draft.reason===(row.reason||'').trim())attendanceRosterDrafts.delete(row.member_id);
+    else attendanceRosterDrafts.set(row.member_id,draft);
+  });
+  attendanceRosterDirty=attendanceRosterDrafts.size>0;
+}
+function attendanceRosterHasChanges(){return attendanceRosterDirty;}
+function updateAttendanceSaveState(){
+  captureAttendanceRosterDrafts();
+  $('#attendance-save').disabled=!currentAttendanceEvent||currentAttendanceEvent.status==='closed'||!attendanceEventIsPublished(currentAttendanceEvent)||!attendanceRosterDirty;
+}
 async function loadAttendanceRoster(eventId){
   const selected=attendanceEvents.find(event=>event.id===eventId);if(!selected)return;
+  if(currentAttendanceEvent&&attendanceRosterDirty&&!window.confirm('Buang perubahan rekap yang belum disimpan?'))return;
   const requestId=++attendanceRosterRequest;
-  currentAttendanceEvent=selected;currentAttendanceRows=[];attendanceRosterLoading=true;attendanceRosterPanel.hidden=false;
+  currentAttendanceEvent=selected;currentAttendanceRows=[];attendanceRosterDrafts.clear();attendanceRosterLoading=true;attendanceRosterDirty=false;attendanceRosterPanel.hidden=false;
   $('#attendance-save').disabled=true;
-  $('#attendance-roster-title').textContent=selected.title;
-  $('#attendance-event-meta').textContent=selected.event_date+' · '+(selected.session_name||'Umum')+(selected.location?' · '+selected.location:'');
+  $('#attendance-roster-title').textContent=selected.agenda?.title||selected.title;
+  $('#attendance-event-meta').textContent=selected.event_date+' · '+(selected.session_name||'Umum')+(selected.location?' · '+selected.location:'')+(selected.agenda?.status==='published'?'':' · Agenda tidak terbit');
   $('#attendance-summary').textContent='';
   $('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Memuat daftar anggota…</td></tr>';
   try{
@@ -1034,22 +1118,47 @@ async function loadAttendanceRoster(eventId){
   finally{if(requestId===attendanceRosterRequest)attendanceRosterLoading=false;}
 }
 function renderAttendanceRoster(){
-  const rows=currentAttendanceRows.map(row=>({...row,member:memberById(row.member_id)})).filter(row=>row.member).sort((a,b)=>a.member.full_name.localeCompare(b.member.full_name,'id'));
-  const counts={hadir:0,izin:0,sakit:0,alpa:0,belum:0};rows.forEach(row=>counts[row.status]=(counts[row.status]||0)+1);
-  const rate=rows.length?Math.round(counts.hadir*100/rows.length):0;
+  const allRows=currentAttendanceRows.map(row=>({...row,member:memberById(row.member_id)})).filter(row=>row.member);
+  allRows.sort((a,b)=>Number(b.status==='hadir')-Number(a.status==='hadir')||Date.parse(b.updated_at||0)-Date.parse(a.updated_at||0)||a.member.full_name.localeCompare(b.member.full_name,'id'));
+  const counts={hadir:0,izin:0,sakit:0,alpa:0,belum:0};allRows.forEach(row=>counts[row.status]=(counts[row.status]||0)+1);
+  const rate=allRows.length?Math.round(counts.hadir*1000/allRows.length)/10:0;
   $('#attendance-summary').innerHTML='<span><strong>'+counts.hadir+'</strong> hadir</span><span><strong>'+counts.izin+'</strong> izin</span><span><strong>'+counts.sakit+'</strong> sakit</span><span><strong>'+counts.alpa+'</strong> tanpa keterangan</span><span><strong>'+rate+'%</strong> kehadiran</span>';
-  if(!rows.length){$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Belum ada roster. Pastikan data anggota sudah diimpor sebelum membuat daftar hadir.</td></tr>';return;}
+  if(!allRows.length){$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Belum ada roster pada daftar hadir ini.</td></tr>';return;}
+  const search=($('#attendance-roster-filter').value||'').trim().toLocaleLowerCase('id-ID');
+  const rows=allRows.filter(row=>!search||row.member.full_name.toLocaleLowerCase('id-ID').includes(search)||row.member.nia.toLocaleLowerCase('id-ID').includes(search));
+  if(!rows.length){$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Anggota yang cocok tidak ditemukan.</td></tr>';return;}
+  const canEdit=currentAttendanceEvent.status==='open'&&attendanceEventIsPublished(currentAttendanceEvent);
   $('#attendance-roster').innerHTML=rows.map(row=>{
+    const draft=attendanceRosterDrafts.get(row.member_id);
+    const status=draft?.status||row.status;
+    const reason=draft?.reason??row.reason??'';
     const proof=row.proof_path&&row.proof_uploaded_at
       ? '<button class="text-button attendance-proof-button" type="button" data-attendance-proof="'+escapeHTML(row.member_id)+'">Lihat foto</button>'
       : row.proof_deleted_at
         ? '<small class="attendance-proof-expired">Dihapus otomatis</small>'
         : '<small class="attendance-proof-missing">Belum ada foto</small>';
-    return '<tr><td><strong>'+escapeHTML(row.member.full_name)+'</strong><small>Angkatan '+escapeHTML(row.member.cohort)+'</small></td><td>'+escapeHTML(row.member.nia)+'</td><td><select data-attendance-status="'+escapeHTML(row.member_id)+'" aria-label="Status kehadiran '+escapeHTML(row.member.full_name)+'">'+['belum','hadir','izin','sakit','alpa'].map(status=>'<option value="'+status+'" '+(row.status===status?'selected':'')+'>'+attendanceStatusLabel(status)+'</option>').join('')+'</select><input class="attendance-reason" data-attendance-reason="'+escapeHTML(row.member_id)+'" value="'+escapeHTML(row.reason||'')+'" placeholder="Catatan izin (opsional)" aria-label="Catatan kehadiran '+escapeHTML(row.member.full_name)+'"></td><td>'+proof+'</td></tr>';
+    return '<tr><td><strong>'+escapeHTML(row.member.full_name)+'</strong><small>Angkatan '+escapeHTML(row.member.cohort)+'</small></td><td>'+escapeHTML(row.member.nia)+'</td><td><select data-attendance-status="'+escapeHTML(row.member_id)+'" aria-label="Status kehadiran '+escapeHTML(row.member.full_name)+'">'+['belum','hadir','izin','sakit','alpa'].map(option=>'<option value="'+option+'" '+(status===option?'selected':'')+'>'+attendanceStatusLabel(option)+'</option>').join('')+'</select><input class="attendance-reason" data-attendance-reason="'+escapeHTML(row.member_id)+'" value="'+escapeHTML(reason)+'" placeholder="Catatan izin (opsional)" aria-label="Catatan kehadiran '+escapeHTML(row.member.full_name)+'"></td><td>'+proof+'</td></tr>';
   }).join('');
-  document.querySelectorAll('#attendance-roster select,#attendance-roster input').forEach(field=>field.disabled=currentAttendanceEvent.status==='closed');
-  $('#attendance-save').disabled=currentAttendanceEvent.status==='closed';
+  document.querySelectorAll('#attendance-roster select,#attendance-roster input').forEach(field=>field.disabled=!canEdit);
+  $('#attendance-save').disabled=!canEdit||!attendanceRosterDirty;
 }
+$('#attendance-roster').addEventListener('input',event=>{if(event.target.matches('[data-attendance-reason]'))updateAttendanceSaveState();});
+$('#attendance-roster').addEventListener('change',event=>{if(event.target.matches('[data-attendance-status]'))updateAttendanceSaveState();});
+$('#attendance-roster-filter').addEventListener('input',()=>{captureAttendanceRosterDrafts();renderAttendanceRoster();});
+async function refreshOpenAttendanceRoster(){
+  if(attendanceRosterLoading||!currentAttendanceEvent||attendanceRosterPanel.hidden||currentAttendanceEvent.status!=='open'||attendanceRosterHasChanges())return;
+  const eventId=currentAttendanceEvent.id,requestId=attendanceRosterRequest;
+  try{
+    const rows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
+    if(requestId!==attendanceRosterRequest||attendanceRosterHasChanges())return;
+    const signature=items=>items.map(row=>[row.member_id,row.status,row.updated_at,row.proof_path,row.proof_uploaded_at,row.proof_deleted_at].join('|')).join('\n');
+    if(signature(rows)!==signature(currentAttendanceRows)){
+      currentAttendanceRows=rows;
+      renderAttendanceRoster();
+    }
+  }catch{}
+}
+setInterval(()=>{if(!$('#attendance-tools-panel').hidden)void refreshOpenAttendanceRoster();},5000);
 async function getAttendanceProofUrl(eventId,memberId){
   const endpoint=config.url+'/functions/v1/attendance-checkin?mode=proof-url&event_id='+encodeURIComponent(eventId)+'&member_id='+encodeURIComponent(memberId);
   const response=await authenticatedFetch(endpoint,{method:'GET',headers:{apikey:config.publishableKey}});
@@ -1065,17 +1174,17 @@ $('#attendance-roster').addEventListener('click',async event=>{
     const signedUrl=await getAttendanceProofUrl(currentAttendanceEvent.id,button.dataset.attendanceProof);
     $('#attendance-proof-image').src=signedUrl;
     $('#attendance-proof-dialog').showModal();
-  }catch(error){if(requestId===attendanceRosterRequest)showMessage('#attendance-message',error.message,'error');}
-  finally{button.disabled=attendanceRosterLoading||currentAttendanceEvent?.status==='closed';}
+  }catch(error){if(currentAttendanceEvent?.id)showMessage('#attendance-message',error.message,'error');}
+  finally{button.disabled=attendanceRosterLoading;}
 });
 $('#attendance-proof-dialog').addEventListener('close',()=>{$('#attendance-proof-image').removeAttribute('src');});
 $('#attendance-save').addEventListener('click',async()=>{
-  if(!currentAttendanceEvent||attendanceRosterLoading||currentAttendanceEvent.status==='closed')return;
+  if(!currentAttendanceEvent||attendanceRosterLoading||currentAttendanceEvent.status==='closed'||currentAttendanceEvent.agenda?.status!=='published')return;
   const eventId=currentAttendanceEvent.id,requestId=attendanceRosterRequest;
   const changes=currentAttendanceRows.flatMap(row=>{
-    const select=document.querySelector('[data-attendance-status="'+CSS.escape(row.member_id)+'"]');
-    const reason=document.querySelector('[data-attendance-reason="'+CSS.escape(row.member_id)+'"]');
-    const status=select?.value||row.status, note=reason?.value.trim()||null;
+    const draft=attendanceRosterDrafts.get(row.member_id);
+    if(!draft)return [];
+    const status=draft.status, note=draft.reason||null;
     if(status===row.status&&note===(row.reason?.trim()||null))return [];
     return [{member_id:row.member_id,status,reason:note,expected_updated_at:row.updated_at}];
   });
@@ -1086,9 +1195,12 @@ $('#attendance-save').addEventListener('click',async()=>{
     const rows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
     if(requestId!==attendanceRosterRequest)return;
     currentAttendanceRows=rows;
-    renderAttendanceRoster();showMessage('#attendance-message','Rekap kehadiran berhasil disimpan.','success');
+    attendanceRosterDrafts.clear();attendanceRosterDirty=false;
+    renderAttendanceRoster();
+    await loadAttendanceRecap();
+    showMessage('#attendance-message','Rekap kehadiran berhasil disimpan.','success');
   }catch(error){if(requestId===attendanceRosterRequest)showMessage('#attendance-message',error.message,'error');}
-  finally{button.disabled=attendanceRosterLoading||currentAttendanceEvent?.status==='closed';}
+  finally{button.disabled=attendanceRosterLoading||currentAttendanceEvent?.status==='closed'||!attendanceRosterDirty;}
 });
 $('#attendance-export').addEventListener('click',()=>{
   if(!currentAttendanceEvent)return;

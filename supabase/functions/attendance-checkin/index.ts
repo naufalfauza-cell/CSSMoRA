@@ -256,14 +256,92 @@ async function finalizeAttendance(request: Request, supabaseUrl: string, service
 }
 async function getActiveEvents(supabaseUrl: string, headers: Record<string, string>) {
   const query = new URLSearchParams({
-    select: "id,title,event_date,session_name,public_token",
+    select: "id,title,event_date,session_name,public_token,agenda_id",
     status: "eq.open",
     event_date: "eq." + todayJakarta(),
     order: "created_at.asc",
   });
   const response = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?" + query.toString(), { headers });
   if (!response.ok) return json({ error: "Kegiatan aktif belum dapat dimuat." }, 500);
-  return json({ events: await response.json() });
+  const events = await response.json();
+  const agendaIds = [...new Set(events.map((event: { agenda_id?: string | null }) => String(event.agenda_id ?? "")).filter(isUuid))];
+  if (!agendaIds.length) return json({ events: [] });
+  const agendaQuery = new URLSearchParams({
+    select: "id",
+    status: "eq.published",
+    id: "in.(" + agendaIds.join(",") + ")",
+  });
+  const agendaResponse = await fetch(supabaseUrl + "/rest/v1/agenda?" + agendaQuery.toString(), { headers });
+  if (!agendaResponse.ok) return json({ error: "Status agenda kalender belum dapat diperiksa." }, 500);
+  const publishedIds = new Set((await agendaResponse.json()).map((agenda: { id: string }) => agenda.id));
+  return json({ events: events.filter((event: { agenda_id?: string | null }) => publishedIds.has(event.agenda_id)) });
+}
+
+async function deleteAttendanceEvent(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>) {
+  const authorization = request.headers.get("Authorization") ?? "";
+  if (!authorization.startsWith("Bearer ")) return json({ error: "Silakan login sebagai pengurus." }, 401);
+  const userResponse = await fetch(supabaseUrl + "/auth/v1/user", {
+    headers: { apikey: serviceKey, Authorization: authorization },
+  });
+  if (!userResponse.ok) return json({ error: "Sesi pengurus tidak valid. Silakan login kembali." }, 401);
+  const user = await userResponse.json();
+  const email = String(user.email ?? "").trim().toLowerCase();
+  if (!email) return json({ error: "Akun pengurus tidak memiliki email." }, 403);
+  const adminResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_admins?select=email&email=eq." + encodeURIComponent(email) + "&limit=1", { headers });
+  if (!adminResponse.ok) return json({ error: "Akses sekretariat tidak dapat diperiksa." }, 500);
+  if (!(await adminResponse.json()).length) return json({ error: "Akun ini tidak memiliki akses sekretariat." }, 403);
+
+  const eventId = url.searchParams.get("event_id") ?? "";
+  if (!isUuid(eventId)) return json({ error: "Agenda absensi tidak valid." }, 400);
+  const eventQuery = new URLSearchParams({ select: "id,agenda_id", id: "eq." + eventId, limit: "1" });
+  const eventResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?" + eventQuery, { headers });
+  if (!eventResponse.ok) return json({ error: "Data agenda absensi belum dapat dimuat." }, 500);
+  const attendanceEvent = (await eventResponse.json())[0];
+  if (!attendanceEvent) return json({ error: "Agenda absensi tidak ditemukan." }, 404);
+  if (attendanceEvent.agenda_id) {
+    const agendaQuery = new URLSearchParams({ select: "status", id: "eq." + attendanceEvent.agenda_id, limit: "1" });
+    const agendaResponse = await fetch(supabaseUrl + "/rest/v1/agenda?" + agendaQuery, { headers });
+    if (!agendaResponse.ok) return json({ error: "Status agenda kalender belum dapat diperiksa." }, 500);
+    if ((await agendaResponse.json()).some((agenda: { status: string }) => agenda.status === "published")) {
+      return json({ error: "Tarik agenda dari kalender sebelum menghapus data absensinya." }, 409);
+    }
+  }
+
+  const recordsQuery = new URLSearchParams({
+    select: "proof_path",
+    event_id: "eq." + eventId,
+    proof_path: "not.is.null",
+  });
+  const recordsResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + recordsQuery, { headers });
+  if (!recordsResponse.ok) return json({ error: "Bukti foto absensi belum dapat diperiksa." }, 500);
+  const proofPaths = (await recordsResponse.json())
+    .map((record: { proof_path?: string | null }) => String(record.proof_path ?? ""))
+    .filter(Boolean);
+  if (proofPaths.some((path: string) => !/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/proof\.jpg$/i.test(path))) {
+    return json({ error: "Jalur foto bukti tidak valid. Data absensi tetap tersimpan." }, 409);
+  }
+  const paths = [...new Set(proofPaths)];
+  if (paths.length) {
+    const storageResponse = await fetch(supabaseUrl + "/storage/v1/object/attendance-proofs", {
+      method: "DELETE",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ prefixes: paths }),
+    });
+    if (!storageResponse.ok) return json({ error: "Foto bukti belum dapat dihapus. Data absensi tetap tersimpan." }, 500);
+  }
+
+  const deleteQuery = new URLSearchParams({ id: "eq." + eventId });
+  const deleteResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?" + deleteQuery, {
+    method: "DELETE",
+    headers: { ...headers, "Content-Type": "application/json", Prefer: "return=representation" },
+  });
+  if (!deleteResponse.ok) {
+    const detail = await deleteResponse.json().catch(() => ({}));
+    if (detail.code === "P0001") return json({ error: "Agenda masih terbit. Tarik agenda dari kalender sebelum menghapus data absensinya." }, 409);
+    return json({ error: "Data absensi belum dapat dihapus." }, 500);
+  }
+  if (!(await deleteResponse.json().catch(() => [])).length) return json({ error: "Agenda absensi sudah berubah. Muat ulang lalu coba lagi." }, 409);
+  return json({ success: true });
 }
 async function getRosterMembers(supabaseUrl: string, headers: Record<string, string>, eventId: string) {
   const recordQuery = new URLSearchParams({
@@ -336,18 +414,24 @@ async function handleRequest(request: Request) {
   if (request.method === "GET" && mode === "active") return getActiveEvents(supabaseUrl, headers);
   if (request.method === "GET" && mode === "proof-url") return adminProofUrl(request, url, supabaseUrl, serviceKey, headers);
   if (request.method === "POST" && mode === "cleanup") return cleanExpiredAttendancePhotos(request, supabaseUrl, serviceKey, headers);
+  if (request.method === "POST" && mode === "delete-event") return deleteAttendanceEvent(request, url, supabaseUrl, serviceKey, headers);
 
   let input: Record<string, unknown> = {};
   if (request.method === "POST") input = await request.clone().json().catch(() => ({}));
   const action = String(input.mode ?? "");
   const token = url.searchParams.get("token") ?? String(input.token ?? "");
   if (!isUuid(token)) return json({ error: "Tautan absensi tidak valid." }, 400);
-  const eventUrl = supabaseUrl + "/rest/v1/secretariat_attendance_events?select=id,title,event_date,session_name,status&public_token=eq." + encodeURIComponent(token) + "&limit=1";
+  const eventUrl = supabaseUrl + "/rest/v1/secretariat_attendance_events?select=id,title,event_date,session_name,status,agenda_id&public_token=eq." + encodeURIComponent(token) + "&limit=1";
   const eventResponse = await fetch(eventUrl, { headers });
   if (!eventResponse.ok) return json({ error: "Kegiatan absensi tidak ditemukan." }, 404);
   const event = (await eventResponse.json())[0];
   if (!event) return json({ error: "Kegiatan absensi tidak ditemukan." }, 404);
   if (event.status !== "open") return json({ error: "Absensi kegiatan ini sudah ditutup." }, 410);
+  if (!event.agenda_id) return json({ error: "Agenda kalender belum diterbitkan." }, 410);
+  const agendaQuery = new URLSearchParams({ select: "id", id: "eq." + event.agenda_id, status: "eq.published", limit: "1" });
+  const agendaResponse = await fetch(supabaseUrl + "/rest/v1/agenda?" + agendaQuery.toString(), { headers });
+  if (!agendaResponse.ok) return json({ error: "Status agenda kalender belum dapat diperiksa." }, 500);
+  if (!(await agendaResponse.json()).length) return json({ error: "Agenda kegiatan tidak lagi diterbitkan." }, 410);
 
   if (request.method === "GET") {
     if (mode === "options") return rosterOptions(request, url, supabaseUrl, serviceKey, headers, event);
