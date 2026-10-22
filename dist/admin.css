@@ -1988,3 +1988,25 @@
 .achievement-reviewer-row button{border:0;background:transparent;color:#a34335;font-size:9px;font-weight:700;cursor:pointer}
 @media(max-width:1050px){.achievement-admin-layout{grid-template-columns:minmax(0,1fr)}.achievement-reviewer-aside{max-width:500px}}
 @media(max-width:650px){.achievement-admin-heading{align-items:flex-start}.achievement-admin-toolbar{align-items:flex-start;flex-direction:column}.achievement-application-head{flex-direction:column}.achievement-application-grid{grid-template-columns:1fr}.achievement-review-controls{flex-wrap:wrap}.achievement-review-controls label{flex:1 1 100%}.achievement-approval-trail{grid-template-columns:1fr}}
+
+
+.achievement-approved-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+.achievement-approved-table{width:100%;min-width:680px;border-collapse:collapse;text-align:left}
+.achievement-approved-table th{padding:11px 13px;background:#f5f8f4;color:#77867b;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.achievement-approved-table td{padding:12px 13px;border-top:1px solid #edf0eb;color:#34493b;font-size:10px;vertical-align:middle}
+.achievement-approved-table td:first-child{min-width:180px}
+.achievement-approved-table td strong,.achievement-approved-table td small{display:block}
+.achievement-approved-table td small{margin-top:4px;color:#859187;font-size:9px}
+.achievement-details-toggle,.achievement-payment-file button,.achievement-payment-file a{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 10px;border:1px solid #dce7dc;border-radius:9px;background:#f8faf7;color:#23633e;text-decoration:none;font:700 9px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.achievement-details-row>td{padding:12px;background:#f9fbf8}
+.achievement-detail-content{display:grid;gap:10px}
+.achievement-payment-panel{padding:12px;border:1px solid #dce8dc;border-radius:12px;background:#f7faf6}
+.achievement-payment-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#244b34;font-size:11px}
+.achievement-payment-panel>p{margin:7px 0;color:#748278;font-size:9px;line-height:1.5}
+.achievement-payment-upload{display:grid;gap:6px;color:#556a5c;font-size:9px;font-weight:700}
+.achievement-payment-upload input{max-width:100%;font:500 10px 'Plus Jakarta Sans',sans-serif}
+.achievement-payment-upload small{color:#879188;font-size:9px;font-weight:500}
+.achievement-payment-file{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}
+.achievement-payment-file>span{margin-right:auto;color:#4a5c4e;font-size:9px}
+.achievement-payment-file a{color:#23633e}
+@media(max-width:650px){.achievement-approved-table{min-width:620px}.achievement-payment-file>span{flex-basis:100%}}
