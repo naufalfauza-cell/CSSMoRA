@@ -10,7 +10,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
     constructor(...args) { super(...(args.length ? args : [instant])); }
     static now() { return instant; }
   }
-  const timers = [];
+  const timers = [],activeTimers=new Set();
   let requested;
   const fakeNode = () => ({ classList: { toggle() {} }, addEventListener() {}, setAttribute() {}, removeAttribute() {}, dataset: {} });
   const box = {
@@ -31,8 +31,8 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
     Date: FixedDate, Intl, URLSearchParams,
     localStorage: { getItem: () => cache ? JSON.stringify(cache) : null, setItem() {} },
     console: { error() {} },
-    setInterval: (callback, interval) => { timers.push(interval); return timers.length; },
-    clearInterval() {},
+    setInterval: (callback, interval) => { timers.push(interval); activeTimers.add(timers.length); return timers.length; },
+    clearInterval(id) {activeTimers.delete(id);},
     fetch: async url => {
       const requestUrl = new URL(url);
       if (requestUrl.pathname.endsWith('/agenda')) requested = requestUrl;
@@ -51,7 +51,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   };
   vm.runInNewContext(source, context, { timeout: 1000 });
   await new Promise(setImmediate);
-  return { html: box.innerHTML, requested, timers };
+  return { html: box.innerHTML, requested, timers, activeTimers: [...activeTimers] };
 }
 
 (async () => {
@@ -68,7 +68,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   assert.doesNotMatch(upcoming.html, /Kemarin/);
   assert.equal(upcoming.requested.searchParams.get('limit'), '6');
   assert.equal(upcoming.requested.pathname, '/rest/v1/agenda');
-  assert.match(upcoming.requested.searchParams.get('or'), /starts_at\.gte\.2026-11-10T03:00:00\.000Z/);
+  assert.match(upcoming.requested.searchParams.get('or'), /starts_at\.gte\.2026-11-10T00:00:00[+]07:00/);
 
   const sameDay = await run([event('Tanpa jam selesai', '2026-11-10T04:00:00Z')]);
   assert.match(sameDay.html, /Tanpa jam selesai/);
@@ -92,5 +92,9 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   const carousel = await run(slides);
   assert.equal((carousel.html.match(/<article /g) || []).length, 6);
   assert.deepEqual(carousel.timers, [3000]);
+  const ongoingNoEnd=await run([event('Masih berlangsung','2026-11-10T02:00:00Z')]);
+  assert.match(ongoingNoEnd.html,/Masih berlangsung/);
+  const cached=await run(slides,{cache:{items:slides}});
+  assert.equal(cached.activeTimers.length,1);
   console.log('PASS: multi-day dates, server cutoff/limit, WIB midnight, escaping, empty/error states, six-item carousel at 3 seconds');
 })().catch(error => { console.error(error); process.exitCode = 1; });

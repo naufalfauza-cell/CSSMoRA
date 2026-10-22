@@ -57,10 +57,7 @@ declare
   v_dept_input text := upper(btrim(p_department_code));
   v_department text;
 begin
-  if auth.uid() is null or not (
-    public.is_secretariat_admin()
-    or exists (select 1 from public.competition_admins a where a.email = lower(btrim(auth.jwt()->>'email')))
-  ) then
+  if auth.uid() is null or not public.is_secretariat_admin() then
     raise exception 'Akses pengurus CSSMoRA diperlukan.';
   end if;
   if p_issued_on is null or length(btrim(coalesce(p_subject, ''))) not between 3 and 240 then

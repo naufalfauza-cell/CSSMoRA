@@ -48,13 +48,14 @@ const saveSession = value => {
   }
 };
 
-async function fetchTimed(url, options) {
-  const timeoutOptions=typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function'?{signal:AbortSignal.timeout(15000)}:{};
+async function fetchTimed(url, options={}) {
+  const {timeoutMs=15000,...requestOptions}=options;
+  const timeoutOptions=typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function'?{signal:AbortSignal.timeout(timeoutMs)}:{};
   try {
-    return await fetch(url,{...options,...timeoutOptions});
+    return await fetch(url,{...requestOptions,...timeoutOptions});
   } catch(error) {
     if(error?.name==='TimeoutError'||error?.name==='AbortError') {
-      throw new Error('Supabase belum merespons setelah 15 detik. Periksa koneksi lalu coba lagi.');
+      throw new Error('Permintaan melewati batas waktu. Periksa koneksi lalu coba lagi.');
     }
     throw error;
   }
@@ -69,25 +70,39 @@ async function authRequest(path,body) {
   return data;
 }
 
+let refreshingSession = null;
 async function refreshSession() {
+  if(refreshingSession)return refreshingSession;
+  refreshingSession=performRefreshSession().finally(()=>{refreshingSession=null;});
+  return refreshingSession;
+}
+async function performRefreshSession() {
   if(!session?.refresh_token)throw new Error('Sesi berakhir. Silakan login kembali.');
   const refreshed=await authRequest('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
   saveSession({...refreshed,expires_at:Date.now()+Number(refreshed.expires_in||3600)*1000});
 }
 
-async function api(path,{method='GET',body,allowRetry=true,extraHeaders={}}={}) {
-  const headers={...baseHeaders(),...extraHeaders};
-  if(session?.access_token)headers.Authorization=`Bearer ${session.access_token}`;
-  const response=await fetchTimed(`${config.url}/rest/v1/${path}`,{
-    method,headers,body:body===undefined?undefined:JSON.stringify(body)
+async function authenticatedFetch(url,options={}) {
+  if(session?.refresh_token&&Number(session.expires_at||0)<=Date.now()+60000)await refreshSession();
+  const send=()=>fetchTimed(url,{...options,headers:{...options.headers,...(session?.access_token?{Authorization:'Bearer '+session.access_token}:{})}});
+  let response=await send();
+  if(response.status===401&&session?.refresh_token){await refreshSession();response=await send();}
+  return response;
+}
+function apiError(result) {
+  if(result?.code==='23514')return 'Data belum sesuai ketentuan. Periksa isian lalu coba lagi.';
+  if(result?.code==='23505')return 'Data atau nomor tersebut sudah digunakan. Muat ulang lalu coba lagi.';
+  if(result?.code==='42501')return 'Akun ini tidak memiliki akses untuk tindakan tersebut.';
+  return result?.message||'Permintaan gagal. Coba lagi.';
+}
+async function api(path,{method='GET',body,extraHeaders={}}={}) {
+  const response=await authenticatedFetch(config.url+'/rest/v1/'+path,{
+    method,headers:{...baseHeaders(),...extraHeaders},body:body===undefined?undefined:JSON.stringify(body)
   });
-  if(response.status===401&&allowRetry&&session?.refresh_token){
-    await refreshSession();
-    return api(path,{method,body,allowRetry:false,extraHeaders});
-  }
   const raw=await response.text();
-  const result=raw?JSON.parse(raw):null;
-  if(!response.ok)throw new Error(result?.message||result?.hint||result?.details||'Permintaan gagal. Coba lagi.');
+  let result=null;
+  try{result=raw?JSON.parse(raw):null;}catch{throw new Error('Respons layanan tidak dapat dibaca. Coba lagi.');}
+  if(!response.ok)throw new Error(apiError(result));
   return result;
 }
 
@@ -232,6 +247,7 @@ recordList.addEventListener('click',async event=>{
     competitionForm.elements.deadline.value=new Date(item.deadline).toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'});
     competitionForm.elements.fee.value=item.fee||'Gratis';
     competitionForm.elements.poster.value=item.posterImage||'';
+    $('#competition-poster-file').value='';
     competitionForm.elements.registration.value=item.registrationUrl||'';
     competitionForm.elements.description.value=item.description||'';
     competitionForm.elements.published.checked=item.status==='published';
@@ -261,8 +277,10 @@ competitionForm.addEventListener('submit',async event=>{
   if((poster&&!poster.startsWith('https://'))||(registration&&!registration.startsWith('https://'))){showMessage('#editor-message','Tautan poster dan pendaftaran harus memakai https://.','error');return;}
   const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
   const existingId=$('#record-id').value;
+  const id=existingId||`${slug}-${Date.now()}`;
+  let uploadedPosterPath=null;
   const payload={
-    id:existingId||`${slug}-${Date.now()}`,
+    id,
     title,
     subtitle:competitionForm.elements.subtitle.value.trim(),
     category:competitionForm.elements.category.value,
@@ -281,6 +299,11 @@ competitionForm.addEventListener('submit',async event=>{
   submit.disabled=true;
   showMessage('#editor-message','Menyimpan…');
   try{
+    const file=$('#competition-poster-file').files[0];
+    if(file){
+      const upload=await uploadCompetitionPoster(file,id);
+      payload.posterImage=upload.url;uploadedPosterPath=upload.path;
+    }
     if(existingId){
       await api(`competitions?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
       showMessage('#editor-message','Perubahan berhasil disimpan.','success');
@@ -290,7 +313,7 @@ competitionForm.addEventListener('submit',async event=>{
     }
     await loadRecords();
     clearEditor();
-  }catch(error){showMessage('#editor-message',error.message,'error');}
+  }catch(error){if(uploadedPosterPath)await removeCompetitionPoster(uploadedPosterPath).catch(()=>{});showMessage('#editor-message',error.message,'error');}
   finally{submit.disabled=false;}
 });
 
@@ -303,8 +326,21 @@ const storageHeaders=contentType=>({
 });
 const objectUrl=path=>`${config.url}/storage/v1/object/public/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`;
 
+async function removeCompetitionPoster(path){
+  const response=await authenticatedFetch(config.url+'/storage/v1/object/posters',{method:'DELETE',headers:baseHeaders(),body:JSON.stringify({prefixes:[path]})});
+  if(!response.ok)throw new Error('Poster belum dapat dihapus.');
+}
+async function uploadCompetitionPoster(file,id){
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Poster harus berupa JPG, PNG, atau WebP.');
+  const image=await window.CSSMoRAUpload.compressImage(file,{maxBytes:2*1024*1024});
+  const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[image.type];
+  const path=id+'/'+crypto.randomUUID()+'.'+ext;
+  const response=await authenticatedFetch(config.url+'/storage/v1/object/posters/'+path,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':image.type,'x-upsert':'false'},body:image});
+  if(!response.ok)throw new Error('Poster gagal diunggah. Periksa ukuran dan akses akun.');
+  return {path,url:config.url+'/storage/v1/object/public/posters/'+path};
+}
 async function uploadProgramPhoto(file,path) {
-  const response=await fetch(`${config.url}/storage/v1/object/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{
+  const response=await authenticatedFetch(`${config.url}/storage/v1/object/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{
     method:'POST',headers:{...storageHeaders(file.type),'x-upsert':'false'},body:file
   });
   if(!response.ok) {
@@ -314,7 +350,7 @@ async function uploadProgramPhoto(file,path) {
 }
 async function deleteProgramPhoto(path) {
   if(!path)return;
-  const response=await fetch(`${config.url}/storage/v1/object/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{
+  const response=await authenticatedFetch(`${config.url}/storage/v1/object/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{
     method:'DELETE',headers:storageHeaders()
   });
   if(!response.ok)throw new Error('Foto lama belum dapat dihapus dari penyimpanan.');
@@ -619,8 +655,8 @@ generateAnnouncementButton.addEventListener('click',async()=>{
   announcementStatus.textContent='AI sedang merapikan jarkoman…';
   announcementStatus.dataset.kind='';
   try{
-    const response=await fetchTimed(`${config.url}/functions/v1/generate-announcement`,{
-      method:'POST',
+    const response=await authenticatedFetch(`${config.url}/functions/v1/generate-announcement`,{
+      method:'POST',timeoutMs:35000,
       headers:{...baseHeaders(),Authorization:`Bearer ${session.access_token}`},
       body:JSON.stringify({
         title,
@@ -715,26 +751,26 @@ const memberById=id=>members.find(member=>member.id===id);
 const localDateInput=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const csvCell=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
 function downloadCSV(name,rows){
-  const csv='\\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\\r\\n');
+  const csv='\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   const link=document.createElement('a');link.href=url;link.download=name;link.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function parseCSV(text){
-  const delimiter=(text.split(/\\r?\\n/,1)[0].match(/;/g)||[]).length>(text.split(/\\r?\\n/,1)[0].match(/,/g)||[]).length?';':',';
+  const delimiter=(text.split(/\r?\n/,1)[0].match(/;/g)||[]).length>(text.split(/\r?\n/,1)[0].match(/,/g)||[]).length?';':',';
   const rows=[];let row=[],cell='',quoted=false;
   for(let i=0;i<text.length;i++){
     const ch=text[i];
     if(quoted&&ch==='"'&&text[i+1]==='"'){cell+='"';i++;}
     else if(ch==='"')quoted=!quoted;
     else if(ch===delimiter&&!quoted){row.push(cell);cell='';}
-    else if((ch==='\\n'||ch==='\\r')&&!quoted){if(ch==='\\r'&&text[i+1]==='\\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell='';}
+    else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell='';}
     else cell+=ch;
   }
   if(cell||row.length){row.push(cell);if(row.some(v=>v.trim()))rows.push(row);}
   return rows;
 }
-const normHeader=value=>String(value||'').replace(/^\\uFEFF/,'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toLowerCase();
+const normHeader=value=>String(value||'').replace(/^\uFEFF/,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 function showSecretaryTab(tab){
   document.querySelectorAll('.secretariat-tab').forEach(item=>{
     const selected=item===tab;
@@ -985,14 +1021,11 @@ function renderAttendanceRoster(){
     return '<tr><td><strong>'+escapeHTML(row.member.full_name)+'</strong><small>Angkatan '+escapeHTML(row.member.cohort)+'</small></td><td>'+escapeHTML(row.member.nia)+'</td><td><select data-attendance-status="'+escapeHTML(row.member_id)+'" aria-label="Status kehadiran '+escapeHTML(row.member.full_name)+'">'+['belum','hadir','izin','sakit','alpa'].map(status=>'<option value="'+status+'" '+(row.status===status?'selected':'')+'>'+attendanceStatusLabel(status)+'</option>').join('')+'</select><input class="attendance-reason" data-attendance-reason="'+escapeHTML(row.member_id)+'" value="'+escapeHTML(row.reason||'')+'" placeholder="Catatan izin (opsional)" aria-label="Catatan kehadiran '+escapeHTML(row.member.full_name)+'"></td><td>'+proof+'</td></tr>';
   }).join('');
   document.querySelectorAll('#attendance-roster select,#attendance-roster input').forEach(field=>field.disabled=currentAttendanceEvent.status==='closed');
-  document.querySelectorAll('#attendance-roster [data-attendance-proof]').forEach(button=>button.disabled=currentAttendanceEvent.status==='closed');
   $('#attendance-save').disabled=currentAttendanceEvent.status==='closed';
 }
 async function getAttendanceProofUrl(eventId,memberId){
   const endpoint=config.url+'/functions/v1/attendance-checkin?mode=proof-url&event_id='+encodeURIComponent(eventId)+'&member_id='+encodeURIComponent(memberId);
-  const makeRequest=()=>fetchTimed(endpoint,{method:'GET',headers:{apikey:config.publishableKey,Authorization:session?.access_token?'Bearer '+session.access_token:''}});
-  let response=await makeRequest();
-  if(response.status===401&&session?.refresh_token){await refreshSession();response=await makeRequest();}
+  const response=await authenticatedFetch(endpoint,{method:'GET',headers:{apikey:config.publishableKey}});
   const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result.error||'Foto bukti belum dapat dimuat.');
   return result.signed_url;
@@ -1011,14 +1044,17 @@ $('#attendance-roster').addEventListener('click',async event=>{
 $('#attendance-proof-dialog').addEventListener('close',()=>{$('#attendance-proof-image').removeAttribute('src');});
 $('#attendance-save').addEventListener('click',async()=>{
   if(!currentAttendanceEvent)return;
-  const rows=currentAttendanceRows.map(row=>{
+  const changes=currentAttendanceRows.flatMap(row=>{
     const select=document.querySelector('[data-attendance-status="'+CSS.escape(row.member_id)+'"]');
     const reason=document.querySelector('[data-attendance-reason="'+CSS.escape(row.member_id)+'"]');
-    return {event_id:currentAttendanceEvent.id,member_id:row.member_id,status:select?.value||row.status,reason:reason?.value.trim()||null,recorded_by:session?.user?.id||null,proof_path:row.proof_path||null,proof_uploaded_at:row.proof_uploaded_at||null,proof_expires_at:row.proof_expires_at||null,proof_deleted_at:row.proof_deleted_at||null,updated_at:new Date().toISOString()};
+    const status=select?.value||row.status, note=reason?.value.trim()||null;
+    if(status===row.status&&note===(row.reason?.trim()||null))return [];
+    return [{member_id:row.member_id,status,reason:note,expected_updated_at:row.updated_at}];
   });
+  if(!changes.length){showMessage('#attendance-message','Tidak ada perubahan untuk disimpan.');return;}
   const button=$('#attendance-save');button.disabled=true;showMessage('#attendance-message','Menyimpan status kehadiran…');
   try{
-    if(rows.length)await api('secretariat_attendance_records?on_conflict=event_id,member_id',{method:'POST',body:rows,extraHeaders:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+    await api('rpc/save_secretariat_attendance_changes',{method:'POST',body:{p_event_id:currentAttendanceEvent.id,p_changes:changes}});
     currentAttendanceRows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(currentAttendanceEvent.id));
     renderAttendanceRoster();showMessage('#attendance-message','Rekap kehadiran berhasil disimpan.','success');
   }catch(error){showMessage('#attendance-message',error.message,'error');}
@@ -1038,10 +1074,15 @@ async function loadLetters(){
     loadedAdminData.add('letters');
     $('#letter-count').textContent=letters.length+' surat';
     if(!letters.length){list.innerHTML='<p class="records-empty">Belum ada surat yang diberi nomor.</p>';return;}
-    list.innerHTML=letters.map(letter=>'<article class="letter-record"><div class="letter-record-heading"><strong>'+escapeHTML(letter.letter_number)+'</strong><span class="record-status '+(letter.archive_status==='archived'?'published':'')+'">'+(letter.archive_status==='archived'?'SUDAH ARSIP':letter.archive_status==='void'?'DIBATALKAN':'BELUM ARSIP')+'</span></div><p>'+escapeHTML(letter.subject)+'</p><small>'+escapeHTML(letter.issued_on)+' · '+escapeHTML(letter.department_code)+' · '+escapeHTML(letter.recipient||'Tujuan belum diisi')+'</small><form class="letter-archive-form" data-letter-id="'+escapeHTML(letter.id)+'"><input name="archiveUrl" type="url" value="'+escapeHTML(letter.archive_url||'')+'" placeholder="Tautan arsip Drive"><select name="archiveStatus" aria-label="Status arsip surat"><option value="pending" '+(letter.archive_status==='pending'?'selected':'')+'>Belum diarsipkan</option><option value="archived" '+(letter.archive_status==='archived'?'selected':'')+'>Sudah diarsipkan</option><option value="void" '+(letter.archive_status==='void'?'selected':'')+'>Dibatalkan</option></select><button type="submit">Simpan arsip</button></form></article>').join('');
+    list.innerHTML=letters.map(letter=>'<article class="letter-record"><div class="letter-record-heading"><strong>'+escapeHTML(letter.letter_number)+'</strong><button type="button" data-copy-letter="'+escapeHTML(letter.letter_number)+'">Salin nomor</button><span class="record-status '+(letter.archive_status==='archived'?'published':'')+'">'+(letter.archive_status==='archived'?'SUDAH ARSIP':letter.archive_status==='void'?'DIBATALKAN':'BELUM ARSIP')+'</span></div><p>'+escapeHTML(letter.subject)+'</p><small>'+escapeHTML(letter.issued_on)+' · '+escapeHTML(letter.department_code)+' · '+escapeHTML(letter.recipient||'Tujuan belum diisi')+'</small><form class="letter-archive-form" data-letter-id="'+escapeHTML(letter.id)+'"><input name="archiveUrl" type="url" value="'+escapeHTML(letter.archive_url||'')+'" placeholder="Tautan arsip Drive"><select name="archiveStatus" aria-label="Status arsip surat"><option value="pending" '+(letter.archive_status==='pending'?'selected':'')+'>Belum diarsipkan</option><option value="archived" '+(letter.archive_status==='archived'?'selected':'')+'>Sudah diarsipkan</option><option value="void" '+(letter.archive_status==='void'?'selected':'')+'>Dibatalkan</option></select><button type="submit">Simpan arsip</button></form></article>').join('');
   }catch(error){list.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
 }
 $('#letters-refresh').addEventListener('click',loadLetters);
+$('#letter-record-list').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-copy-letter]');if(!button)return;
+  try{await navigator.clipboard.writeText(button.dataset.copyLetter);showMessage('#letter-message','Nomor surat disalin.','success');}
+  catch{showMessage('#letter-message','Nomor surat: '+button.dataset.copyLetter);}
+});
 $('#letter-issued-on').value=localDateInput();
 letterForm.addEventListener('submit',async event=>{
   event.preventDefault();
@@ -1078,6 +1119,10 @@ const achievementList=$('#achievement-application-list');
 const achievementStatusLabels={pending_bendahara:'Menunggu Bendahara',pending_ketua:'Menunggu Ketua',approved:'Disetujui',rejected:'Ditolak'};
 const hasAchievementRole=role=>achievementRoles.includes(role);
 const achievementMoney=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
+function achievementRequestNumber(app){
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'2-digit',month:'2-digit'}).formatToParts(new Date(app.created_at)).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+  return 'CSS-PR-'+parts.year+parts.month+'-'+app.id.replaceAll('-','').slice(0,8).toUpperCase();
+}
 function achievementDetailMarkup(app,team,{canReview=false,role=''}={}){
   const phone=String(app.leader_phone||'').replace(/\D/g,'').replace(/^0/,'62');
   const waText=encodeURIComponent(`Halo ${app.leader_name}, pengajuan bantuan biaya lomba “${app.competition_name}” telah disetujui CSSMoRA UNAIR. Nilai subsidi yang diajukan sebesar ${achievementMoney(app.requested_amount)}. Bukti transfer akan saya kirimkan melalui chat WhatsApp ini.`);
@@ -1105,7 +1150,7 @@ function renderAchievementApplications(){
     const isChairSelfReviewException=session?.user?.email?.toLowerCase()==='naufal.almaroqi@gmail.com';
     const canReview=Boolean(role)&&(role!=='ketua'||app.treasurer_email?.toLowerCase()!==session?.user?.email?.toLowerCase()||isChairSelfReviewException);
     const blocked=app.status==='pending_ketua'&&app.treasurer_email?.toLowerCase()===session?.user?.email?.toLowerCase()&&!isChairSelfReviewException;
-    return `<article class="achievement-application-card" data-application-id="${escapeHTML(app.id)}"><header class="achievement-application-head"><div><span class="achievement-request-number">CSS-PR-${escapeHTML(new Date(app.created_at).toLocaleDateString('id-ID',{year:'2-digit',month:'2-digit'}))}-${escapeHTML(app.id.replaceAll('-','').slice(0,8).toUpperCase())}</span><h4>${escapeHTML(app.competition_name)}</h4><small>${escapeHTML(app.competition_type)} · ${app.participation_type==='tim'?'Tim':'Individu'} · ${escapeHTML(new Date(app.created_at).toLocaleString('id-ID'))}</small></div><span class="record-status achievement-status ${escapeHTML(app.status)}">${achievementStatusLabels[app.status]||escapeHTML(app.status)}</span></header>${achievementDetailMarkup(app,team,{canReview,role})}${blocked?'<p class="admin-muted achievement-review-blocked">Persetujuan Bendahara dan Ketua harus dilakukan oleh dua akun berbeda.</p>':''}</article>`;
+    return `<article class="achievement-application-card" data-application-id="${escapeHTML(app.id)}"><header class="achievement-application-head"><div><span class="achievement-request-number">${escapeHTML(achievementRequestNumber(app))}</span><h4>${escapeHTML(app.competition_name)}</h4><small>${escapeHTML(app.competition_type)} · ${app.participation_type==='tim'?'Tim':'Individu'} · ${escapeHTML(new Date(app.created_at).toLocaleString('id-ID'))}</small></div><span class="record-status achievement-status ${escapeHTML(app.status)}">${achievementStatusLabels[app.status]||escapeHTML(app.status)}</span></header>${achievementDetailMarkup(app,team,{canReview,role})}${blocked?'<p class="admin-muted achievement-review-blocked">Persetujuan Bendahara dan Ketua harus dilakukan oleh dua akun berbeda.</p>':''}</article>`;
   }).join('');
   achievementList.innerHTML=table+cards;
 }
@@ -1203,7 +1248,7 @@ achievementList.addEventListener('click',async event=>{
     proof.disabled=true;
     try{
       const path=proof.dataset.achievementProof.split('/').map(encodeURIComponent).join('/');
-      const response=await fetchTimed(`${config.url}/storage/v1/object/sign/cssmora-prestasi-proofs/${path}`,{method:'POST',headers:{...baseHeaders(),Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({expiresIn:3600})});
+      const response=await authenticatedFetch(`${config.url}/storage/v1/object/sign/cssmora-prestasi-proofs/${path}`,{method:'POST',headers:{...baseHeaders(),Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({expiresIn:3600})});
       const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||'Bukti pendaftaran tidak dapat dibuka.');
       const url=data.signedURL?.startsWith('http')?data.signedURL:`${config.url}/storage/v1${data.signedURL}`;
       window.open(url,'_blank','noopener');

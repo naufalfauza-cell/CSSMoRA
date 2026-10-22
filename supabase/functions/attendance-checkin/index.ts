@@ -1,5 +1,4 @@
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://cssmora.vercel.app",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-attendance-cleanup-secret",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Content-Type": "application/json",
@@ -325,7 +324,7 @@ async function rosterOptions(request: Request, url: URL, supabaseUrl: string, se
   return json({ error: "Pilihan angkatan, prodi, atau nama belum lengkap." }, 400);
 }
 
-Deno.serve(async (request: Request) => {
+async function handleRequest(request: Request) {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "GET" && request.method !== "POST") return json({ error: "Metode tidak didukung." }, 405);
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -357,4 +356,24 @@ Deno.serve(async (request: Request) => {
   if (action === "prepare_upload") return preparePhotoUpload(request, supabaseUrl, serviceKey, headers, event, input);
   if (action === "finalize") return finalizeAttendance(request, supabaseUrl, serviceKey, headers, event, input);
   return json({ error: "Unggah foto bukti diperlukan untuk mencatat kehadiran." }, 400);
+}
+const allowedOrigin = (origin: string | null) => {
+  if(!origin)return true;
+  try{
+    const u=new URL(origin),h=u.hostname;
+    return (u.protocol==="https:" && (
+      h==="cssmora.vercel.app" || h==="cssmora.netlify.app" ||
+      (h.startsWith("cssmora-") && h.endsWith("-naufalalmaroqi-2669s-projects.vercel.app")) ||
+      h.endsWith("--cssmora.netlify.app")
+    )) || u.origin==="http://localhost:4173";
+  }catch{return false;}
+};
+Deno.serve(async (request: Request)=>{
+  const origin=request.headers.get("Origin");
+  if(!allowedOrigin(origin))return new Response(JSON.stringify({error:"Asal permintaan tidak diizinkan."}),{status:403,headers:{"Content-Type":"application/json"}});
+  const response=await handleRequest(request);
+  const headers=new Headers(response.headers);
+  if(origin)headers.set("Access-Control-Allow-Origin",origin);
+  headers.set("Vary","Origin");
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 });

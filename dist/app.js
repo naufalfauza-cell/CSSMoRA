@@ -17,7 +17,7 @@ function render() {
     const matchedText = `${item.title} ${item.organizer} ${item.category} ${item.subtitle}`.toLocaleLowerCase('id').includes(query);
     return matchedText && (category==='all'||item.category===category) && (status==='all'||(status==='open')===isOpen(item));
   }).sort((a,b) => Number(isOpen(b))-Number(isOpen(a)) || (isOpen(a)?a.deadline.localeCompare(b.deadline):b.deadline.localeCompare(a.deadline)));
-  grid.innerHTML = items.map(item => `<button class="competition-card" type="button" data-id="${item.id}" aria-label="Lihat detail ${escapeHTML(item.title)}">
+  grid.innerHTML = items.map(item => `<button class="competition-card" type="button" data-id="${escapeHTML(item.id)}" aria-label="Lihat detail ${escapeHTML(item.title)}">
     <div class="card-poster">${poster(item)}<span class="status-badge ${isOpen(item)?'is-open':'is-closed'}">${isOpen(item)?'● Masih dibuka':'● Sudah ditutup'}</span></div>
     <div class="card-meta"><span>${escapeHTML(item.category)}</span><span>CSSMoRA UNAIR</span></div>
     <div class="card-title-row"><h3>${escapeHTML(item.title)}</h3><span aria-hidden="true">↗</span></div>
