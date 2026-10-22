@@ -219,3 +219,24 @@ body.admin-page :is(.admin-button,.attendance-save){border-radius:999px;font-wei
  body *,body *::before,body *::after{scroll-behavior:auto!important}
  body :is(.competition-card,.poster-image,.agenda-event-card,.agenda-card-photo img,.admin-tab,.sign-link){transition:none!important;animation:none!important}
 }
+
+/* Copy actions: compact pill buttons instead of browser-default rectangles. */
+body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement){
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:30px;padding:0 12px;border:1px solid #dce9cd;border-radius:999px;
+  background:linear-gradient(145deg,#f1f6e8,#e7efd9);color:#28583d;
+  box-shadow:inset 0 -1px 0 #d5e3ca,0 2px 6px #244d3f0b;
+  font:600 10px/1 var(--display);letter-spacing:-.01em;white-space:nowrap;cursor:pointer;
+  transition:transform .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement)::before{
+  content:"";width:9px;height:10px;flex:none;border:1.4px solid currentColor;border-radius:2.5px;
+  box-shadow:2.5px -2.5px 0 -1px #edf3e4,2.5px -2.5px 0 0 currentColor;
+}
+body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement):hover:not(:disabled){
+  transform:translateY(-1px);border-color:#c7d9b2;
+  background:linear-gradient(145deg,#f4f8e9,#ddecaa);
+  box-shadow:inset 0 -1px 0 #d1dfb8,0 5px 12px #244d3f12;
+}
+body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement):active:not(:disabled){transform:scale(.97)}
+body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement):disabled{opacity:.5;box-shadow:none}
