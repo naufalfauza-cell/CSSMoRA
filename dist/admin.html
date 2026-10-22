@@ -269,7 +269,12 @@
               <div class="secretariat-record-list" id="attendance-event-list"><p class="records-empty">Memuat kegiatan…</p></div>
             </section>
           </div>
-          <section class="records-card attendance-recap-card" aria-labelledby="attendance-recap-title">
+          <button class="attendance-recap-trigger" id="attendance-recap-toggle" type="button" aria-expanded="false" aria-controls="attendance-recap-card">
+            <span class="attendance-recap-trigger-icon" aria-hidden="true">↗</span>
+            <span class="attendance-recap-trigger-copy"><strong data-attendance-recap-label>Lihat akumulasi absen</strong><small>Rekap kehadiran seluruh agenda yang selesai</small></span>
+            <span class="attendance-recap-trigger-arrow" aria-hidden="true">⌄</span>
+          </button>
+          <section class="records-card attendance-recap-card" id="attendance-recap-card" aria-labelledby="attendance-recap-title" hidden>
             <div class="editor-heading"><div><span class="admin-kicker">AKUMULASI KEHADIRAN</span><h3 id="attendance-recap-title">Rekap anggota</h3></div></div>
             <div class="attendance-summary" id="attendance-recap-summary"></div>
             <div class="table-toolbar"><input class="table-search" id="attendance-recap-filter" type="search" placeholder="Cari nama atau NIA" aria-label="Cari anggota pada rekap kehadiran"></div>
@@ -283,6 +288,21 @@
             <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Status kehadiran</th><th>Bukti foto</th></tr></thead><tbody id="attendance-roster"><tr><td colspan="4" class="records-empty">Pilih kegiatan untuk mulai.</td></tr></tbody></table></div>
             <p class="form-message" id="attendance-message" role="status" aria-live="polite"></p>
           </section>
+          <dialog class="attendance-open-dialog" id="attendance-open-dialog" aria-labelledby="attendance-open-title">
+            <form id="attendance-open-form">
+              <span class="admin-kicker">PENGATURAN ABSENSI</span>
+              <h3 id="attendance-open-title">Buka absensi</h3>
+              <p id="attendance-open-event-name"></p>
+              <label for="attendance-auto-close-at">Batas tutup otomatis <span>(opsional)</span></label>
+              <input id="attendance-auto-close-at" type="datetime-local" step="60">
+              <small class="attendance-open-hint">Waktu WIB. Kosongkan jika absensi akan ditutup manual.</small>
+              <p class="form-message" id="attendance-open-message" role="status" aria-live="polite"></p>
+              <div class="attendance-open-actions">
+                <button class="text-button" id="attendance-open-cancel" type="button">Batal</button>
+                <button class="admin-button" id="attendance-open-submit" type="submit">Buka absensi</button>
+              </div>
+            </form>
+          </dialog>
           <dialog class="attendance-proof-dialog" id="attendance-proof-dialog" aria-labelledby="attendance-proof-title">
             <form method="dialog"><button class="attendance-proof-close" aria-label="Tutup foto bukti">×</button></form>
             <h3 id="attendance-proof-title">Foto bukti kehadiran</h3>

@@ -118,5 +118,44 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   assert.match(attendanceFunction,/mode === "delete-event"/);
   assert.match(attendanceFunction,/status: "eq\.published"/);
   assert.match(attendanceFunction,/event\.agenda_id/);
+
+  const subsidyClient=read('dist/prestasi.js');
+  const subsidyFunctions=subsidyClient.slice(subsidyClient.indexOf('function groupSubsidyRate('),subsidyClient.indexOf('function updateSubsidy('));
+  const subsidyContext=vm.createContext({});
+  vm.runInContext(subsidyFunctions+';globalThis.rates={groupSubsidyRate,subsidyRate,subsidyAmount};',subsidyContext);
+  for(const [fee,teamRate,individualRate] of [[20000,1,.5],[20001,.75,.375],[50000,.75,.375],[50001,.5,.25],[80000,.5,.25],[80001,.25,.125]]){
+    assert.equal(subsidyContext.rates.subsidyRate('tim',fee),teamRate);
+    assert.equal(subsidyContext.rates.subsidyRate('individu',fee),individualRate);
+  }
+  assert.equal(Math.round(40000*subsidyContext.rates.subsidyRate('individu',40000)),15000);
+  assert.equal(subsidyContext.rates.subsidyAmount('individu',40000),15000);
+  assert.equal(subsidyContext.rates.subsidyAmount('individu',20001),7501);
+  assert.equal(subsidyContext.rates.subsidyAmount('individu',50001),12501);
+  const subsidyMigration=read('supabase/migrations/20261022183527_fix_individual_subsidy_and_attendance_deadline.sql');
+  assert.match(subsidyMigration,/public\.cssmora_achievement_subsidy_rate\(p_participation_type, p_fee_amount\)/);
+  assert.match(subsidyMigration,/generated always as \([\s\S]*cssmora_achievement_subsidy_rate\(participation_type, fee_amount\)/);
+  assert.match(subsidyMigration,/cssmora_achievement_subsidy_amount\(p_participation_type, p_fee_amount\)/);
+  assert.match(subsidyMigration,/rename column requested_amount to legacy_requested_amount/);
+  assert.doesNotMatch(subsidyMigration,/drop column/i);
+
+  assert.match(attendanceHtml,/id="attendance-recap-toggle"[^>]*aria-expanded="false"/);
+  assert.match(attendanceHtml,/Lihat akumulasi absen/);
+  assert.match(attendanceHtml,/id="attendance-recap-card"[^>]*hidden/);
+  const secretaryLoader=attendanceAdmin.slice(attendanceAdmin.indexOf('async function loadSecretarySection('),attendanceAdmin.indexOf("document.querySelectorAll('.secretariat-tab')"));
+  assert.doesNotMatch(secretaryLoader,/loadAttendanceRecap/);
+  assert.match(attendanceHtml,/id="attendance-auto-close-at" type="datetime-local"/);
+  assert.match(attendanceAdmin,/body:\{status:'closed',auto_close_at:null\}/);
+  assert.match(attendanceAdmin,/body:\{status:'open',auto_close_at:autoCloseAt\}/);
+  const timeHelpers=attendanceAdmin.slice(attendanceAdmin.indexOf('function attendanceWibNowInputValue('),attendanceAdmin.indexOf('function renderAttendanceEvents('));
+  const timeContext=vm.createContext({Intl});
+  vm.runInContext(timeHelpers+';globalThis.toIso=attendanceWibInputToIso;',timeContext);
+  assert.equal(timeContext.toIso('2026-10-22T20:15'),'2026-10-22T13:15:00.000Z');
+  assert.match(subsidyMigration,/add column if not exists auto_close_at timestamptz/);
+  assert.match(subsidyMigration,/cssmora-attendance-auto-close/);
+  assert.match(subsidyMigration,/auto_close_at <= statement_timestamp\(\)/);
+  assert.match(attendanceFunction,/status,agenda_id,auto_close_at/);
+  assert.match(attendanceFunction,/Date\.parse\(String\(event\.auto_close_at\)\) <= Date\.now\(\)/);
+  assert.match(attendanceFunction,/if \(attendanceDeadlinePassed\(event\)\) return json\(\{ error: "Batas waktu absensi sudah lewat\." \}, 410\)/);
+  console.log('PASS: individual subsidy uses half the group tier; attendance recap is opt-in and close deadlines are WIB-based and automatic');
   console.log('PASS: agenda carousel and attendance source, recap, delete, search, live refresh, and arrival ordering');
 })().catch(error => { console.error(error); process.exitCode = 1; });

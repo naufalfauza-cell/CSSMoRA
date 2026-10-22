@@ -9,6 +9,8 @@ const json = (body: unknown, status = 200) =>
 const isUuid = (value: string) => /^[0-9a-f-]{36}$/i.test(value);
 const todayJakarta = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const attendanceDeadlinePassed = (event: { auto_close_at?: unknown }) =>
+  Boolean(event.auto_close_at) && Date.parse(String(event.auto_close_at)) <= Date.now();
 const normalizeValue = (value: unknown) => String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("id-ID");
 async function hmacBytes(secret: string, message: string) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -236,6 +238,7 @@ async function finalizeAttendance(request: Request, supabaseUrl: string, service
     return json({ error: "Pemeriksaan keamanan belum tersedia. Coba lagi sebentar." }, 503);
   }
 
+  if (attendanceDeadlinePassed(event)) return json({ error: "Batas waktu absensi sudah lewat." }, 410);
   const updateQuery = new URLSearchParams({ event_id: "eq." + event.id, member_id: "eq." + member.id, status: "eq.belum" });
   const saveResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + updateQuery, {
     method: "PATCH",
@@ -256,7 +259,7 @@ async function finalizeAttendance(request: Request, supabaseUrl: string, service
 }
 async function getActiveEvents(supabaseUrl: string, headers: Record<string, string>) {
   const query = new URLSearchParams({
-    select: "id,title,event_date,session_name,public_token,agenda_id",
+    select: "id,title,event_date,session_name,public_token,agenda_id,auto_close_at",
     status: "eq.open",
     event_date: "eq." + todayJakarta(),
     order: "created_at.asc",
@@ -264,7 +267,11 @@ async function getActiveEvents(supabaseUrl: string, headers: Record<string, stri
   const response = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?" + query.toString(), { headers });
   if (!response.ok) return json({ error: "Kegiatan aktif belum dapat dimuat." }, 500);
   const events = await response.json();
-  const agendaIds = [...new Set(events.map((event: { agenda_id?: string | null }) => String(event.agenda_id ?? "")).filter(isUuid))];
+  const now = Date.now();
+  const availableEvents = events.filter((event: { auto_close_at?: string | null }) =>
+    !event.auto_close_at || Date.parse(event.auto_close_at) > now
+  );
+  const agendaIds = [...new Set(availableEvents.map((event: { agenda_id?: string | null }) => String(event.agenda_id ?? "")).filter(isUuid))];
   if (!agendaIds.length) return json({ events: [] });
   const agendaQuery = new URLSearchParams({
     select: "id",
@@ -274,7 +281,7 @@ async function getActiveEvents(supabaseUrl: string, headers: Record<string, stri
   const agendaResponse = await fetch(supabaseUrl + "/rest/v1/agenda?" + agendaQuery.toString(), { headers });
   if (!agendaResponse.ok) return json({ error: "Status agenda kalender belum dapat diperiksa." }, 500);
   const publishedIds = new Set((await agendaResponse.json()).map((agenda: { id: string }) => agenda.id));
-  return json({ events: events.filter((event: { agenda_id?: string | null }) => publishedIds.has(event.agenda_id)) });
+  return json({ events: availableEvents.filter((event: { agenda_id?: string | null }) => publishedIds.has(event.agenda_id)) });
 }
 
 async function deleteAttendanceEvent(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>) {
@@ -421,12 +428,25 @@ async function handleRequest(request: Request) {
   const action = String(input.mode ?? "");
   const token = url.searchParams.get("token") ?? String(input.token ?? "");
   if (!isUuid(token)) return json({ error: "Tautan absensi tidak valid." }, 400);
-  const eventUrl = supabaseUrl + "/rest/v1/secretariat_attendance_events?select=id,title,event_date,session_name,status,agenda_id&public_token=eq." + encodeURIComponent(token) + "&limit=1";
+  const eventUrl = supabaseUrl + "/rest/v1/secretariat_attendance_events?select=id,title,event_date,session_name,status,agenda_id,auto_close_at&public_token=eq." + encodeURIComponent(token) + "&limit=1";
   const eventResponse = await fetch(eventUrl, { headers });
   if (!eventResponse.ok) return json({ error: "Kegiatan absensi tidak ditemukan." }, 404);
   const event = (await eventResponse.json())[0];
   if (!event) return json({ error: "Kegiatan absensi tidak ditemukan." }, 404);
   if (event.status !== "open") return json({ error: "Absensi kegiatan ini sudah ditutup." }, 410);
+  if (attendanceDeadlinePassed(event)) {
+    const closeQuery = new URLSearchParams({
+      id: "eq." + event.id,
+      status: "eq.open",
+      auto_close_at: "eq." + event.auto_close_at,
+    });
+    await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?" + closeQuery.toString(), {
+      method: "PATCH",
+      headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "closed" }),
+    }).catch(() => undefined);
+    return json({ error: "Batas waktu absensi sudah lewat." }, 410);
+  }
   if (!event.agenda_id) return json({ error: "Agenda kalender belum diterbitkan." }, 410);
   const agendaQuery = new URLSearchParams({ select: "id", id: "eq." + event.agenda_id, status: "eq.published", limit: "1" });
   const agendaResponse = await fetch(supabaseUrl + "/rest/v1/agenda?" + agendaQuery.toString(), { headers });

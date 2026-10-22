@@ -2111,3 +2111,29 @@
 .admin-page .attendance-empty-note{margin:0;padding:10px;border-radius:10px;background:#f8faf7;color:#718075;font-size:10px;line-height:1.5}
 @media(max-width:900px){.admin-page .attendance-workspace{grid-template-columns:minmax(0,1fr)}.admin-page .attendance-events-card .secretariat-record-list{max-height:360px}}
 @media(max-width:600px){.admin-page .attendance-event-card{grid-template-columns:minmax(0,1fr)}.admin-page .attendance-event-actions{justify-content:flex-start}.admin-page .attendance-event-search{width:100%;margin:4px 0 0}.admin-page .attendance-actions{align-items:center;flex-direction:row;flex-wrap:wrap}.admin-page .table-toolbar{justify-content:stretch}.admin-page .table-search{width:100%}}
+
+.admin-page .attendance-recap-trigger{display:flex;align-items:center;gap:10px;width:100%;margin-top:12px;padding:10px 12px;border:1px solid #dfe9dc;border-radius:12px;background:linear-gradient(105deg,#f5f8f2,#fff);color:#234d39;text-align:left;cursor:pointer;transition:border-color .16s,background .16s,transform .16s}
+.admin-page .attendance-recap-trigger:hover{border-color:#b7cfb4;background:#f0f6ed;transform:translateY(-1px)}
+.admin-page .attendance-recap-trigger:focus-visible{outline:3px solid #b9d6bb;outline-offset:2px}
+.admin-page .attendance-recap-trigger-icon{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:9px;background:#e7f0e3;color:#376d49;font-size:15px;font-weight:700}
+.admin-page .attendance-recap-trigger-copy{display:grid;gap:2px;min-width:0}
+.admin-page .attendance-recap-trigger-copy strong{font-size:11px;font-weight:700}
+.admin-page .attendance-recap-trigger-copy small{color:#718075;font-size:9px;font-weight:500}
+.admin-page .attendance-recap-trigger-arrow{margin-left:auto;color:#68836b;font-size:17px;transition:transform .16s}
+.admin-page .attendance-recap-trigger[aria-expanded="true"] .attendance-recap-trigger-arrow{transform:rotate(180deg)}
+.admin-page .attendance-recap-card[hidden]{display:none!important}
+.admin-page .attendance-auto-close-label{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#f0f5eb;color:#60794d;font:600 8px 'Plus Jakarta Sans',sans-serif}
+.admin-page .attendance-open-dialog{width:min(92vw,420px);max-width:420px;padding:0;border:1px solid #dce7dc;border-radius:16px;background:#fff;color:#273d30;box-shadow:0 24px 70px #10231733}
+.admin-page .attendance-open-dialog::backdrop{background:#10231799;backdrop-filter:blur(3px)}
+.admin-page .attendance-open-dialog form{display:grid;gap:9px;margin:0;padding:20px}
+.admin-page .attendance-open-dialog h3{margin:0;font-size:17px;letter-spacing:-.03em}
+.admin-page .attendance-open-dialog p{margin:0;color:#647568;font-size:10px;line-height:1.5}
+.admin-page .attendance-open-dialog label{margin-top:3px;font-size:10px;font-weight:700}
+.admin-page .attendance-open-dialog label span,.admin-page .attendance-open-hint{color:#7c897e;font-size:9px;font-weight:500}
+.admin-page .attendance-open-dialog input{width:100%;min-height:37px;padding:7px 9px;border:1px solid #dfe7df;border-radius:9px;background:#fff;color:#34493b;font:500 11px 'Plus Jakarta Sans',sans-serif}
+.admin-page .attendance-open-dialog input:focus{outline:2px solid #b9d6bb;outline-offset:1px}
+.admin-page .attendance-open-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:5px}
+.admin-page .attendance-open-actions .text-button{padding:8px 10px;font-size:10px;text-decoration:none}
+.admin-page .attendance-open-actions .admin-button{width:auto;min-height:34px;margin:0;padding:8px 12px;border-radius:9px;font-size:10px}
+.admin-page .attendance-open-dialog .form-message{min-height:0;font-size:10px}
+@media(max-width:600px){.admin-page .attendance-recap-trigger{padding:9px}.admin-page .attendance-open-dialog form{padding:16px}}
