@@ -997,7 +997,8 @@ function renderAchievementApplications(){
   achievementList.innerHTML=rows.map(app=>{
     const team=achievementMembers.filter(m=>m.application_id===app.id);
     const role=app.status==='pending_bendahara'&&hasAchievementRole('bendahara')?'bendahara':app.status==='pending_ketua'&&hasAchievementRole('ketua')?'ketua':'';
-    const canReview=Boolean(role)&&(role!=='ketua'||app.treasurer_email!==session?.user?.email?.toLowerCase());
+    const isChairSelfReviewException=session?.user?.email?.toLowerCase()==='naufal.almaroqi@gmail.com';
+    const canReview=Boolean(role)&&(role!=='ketua'||app.treasurer_email?.toLowerCase()!==session?.user?.email?.toLowerCase()||isChairSelfReviewException);
     const phone=String(app.leader_phone||'').replace(/\D/g,'').replace(/^0/,'62');
     const waText=encodeURIComponent(`Halo ${app.leader_name}, pengajuan bantuan biaya lomba “${app.competition_name}” telah disetujui CSSMoRA UNAIR. Nilai subsidi: ${achievementMoney(app.requested_amount)}. Silakan koordinasikan pencairannya dengan Bendahara.`);
     return `<article class="achievement-application-card" data-application-id="${escapeHTML(app.id)}">
@@ -1006,7 +1007,7 @@ function renderAchievementApplications(){
       ${app.participation_type==='tim'?`<div class="achievement-team-row"><small>Anggota tim</small><span>${team.map(m=>`${escapeHTML(m.member_name)} · ${escapeHTML(m.cohort)}`).join(' &nbsp;·&nbsp; ')}</span></div>`:''}
       <div class="achievement-application-links"><a href="${escapeHTML(app.information_url)}" target="_blank" rel="noopener">Buka informasi lomba ↗</a><button type="button" data-achievement-proof="${escapeHTML(app.proof_path)}">Lihat bukti pendaftaran ↗</button></div>
       <div class="achievement-approval-trail"><span class="${app.treasurer_decision?'is-done':''}"><b>1</b><strong>Bendahara</strong><small>${app.treasurer_decision?`${app.treasurer_decision==='approved'?'Disetujui':'Ditolak'} oleh Bendahara${app.treasurer_note?' · '+escapeHTML(app.treasurer_note):''}`:'Menunggu pemeriksaan bukti'}</small></span><span class="${app.chair_decision?'is-done':''}"><b>2</b><strong>Ketua</strong><small>${app.chair_decision?`${app.chair_decision==='approved'?'Disetujui':'Ditolak'} oleh Ketua${app.chair_note?' · '+escapeHTML(app.chair_note):''}`:app.status==='pending_ketua'?'Menunggu persetujuan Ketua':'Menunggu tahap Bendahara'}</small></span></div>
-      ${app.status==='pending_ketua'&&app.treasurer_email?.toLowerCase()===session?.user?.email?.toLowerCase()?'<p class="admin-muted achievement-review-blocked">Persetujuan Bendahara dan Ketua harus dilakukan oleh dua akun berbeda.</p>':''}
+      ${app.status==='pending_ketua'&&app.treasurer_email?.toLowerCase()===session?.user?.email?.toLowerCase()?(isChairSelfReviewException?'<p class="admin-muted achievement-review-blocked">Pengecualian peninjauan aktif untuk akun Ketua.</p>':'<p class="admin-muted achievement-review-blocked">Persetujuan Bendahara dan Ketua harus dilakukan oleh dua akun berbeda.</p>'):''}
       ${canReview?`<div class="achievement-review-controls"><label>Catatan peninjauan <input type="text" maxlength="1000" data-review-note placeholder="Catatan singkat (opsional)"></label><button type="button" data-achievement-decision="rejected" class="achievement-reject">Tolak</button><button type="button" data-achievement-decision="approved" class="achievement-approve">Setujui ${role==='bendahara'?'&amp; teruskan ke Ketua':''}</button></div>`:''}
       ${app.status==='approved'?`<a class="achievement-wa-link" href="https://wa.me/${phone}?text=${waText}" target="_blank" rel="noopener">Konfirmasi persetujuan lewat WhatsApp ↗</a>`:''}
     </article>`;
