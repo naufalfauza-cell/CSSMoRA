@@ -90,7 +90,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
 
   const slides = [1, 2, 3, 4, 5, 6, 7, 8].map(n => event(`Agenda ${n}`, `2026-11-${10+n}T03:00:00Z`));
   const carousel = await run(slides);
-  assert.equal((carousel.html.match(/<article /g) || []).length, 3);
+  assert.equal((carousel.html.match(/<article /g) || []).length, 6);
   assert.deepEqual(carousel.timers, [3000]);
   console.log('PASS: multi-day dates, server cutoff/limit, WIB midnight, escaping, empty/error states, six-item carousel at 3 seconds');
 })().catch(error => { console.error(error); process.exitCode = 1; });
