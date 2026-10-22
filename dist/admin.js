@@ -1034,8 +1034,8 @@ letterForm.addEventListener('submit',async event=>{
   try{
     const issued=await api('rpc/issue_secretariat_letter',{method:'POST',body:{
       p_issued_on:$('#letter-issued-on').value,p_subject:$('#letter-subject').value.trim(),
-      p_scope_code:$('#letter-scope').value,p_type_code:$('#letter-type').value.trim().toUpperCase(),
-      p_department_code:$('#letter-department').value.trim().toUpperCase(),
+      p_scope_code:$('#letter-scope').value,p_type_code:$('#letter-type').value,
+      p_department_code:$('#letter-department').value,p_period_start_year:2026,
       p_recipient:$('#letter-recipient').value.trim()||null,
       p_attachment_count:Number($('#letter-attachments').value||0),
       p_archive_url:$('#letter-archive-url').value.trim()||null
