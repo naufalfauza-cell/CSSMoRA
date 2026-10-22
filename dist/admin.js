@@ -1057,5 +1057,6 @@ async function initialize(){
     if(stored){session=JSON.parse(stored);saveSession(session);if(session.expires_at<Date.now()+60000)await refreshSession();await checkAdmin();}
     else{authView.hidden=false;adminView.hidden=true;}
   }catch(error){saveSession(null);authView.hidden=false;adminView.hidden=true;showMessage('#auth-message',error.message,'error');}
+  finally{document.documentElement.classList.remove('admin-session-restoring');}
 }
 initialize();
