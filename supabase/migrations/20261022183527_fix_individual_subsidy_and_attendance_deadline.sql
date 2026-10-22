@@ -35,8 +35,10 @@ as $function$
 $function$;
 
 alter table public.cssmora_achievement_applications
-  drop column subsidy_rate,
-  drop column requested_amount;
+  rename column subsidy_rate to legacy_subsidy_rate;
+
+alter table public.cssmora_achievement_applications
+  rename column requested_amount to legacy_requested_amount;
 
 alter table public.cssmora_achievement_applications
   add column subsidy_rate numeric(4,3)
@@ -47,6 +49,11 @@ alter table public.cssmora_achievement_applications
     generated always as (
       public.cssmora_achievement_subsidy_amount(participation_type, fee_amount)
     ) stored;
+
+comment on column public.cssmora_achievement_applications.legacy_subsidy_rate
+  is 'Nilai formula subsidi lama yang dipertahankan untuk audit koreksi subsidi individu.';
+comment on column public.cssmora_achievement_applications.legacy_requested_amount
+  is 'Nominal formula lama yang dipertahankan untuk audit koreksi subsidi individu.';
 
 create or replace function public.submit_cssmora_achievement_application(
   p_id uuid,

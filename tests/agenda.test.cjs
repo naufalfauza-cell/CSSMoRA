@@ -135,6 +135,8 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   assert.match(subsidyMigration,/public\.cssmora_achievement_subsidy_rate\(p_participation_type, p_fee_amount\)/);
   assert.match(subsidyMigration,/generated always as \([\s\S]*cssmora_achievement_subsidy_rate\(participation_type, fee_amount\)/);
   assert.match(subsidyMigration,/cssmora_achievement_subsidy_amount\(p_participation_type, p_fee_amount\)/);
+  assert.match(subsidyMigration,/rename column requested_amount to legacy_requested_amount/);
+  assert.doesNotMatch(subsidyMigration,/drop column/i);
 
   assert.match(attendanceHtml,/id="attendance-recap-toggle"[^>]*aria-expanded="false"/);
   assert.match(attendanceHtml,/Lihat akumulasi absen/);
