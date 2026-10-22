@@ -49,8 +49,8 @@
         <nav class="sign-nav" aria-label="Pilih informasi">
           <a class="sign-link" href="./lomba.html"><span class="sign-number">01</span><span class="sign-copy"><small>PELUANG</small><strong>Info lomba</strong></span><b aria-hidden="true">↗</b></a>
           <a class="sign-link" href="./agenda.html"><span class="sign-number">02</span><span class="sign-copy"><small>JADWAL</small><strong>Kalender agenda</strong></span><b aria-hidden="true">↗</b></a>
-          <a class="sign-link attendance-entry" id="attendance-entry" href="./absen.html"><span class="sign-number">03</span><span class="sign-copy"><small id="attendance-entry-meta">CEK STATUS</small><strong>Absensi anggota</strong></span><b aria-hidden="true">↗</b></a>
-          <button class="sign-link" type="button" data-dialog="about-dialog"><span class="sign-number">04</span><span class="sign-copy"><small>ORGANISASI</small><strong>Tentang CSSMoRA</strong></span><b aria-hidden="true">↗</b></button>
+          <a class="sign-link attendance-entry" id="attendance-entry" href="./absen.html"><span class="sign-number">03</span><span class="sign-copy"><small>ABSENSI</small><strong>Absensi anggota</strong></span><b aria-hidden="true">↗</b></a>
+          <a class="sign-link" href="./prestasi.html"><span class="sign-number">04</span><span class="sign-copy"><small>PENDANAAN LOMBA</small><strong>Pengajuan prestasi</strong></span><b aria-hidden="true">↗</b></a>
           <a class="sign-link" href="./admin.html"><span class="sign-number">05</span><span class="sign-copy"><small>RUANG PENGURUS</small><strong>Login pengurus</strong></span><b aria-hidden="true">↗</b></a>
         </nav>
         <div class="sign-footer"><span>UNIVERSITAS AIRLANGGA</span><span>UNAIR</span></div>
@@ -60,25 +60,7 @@
     <div class="scene-caption"><span><i></i> CSSMoRA UNIVERSITAS AIRLANGGA</span><span>SURABAYA · INDONESIA</span></div>
   </main>
 
-  <dialog class="info-dialog" id="about-dialog" aria-labelledby="about-title">
-    <button class="dialog-close" type="button" aria-label="Tutup">×</button>
-    <p class="dialog-kicker">TENTANG CSSMoRA UNAIR</p>
-    <h2 id="about-title">Ruang tumbuh dan kebersamaan.</h2>
-    <p>CSSMoRA UNAIR adalah komunitas mahasiswa penerima beasiswa Kementerian Agama di Universitas Airlangga.</p>
-  </dialog>
-
-
   <script src="./supabase-config.js"></script>
   <script src="./agenda.js?v=20261022-videotron-cache-v2"></script>
-  <script src="./attendance-dashboard.js?v=20261022-visible"></script>
-  <script>
-    document.querySelectorAll('[data-dialog]').forEach(button => {
-      button.addEventListener('click', () => document.getElementById(button.dataset.dialog)?.showModal());
-    });
-    document.querySelectorAll('.info-dialog').forEach(dialog => {
-      dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
-      dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
-    });
-  </script>
 </body>
 </html>

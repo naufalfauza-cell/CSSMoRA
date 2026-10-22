@@ -7,6 +7,7 @@ const competitionForm = $('#competition-form');
 const recordList = $('#record-list');
 let session = null;
 let isCompetitionAdmin = false;
+let isSecretariatAdmin = false;
 let achievementRoles = [];
 let achievementApplications = [];
 let achievementMembers = [];
@@ -118,19 +119,24 @@ async function checkAdmin() {
   const user=session?.user;
   if(!user?.email)throw new Error('Akun tidak memiliki alamat email yang terverifikasi.');
   const email=user.email.toLowerCase();
-  const [admins,roles]=await Promise.all([
+  const [admins,secretariat,roles]=await Promise.all([
     api(`competition_admins?select=email&email=eq.${encodeURIComponent(email)}`).catch(()=>[]),
+    api(`secretariat_admins?select=email&email=eq.${encodeURIComponent(email)}`).catch(()=>[]),
     api(`cssmora_achievement_reviewers?select=role&email=eq.${encodeURIComponent(email)}&is_active=eq.true`).catch(()=>[])
   ]);
   isCompetitionAdmin=Boolean(admins?.length);
+  isSecretariatAdmin=Boolean(secretariat?.length);
   achievementRoles=(roles||[]).map(row=>row.role);
-  if(!isCompetitionAdmin&&!achievementRoles.length)throw new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.');
+  if(!isCompetitionAdmin&&!isSecretariatAdmin&&!achievementRoles.length)throw new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.');
   $('#signed-in-as').textContent=user.email;
   authView.hidden=true;
   adminView.hidden=false;
   if(!isCompetitionAdmin){
-    document.querySelectorAll('.admin-tab:not(#tab-achievements)').forEach(tab=>tab.hidden=true);
-    document.querySelector('#tab-achievements').click();
+    document.querySelectorAll('.admin-tab').forEach(tab=>{
+      tab.hidden=!(tab.id==='tab-secretariat'&&isSecretariatAdmin)&&!(tab.id==='tab-achievements'&&achievementRoles.length>0);
+    });
+    if(isSecretariatAdmin)document.querySelector('#tab-secretariat').click();
+    else document.querySelector('#tab-achievements').click();
   }else void loadAdminPanel('competitions-panel');
 }
 
