@@ -66,7 +66,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   const upcoming = await run([...expired, event('Agenda berikutnya', '2026-11-11T03:00:00Z')]);
   assert.match(upcoming.html, /Agenda berikutnya/);
   assert.doesNotMatch(upcoming.html, /Kemarin/);
-  assert.equal(upcoming.requested.searchParams.get('limit'), '3');
+  assert.equal(upcoming.requested.searchParams.get('limit'), '6');
   assert.equal(upcoming.requested.pathname, '/rest/v1/agenda');
   assert.match(upcoming.requested.searchParams.get('or'), /starts_at\.gte\.2026-11-10T03:00:00\.000Z/);
 
@@ -88,9 +88,9 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   assert.doesNotMatch(staleCache.html, /Agenda kedaluwarsa/);
   assert.match(staleCache.html, /Belum ada agenda mendatang/);
 
-  const slides = [1, 2, 3, 4].map(n => event(`Agenda ${n}`, `2026-11-${10+n}T03:00:00Z`));
+  const slides = [1, 2, 3, 4, 5, 6, 7, 8].map(n => event(`Agenda ${n}`, `2026-11-${10+n}T03:00:00Z`));
   const carousel = await run(slides);
   assert.equal((carousel.html.match(/<article /g) || []).length, 3);
   assert.deepEqual(carousel.timers, [3000]);
-  console.log('PASS: multi-day dates, server cutoff/limit, WIB midnight, escaping, empty/error states, three-item carousel at 3 seconds');
+  console.log('PASS: multi-day dates, server cutoff/limit, WIB midnight, escaping, empty/error states, six-item carousel at 3 seconds');
 })().catch(error => { console.error(error); process.exitCode = 1; });
