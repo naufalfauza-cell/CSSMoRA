@@ -990,28 +990,35 @@ const achievementList=$('#achievement-application-list');
 const achievementStatusLabels={pending_bendahara:'Menunggu Bendahara',pending_ketua:'Menunggu Ketua',approved:'Disetujui',rejected:'Ditolak'};
 const hasAchievementRole=role=>achievementRoles.includes(role);
 const achievementMoney=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
+function achievementDetailMarkup(app,team,{canReview=false,role=''}={}){
+  const phone=String(app.leader_phone||'').replace(/\\D/g,'').replace(/^0/,'62');
+  const waText=encodeURIComponent(`Halo ${app.leader_name}, pengajuan bantuan biaya lomba “${app.competition_name}” telah disetujui CSSMoRA UNAIR dengan subsidi ${achievementMoney(app.requested_amount)}. Bukti transfer saya lampirkan pada pesan ini.`);
+  const waLink='https://wa.me/'+phone+'?text='+waText;
+  const approvalTrail=`<div class="achievement-approval-trail"><span class="${app.treasurer_decision?'is-done':''}"><b>1</b><strong>Bendahara</strong><small>${app.treasurer_decision?`${app.treasurer_decision==='approved'?'Disetujui':'Ditolak'} oleh Bendahara${app.treasurer_note?' · '+escapeHTML(app.treasurer_note):''}`:'Menunggu pemeriksaan bukti'}</small></span><span class="${app.chair_decision?'is-done':''}"><b>2</b><strong>Ketua</strong><small>${app.chair_decision?`${app.chair_decision==='approved'?'Disetujui':'Ditolak'} oleh Ketua${app.chair_note?' · '+escapeHTML(app.chair_note):''}`:app.status==='pending_ketua'?'Menunggu persetujuan Ketua':'Menunggu tahap Bendahara'}</small></span></div>`;
+  const paymentPanel=app.status==='approved'?`<section class="achievement-payment-panel"><div class="achievement-payment-heading"><strong>Bukti pembayaran &amp; WhatsApp</strong><span class="record-status ${app.payment_shared_at?'published':''}">${app.payment_shared_at?'SUDAH DIBAGIKAN':'BELUM DIBAGIKAN'}</span></div><p class="admin-muted">${app.payment_shared_at?'Dibagikan pada '+escapeHTML(new Date(app.payment_shared_at).toLocaleString('id-ID')):app.payment_proof_path?'Bukti transfer siap dibagikan. Pastikan file dan pesan sudah terkirim sebelum menandai selesai.':'Unggah bukti transfer setelah dana dikirim.'}</p><label class="achievement-payment-upload">Unggah bukti transfer <input type="file" data-payment-proof-upload="${escapeHTML(app.id)}" accept="image/jpeg,image/png,application/pdf"><small>JPG, PNG, atau PDF · maksimal 5 MB</small></label>${app.payment_proof_path?`<div class="achievement-payment-file"><span>${escapeHTML(app.payment_proof_path.split('/').pop())}</span><button type="button" data-share-payment-proof="${escapeHTML(app.id)}">Bagikan file + pesan ↗</button><button type="button" data-download-payment-proof="${escapeHTML(app.id)}">Unduh bukti</button><a href="${waLink}" target="_blank" rel="noopener">Buka chat WhatsApp</a>${!app.payment_shared_at?`<button type="button" data-mark-payment-shared="${escapeHTML(app.id)}">Tandai sudah dikirim</button>`:''}</div>`:''}</section>`:''; 
+  return `<div class="achievement-detail-content"><div class="achievement-application-grid"><div><small>Ketua / peserta</small><strong>${escapeHTML(app.leader_name)}</strong></div><div><small>Kontak &amp; email resmi</small><strong>${escapeHTML(app.leader_phone)} · ${escapeHTML(app.official_email)}</strong></div><div><small>Biaya lomba</small><strong>${achievementMoney(app.fee_amount)}</strong></div><div><small>Subsidi ${Math.round(Number(app.subsidy_rate)*100)}%</small><strong>${achievementMoney(app.requested_amount)}</strong></div><div><small>Rekening pencairan</small><strong>${escapeHTML(app.bank_name)} · ${escapeHTML(app.account_number)} · ${escapeHTML(app.account_name)}</strong></div><div><small>Pengembalian hadiah</small><strong>Setuju 5% ke kas CSSMoRA</strong></div></div>${app.participation_type==='tim'?`<div class="achievement-team-row"><small>Anggota tim</small><span>${team.map(m=>`${escapeHTML(m.member_name)} · ${escapeHTML(m.cohort)}`).join(' &nbsp;·&nbsp; ')}</span></div>`:''}<div class="achievement-application-links"><a href="${escapeHTML(app.information_url)}" target="_blank" rel="noopener">Buka informasi lomba ↗</a><button type="button" data-achievement-proof="${escapeHTML(app.proof_path)}">Lihat bukti pendaftaran ↗</button></div>${approvalTrail}${canReview?`<div class="achievement-review-controls"><label>Catatan peninjauan <input type="text" maxlength="1000" data-review-note placeholder="Catatan singkat (opsional)"></label><button type="button" data-achievement-decision="rejected" class="achievement-reject">Tolak</button><button type="button" data-achievement-decision="approved" class="achievement-approve">Setujui ${role==='bendahara'?'&amp; teruskan ke Ketua':''}</button></div>`:''}${paymentPanel}</div>`;
+}
 function renderAchievementApplications(){
   const rows=achievementFilter==='all'?achievementApplications:achievementApplications.filter(row=>row.status===achievementFilter);
   $('#achievement-count').textContent=rows.length+' pengajuan';
   if(!rows.length){achievementList.innerHTML='<p class="records-empty">'+(achievementApplications.length?'Tidak ada pengajuan pada status ini.':'Belum ada pengajuan biaya lomba.')+'</p>';return;}
-  achievementList.innerHTML=rows.map(app=>{
-    const team=achievementMembers.filter(m=>m.application_id===app.id);
+  const approved=rows.filter(row=>row.status==='approved');
+  const waiting=rows.filter(row=>row.status!=='approved');
+  const table=approved.length?`<div class="achievement-approved-table-wrap"><table class="achievement-approved-table"><thead><tr><th>Lomba</th><th>Peserta</th><th>Subsidi</th><th>Status WhatsApp</th><th></th></tr></thead><tbody>${approved.map(app=>{
+    const team=achievementMembers.filter(member=>member.application_id===app.id);
+    const shared=Boolean(app.payment_shared_at);
+    const transferStatus=shared?'Sudah dibagikan':app.payment_proof_path?'Bukti siap dibagikan':'Unggah bukti';
+    return `<tr><td><strong>${escapeHTML(app.competition_name)}</strong><small>${escapeHTML(new Date(app.created_at).toLocaleDateString('id-ID'))}</small></td><td>${escapeHTML(app.leader_name)}</td><td>${achievementMoney(app.requested_amount)}</td><td><span class="record-status ${shared?'published':''}">${transferStatus}</span></td><td><button type="button" class="achievement-details-toggle" data-achievement-details aria-expanded="false">Lihat rincian</button></td></tr><tr class="achievement-details-row" hidden><td colspan="5">${achievementDetailMarkup(app,team)}</td></tr>`;
+  }).join('')}</tbody></table></div>`:''; 
+  const cards=waiting.map(app=>{
+    const team=achievementMembers.filter(member=>member.application_id===app.id);
     const role=app.status==='pending_bendahara'&&hasAchievementRole('bendahara')?'bendahara':app.status==='pending_ketua'&&hasAchievementRole('ketua')?'ketua':'';
     const isChairSelfReviewException=session?.user?.email?.toLowerCase()==='naufal.almaroqi@gmail.com';
     const canReview=Boolean(role)&&(role!=='ketua'||app.treasurer_email?.toLowerCase()!==session?.user?.email?.toLowerCase()||isChairSelfReviewException);
-    const phone=String(app.leader_phone||'').replace(/\D/g,'').replace(/^0/,'62');
-    const waText=encodeURIComponent(`Halo ${app.leader_name}, pengajuan bantuan biaya lomba “${app.competition_name}” telah disetujui CSSMoRA UNAIR. Nilai subsidi: ${achievementMoney(app.requested_amount)}. Silakan koordinasikan pencairannya dengan Bendahara.`);
-    return `<article class="achievement-application-card" data-application-id="${escapeHTML(app.id)}">
-      <header class="achievement-application-head"><div><span class="achievement-request-number">CSS-PR-${escapeHTML(new Date(app.created_at).toLocaleDateString('id-ID',{year:'2-digit',month:'2-digit'}))}-${escapeHTML(app.id.replaceAll('-','').slice(0,8).toUpperCase())}</span><h4>${escapeHTML(app.competition_name)}</h4><small>${escapeHTML(app.competition_type)} · ${app.participation_type==='tim'?'Tim':'Individu'} · ${escapeHTML(new Date(app.created_at).toLocaleString('id-ID'))}</small></div><span class="record-status achievement-status ${escapeHTML(app.status)}">${achievementStatusLabels[app.status]||escapeHTML(app.status)}</span></header>
-      <div class="achievement-application-grid"><div><small>Ketua / peserta</small><strong>${escapeHTML(app.leader_name)}</strong></div><div><small>Kontak &amp; email resmi</small><strong>${escapeHTML(app.leader_phone)} · ${escapeHTML(app.official_email)}</strong></div><div><small>Biaya lomba</small><strong>${achievementMoney(app.fee_amount)}</strong></div><div><small>Subsidi ${Math.round(Number(app.subsidy_rate)*100)}%</small><strong>${achievementMoney(app.requested_amount)}</strong></div><div><small>Rekening pencairan</small><strong>${escapeHTML(app.bank_name)} · ${escapeHTML(app.account_number)} · ${escapeHTML(app.account_name)}</strong></div><div><small>Pengembalian hadiah</small><strong>Setuju 5% ke kas CSSMoRA</strong></div></div>
-      ${app.participation_type==='tim'?`<div class="achievement-team-row"><small>Anggota tim</small><span>${team.map(m=>`${escapeHTML(m.member_name)} · ${escapeHTML(m.cohort)}`).join(' &nbsp;·&nbsp; ')}</span></div>`:''}
-      <div class="achievement-application-links"><a href="${escapeHTML(app.information_url)}" target="_blank" rel="noopener">Buka informasi lomba ↗</a><button type="button" data-achievement-proof="${escapeHTML(app.proof_path)}">Lihat bukti pendaftaran ↗</button></div>
-      <div class="achievement-approval-trail"><span class="${app.treasurer_decision?'is-done':''}"><b>1</b><strong>Bendahara</strong><small>${app.treasurer_decision?`${app.treasurer_decision==='approved'?'Disetujui':'Ditolak'} oleh Bendahara${app.treasurer_note?' · '+escapeHTML(app.treasurer_note):''}`:'Menunggu pemeriksaan bukti'}</small></span><span class="${app.chair_decision?'is-done':''}"><b>2</b><strong>Ketua</strong><small>${app.chair_decision?`${app.chair_decision==='approved'?'Disetujui':'Ditolak'} oleh Ketua${app.chair_note?' · '+escapeHTML(app.chair_note):''}`:app.status==='pending_ketua'?'Menunggu persetujuan Ketua':'Menunggu tahap Bendahara'}</small></span></div>
-      ${app.status==='pending_ketua'&&app.treasurer_email?.toLowerCase()===session?.user?.email?.toLowerCase()?(isChairSelfReviewException?'<p class="admin-muted achievement-review-blocked">Pengecualian peninjauan aktif untuk akun Ketua.</p>':'<p class="admin-muted achievement-review-blocked">Persetujuan Bendahara dan Ketua harus dilakukan oleh dua akun berbeda.</p>'):''}
-      ${canReview?`<div class="achievement-review-controls"><label>Catatan peninjauan <input type="text" maxlength="1000" data-review-note placeholder="Catatan singkat (opsional)"></label><button type="button" data-achievement-decision="rejected" class="achievement-reject">Tolak</button><button type="button" data-achievement-decision="approved" class="achievement-approve">Setujui ${role==='bendahara'?'&amp; teruskan ke Ketua':''}</button></div>`:''}
-      ${app.status==='approved'?`<a class="achievement-wa-link" href="https://wa.me/${phone}?text=${waText}" target="_blank" rel="noopener">Konfirmasi persetujuan lewat WhatsApp ↗</a>`:''}
-    </article>`;
+    const blocked=app.status==='pending_ketua'&&app.treasurer_email?.toLowerCase()===session?.user?.email?.toLowerCase()&&!isChairSelfReviewException;
+    return `<article class="achievement-application-card" data-application-id="${escapeHTML(app.id)}"><header class="achievement-application-head"><div><span class="achievement-request-number">CSS-PR-${escapeHTML(new Date(app.created_at).toLocaleDateString('id-ID',{year:'2-digit',month:'2-digit'}))}-${escapeHTML(app.id.replaceAll('-','').slice(0,8).toUpperCase())}</span><h4>${escapeHTML(app.competition_name)}</h4><small>${escapeHTML(app.competition_type)} · ${app.participation_type==='tim'?'Tim':'Individu'} · ${escapeHTML(new Date(app.created_at).toLocaleString('id-ID'))}</small></div><span class="record-status achievement-status ${escapeHTML(app.status)}">${achievementStatusLabels[app.status]||escapeHTML(app.status)}</span></header>${achievementDetailMarkup(app,team,{canReview,role})}${blocked?'<p class="admin-muted achievement-review-blocked">Persetujuan Bendahara dan Ketua harus dilakukan oleh dua akun berbeda.</p>':''}</article>`;
   }).join('');
+  achievementList.innerHTML=table+cards;
 }
 async function loadAchievementDashboard(){
   achievementList.innerHTML='<p class="records-empty">Memuat pengajuan…</p>';
@@ -1028,14 +1035,82 @@ document.querySelectorAll('[data-achievement-filter]').forEach(button=>button.ad
   document.querySelectorAll('[data-achievement-filter]').forEach(item=>item.classList.toggle('is-active',item===button));
   renderAchievementApplications();
 }));
+async function getAchievementSignedUrl(path){
+  const encoded=path.split('/').map(encodeURIComponent).join('/');
+  const response=await fetchTimed(`${config.url}/storage/v1/object/sign/cssmora-prestasi-proofs/${encoded}`,{method:'POST',headers:{...baseHeaders(),Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({expiresIn:300})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.message||'Bukti pembayaran tidak dapat dibuka.');
+  return data.signedURL?.startsWith('http')?data.signedURL:`${config.url}/storage/v1${data.signedURL}`;
+}
+async function removeAchievementPaymentObject(path){
+  const response=await fetchTimed(`${config.url}/storage/v1/object/cssmora-prestasi-proofs`,{method:'DELETE',headers:{...baseHeaders(),Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({prefixes:[path]})});
+  if(!response.ok)throw new Error('File lama belum dapat dihapus.');
+}
+async function uploadAchievementPaymentProof(input){
+  const appId=input.dataset.paymentProofUpload, file=input.files?.[0];
+  if(!file)return;
+  if(!['image/jpeg','image/png','application/pdf'].includes(file.type)){alert('Pilih file JPG, PNG, atau PDF.');input.value='';return;}
+  if(file.size>5*1024*1024){alert('Ukuran bukti pembayaran maksimal 5 MB.');input.value='';return;}
+  const app=achievementApplications.find(row=>row.id===appId);
+  if(!app||app.status!=='approved'){alert('Bukti hanya dapat diunggah untuk pengajuan yang sudah disetujui.');input.value='';return;}
+  const ext=file.type==='image/jpeg'?'jpg':file.type==='image/png'?'png':'pdf';
+  const path=`payments/${appId}/payment-proof-${Date.now()}.${ext}`;
+  const previousPath=app.payment_proof_path;
+  input.disabled=true;showMessage('#achievement-action-message','Mengunggah bukti transfer…');
+  try{
+    const response=await fetchTimed(`${config.url}/storage/v1/object/cssmora-prestasi-proofs/${path.split('/').map(encodeURIComponent).join('/')}`,{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${session.access_token}`,'Content-Type':file.type},body:file});
+    if(!response.ok){const error=await response.json().catch(()=>({}));throw new Error(error.message||'Bukti transfer gagal diunggah.');}
+    await api('rpc/set_cssmora_achievement_payment_proof',{method:'POST',body:{p_id:appId,p_path:path}});
+    if(previousPath)try{await removeAchievementPaymentObject(previousPath);}catch(error){console.warn('Bukti transfer lama belum terhapus:',error);}
+    showMessage('#achievement-action-message','Bukti pembayaran tersimpan. Kamu bisa membagikan file dan pesan melalui WhatsApp.','success');
+    await loadAchievementDashboard();
+  }catch(error){showMessage('#achievement-action-message',error.message,'error');}
+  finally{input.disabled=false;input.value='';}
+}
+function buildPaymentWhatsAppText(app){
+  return `Halo ${app.leader_name}, pengajuan bantuan biaya lomba “${app.competition_name}” telah disetujui CSSMoRA UNAIR. Nilai subsidi yang ditransfer: ${achievementMoney(app.requested_amount)}. Bukti pembayaran terlampir.`;
+}
+async function shareAchievementPayment(appId){
+  const app=achievementApplications.find(row=>row.id===appId);
+  if(!app?.payment_proof_path)throw new Error('Unggah bukti pembayaran terlebih dahulu.');
+  const signedUrl=await getAchievementSignedUrl(app.payment_proof_path);
+  const response=await fetchTimed(signedUrl);
+  if(!response.ok)throw new Error('File bukti pembayaran gagal dimuat.');
+  const blob=await response.blob();
+  const file=new File([blob],app.payment_proof_path.split('/').pop(),{type:blob.type||'application/octet-stream'});
+  if(navigator.share&&navigator.canShare?.({files:[file]})){
+    await navigator.share({files:[file],title:'Bukti pembayaran CSSMoRA',text:buildPaymentWhatsAppText(app)});
+    showMessage('#achievement-action-message','Menu berbagi dibuka. Pilih WhatsApp, kirim pesannya, lalu tandai sudah dikirim.','success');
+  }else{
+    const url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download=file.name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    showMessage('#achievement-action-message','Bukti diunduh. Buka chat WhatsApp, lampirkan file tersebut, lalu tandai sudah dikirim.','');
+  }
+}
+achievementList.addEventListener('change',event=>{
+  const input=event.target.closest('[data-payment-proof-upload]');
+  if(input)void uploadAchievementPaymentProof(input);
+});
 achievementList.addEventListener('click',async event=>{
+  const toggle=event.target.closest('[data-achievement-details]');
+  if(toggle){
+    const detailRow=toggle.closest('tr')?.nextElementSibling;
+    if(detailRow?.classList.contains('achievement-details-row')){detailRow.hidden=!detailRow.hidden;toggle.setAttribute('aria-expanded',String(!detailRow.hidden));toggle.textContent=detailRow.hidden?'Lihat rincian':'Tutup rincian';}
+    return;
+  }
+  const share=event.target.closest('[data-share-payment-proof]');
+  if(share){share.disabled=true;try{await shareAchievementPayment(share.dataset.sharePaymentProof);}catch(error){if(error.name!=='AbortError')showMessage('#achievement-action-message',error.message,'error');}finally{share.disabled=false;}return;}
+  const download=event.target.closest('[data-download-payment-proof]');
+  if(download){download.disabled=true;try{const url=await getAchievementSignedUrl(achievementApplications.find(row=>row.id===download.dataset.downloadPaymentProof)?.payment_proof_path);window.open(url,'_blank','noopener');}catch(error){showMessage('#achievement-action-message',error.message,'error');}finally{download.disabled=false;}return;}
+  const mark=event.target.closest('[data-mark-payment-shared]');
+  if(mark){mark.disabled=true;try{await api('rpc/mark_cssmora_achievement_payment_shared',{method:'POST',body:{p_id:mark.dataset.markPaymentShared}});showMessage('#achievement-action-message','Status berbagi WhatsApp diperbarui.','success');await loadAchievementDashboard();}catch(error){showMessage('#achievement-action-message',error.message,'error');mark.disabled=false;}return;}
   const proof=event.target.closest('[data-achievement-proof]');
   if(proof){
     proof.disabled=true;
     try{
       const path=proof.dataset.achievementProof.split('/').map(encodeURIComponent).join('/');
       const response=await fetchTimed(`${config.url}/storage/v1/object/sign/cssmora-prestasi-proofs/${path}`,{method:'POST',headers:{...baseHeaders(),Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({expiresIn:3600})});
-      const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||'Bukti tidak dapat dibuka.');
+      const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||'Bukti pendaftaran tidak dapat dibuka.');
       const url=data.signedURL?.startsWith('http')?data.signedURL:`${config.url}/storage/v1${data.signedURL}`;
       window.open(url,'_blank','noopener');
     }catch(error){alert(error.message);}finally{proof.disabled=false;}
