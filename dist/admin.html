@@ -14,8 +14,11 @@
   <link rel="stylesheet" href="./admin.css?v=20261022-agenda-jarkoman-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
-    #session-restoring{display:none;min-height:44vh;align-items:center;justify-content:center;color:#315d43;font:600 14px/1.5 "Plus Jakarta Sans",sans-serif}
+    #session-restoring{display:none;min-height:calc(100vh - 120px);align-items:center;justify-content:center;gap:10px;color:#315d43;font:600 13px/1.5 "Plus Jakarta Sans",sans-serif}
     html.admin-session-restoring #session-restoring{display:flex}
+    .session-loading-spinner{width:18px;height:18px;border:2px solid #dce9df;border-top-color:#247448;border-radius:50%;animation:session-loading-spin .75s linear infinite}
+    @keyframes session-loading-spin{to{transform:rotate(360deg)}}
+    @media(prefers-reduced-motion:reduce){.session-loading-spinner{animation:none}}
   </style>
   <script>
     try{if(localStorage.getItem('cssmora-admin-session')||sessionStorage.getItem('cssmora-admin-session'))document.documentElement.classList.add('admin-session-restoring')}catch{}
@@ -34,7 +37,7 @@
       <a class="header-action" href="./lomba.html">Katalog <span aria-hidden="true">↗</span></a>
     </div>
   </header>
-  <main class="admin-main wrap">\n    <div id="session-restoring" role="status">Memulihkan sesi pengurus…</div>
+  <main class="admin-main wrap">\n    <div id="session-restoring" role="status" aria-live="polite"><span class="session-loading-spinner" aria-hidden="true"></span><span>Memuat</span></div>
     <section class="auth-card" id="auth-view" aria-labelledby="auth-title">
       <p class="auth-kicker">RUANG PENGELOLAAN · CSSMoRA</p>
       <h1 id="auth-title">Masuk</h1>
