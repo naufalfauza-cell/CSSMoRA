@@ -66,7 +66,7 @@ async function authRequest(path,body) {
     method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(body)
   });
   const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(data.msg||data.message||data.error_description||'Autentikasi gagal. Periksa email dan kata sandi.');
+  if(!response.ok){const error=new Error(data.msg||data.message||data.error_description||'Autentikasi gagal. Periksa email dan kata sandi.');error.status=response.status;error.authFailure=[400,401,403].includes(response.status);throw error;}
   return data;
 }
 
@@ -102,7 +102,7 @@ async function api(path,{method='GET',body,extraHeaders={}}={}) {
   const raw=await response.text();
   let result=null;
   try{result=raw?JSON.parse(raw):null;}catch{throw new Error('Respons layanan tidak dapat dibaca. Coba lagi.');}
-  if(!response.ok)throw new Error(apiError(result));
+  if(!response.ok){const error=new Error(apiError(result));error.status=response.status;throw error;}
   return result;
 }
 
@@ -141,7 +141,7 @@ async function loadAdminPanel(panelId) {
 
 async function checkAdmin() {
   const user=session?.user;
-  if(!user?.email)throw new Error('Akun tidak memiliki alamat email yang terverifikasi.');
+  if(!user?.email)throw Object.assign(new Error('Akun tidak memiliki alamat email yang terverifikasi.'),{status:401});
   const email=user.email.toLowerCase();
   const rows=await api(`cssmora_user_roles?select=role&email=eq.${encodeURIComponent(email)}&is_active=eq.true`);
   const roleSet=new Set((rows||[]).map(row=>row.role));
@@ -150,7 +150,7 @@ async function checkAdmin() {
   isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen');
   isSecretariatAdmin=isLeadership||roleSet.has('sekretaris');
   achievementRoles=isLeadership?['ketua','bendahara']:(roleSet.has('bendahara')?['bendahara']:[]);
-  if(!roleSet.size)throw new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.');
+  if(!roleSet.size)throw Object.assign(new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.'),{status:403});
 
   $('#signed-in-as').textContent=user.email;
   authView.hidden=true;
@@ -260,9 +260,11 @@ recordList.addEventListener('click',async event=>{
     button.disabled=true;
     try{
       await api(`competitions?id=eq.${encodeURIComponent(item.id)}`,{method:'DELETE'});
+      const cleaned=await cleanupCompetitionPoster(item.posterImage);
       competitions=competitions.filter(row=>row.id!==item.id);
       renderRecords();
       if($('#record-id').value===item.id)clearEditor();
+      if(!cleaned)showMessage('#editor-message','Lomba terhapus. Poster lama belum dapat dibersihkan; coba lagi saat koneksi stabil.','error');
     }catch(error){alert(`Lomba belum terhapus: ${error.message}`);button.disabled=false;}
   }
 });
@@ -277,6 +279,7 @@ competitionForm.addEventListener('submit',async event=>{
   if((poster&&!poster.startsWith('https://'))||(registration&&!registration.startsWith('https://'))){showMessage('#editor-message','Tautan poster dan pendaftaran harus memakai https://.','error');return;}
   const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'lomba';
   const existingId=$('#record-id').value;
+  const oldPoster=competitions.find(item=>item.id===existingId)?.posterImage;
   const id=existingId||`${slug}-${Date.now()}`;
   let uploadedPosterPath=null;
   const payload={
@@ -311,8 +314,11 @@ competitionForm.addEventListener('submit',async event=>{
       await api('competitions',{method:'POST',body:payload});
       showMessage('#editor-message','Lomba berhasil ditambahkan.','success');
     }
+    uploadedPosterPath=null; // The database now owns this upload.
+    const cleaned=oldPoster&&oldPoster!==payload.posterImage?await cleanupCompetitionPoster(oldPoster):true;
     await loadRecords();
     clearEditor();
+    if(!cleaned)showMessage('#editor-message','Lomba tersimpan. Poster lama belum dapat dibersihkan.','error');
   }catch(error){if(uploadedPosterPath)await removeCompetitionPoster(uploadedPosterPath).catch(()=>{});showMessage('#editor-message',error.message,'error');}
   finally{submit.disabled=false;}
 });
@@ -326,6 +332,19 @@ const storageHeaders=contentType=>({
 });
 const objectUrl=path=>`${config.url}/storage/v1/object/public/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`;
 
+async function cleanupCompetitionPoster(url){
+  if(!url)return true;
+  try{
+    const base=new URL(config.url+'/storage/v1/object/public/posters/');
+    const candidate=new URL(url);
+    if(candidate.origin!==base.origin||!candidate.pathname.startsWith(base.pathname))return true;
+    const path=decodeURIComponent(candidate.pathname.slice(base.pathname.length));
+    if(!path||path.split('/').some(part=>!part||part==='.'||part==='..'))return true;
+    const references=await api('competitions?select=id&posterImage=eq.'+encodeURIComponent(url)+'&limit=1');
+    if(!references.length)await removeCompetitionPoster(path);
+    return true;
+  }catch{return false;}
+}
 async function removeCompetitionPoster(path){
   const response=await authenticatedFetch(config.url+'/storage/v1/object/posters',{method:'DELETE',headers:baseHeaders(),body:JSON.stringify({prefixes:[path]})});
   if(!response.ok)throw new Error('Poster belum dapat dihapus.');
@@ -995,16 +1014,24 @@ attendanceEventForm.addEventListener('submit',async event=>{
   finally{button.disabled=false;}
 });
 function attendanceStatusLabel(status){return({hadir:'Hadir',izin:'Izin',sakit:'Sakit',alpa:'Tanpa keterangan',belum:'Belum dicatat'})[status]||status;}
+let attendanceRosterRequest=0;
+let attendanceRosterLoading=false;
 async function loadAttendanceRoster(eventId){
   const selected=attendanceEvents.find(event=>event.id===eventId);if(!selected)return;
-  currentAttendanceEvent=selected;attendanceRosterPanel.hidden=false;
+  const requestId=++attendanceRosterRequest;
+  currentAttendanceEvent=selected;currentAttendanceRows=[];attendanceRosterLoading=true;attendanceRosterPanel.hidden=false;
+  $('#attendance-save').disabled=true;
   $('#attendance-roster-title').textContent=selected.title;
   $('#attendance-event-meta').textContent=selected.event_date+' · '+(selected.session_name||'Umum')+(selected.location?' · '+selected.location:'');
-  $('#attendance-roster').innerHTML='<tr><td colspan="3" class="records-empty">Memuat daftar anggota…</td></tr>';
+  $('#attendance-summary').textContent='';
+  $('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Memuat daftar anggota…</td></tr>';
   try{
-    currentAttendanceRows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
+    const rows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
+    if(requestId!==attendanceRosterRequest)return;
+    currentAttendanceRows=rows;
     renderAttendanceRoster();
-  }catch(error){$('#attendance-roster').innerHTML='<tr><td colspan="3" class="records-empty">'+escapeHTML(error.message)+'</td></tr>';}
+  }catch(error){if(requestId===attendanceRosterRequest)$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">'+escapeHTML(error.message)+'</td></tr>';}
+  finally{if(requestId===attendanceRosterRequest)attendanceRosterLoading=false;}
 }
 function renderAttendanceRoster(){
   const rows=currentAttendanceRows.map(row=>({...row,member:memberById(row.member_id)})).filter(row=>row.member).sort((a,b)=>a.member.full_name.localeCompare(b.member.full_name,'id'));
@@ -1038,12 +1065,13 @@ $('#attendance-roster').addEventListener('click',async event=>{
     const signedUrl=await getAttendanceProofUrl(currentAttendanceEvent.id,button.dataset.attendanceProof);
     $('#attendance-proof-image').src=signedUrl;
     $('#attendance-proof-dialog').showModal();
-  }catch(error){showMessage('#attendance-message',error.message,'error');}
-  finally{button.disabled=false;}
+  }catch(error){if(requestId===attendanceRosterRequest)showMessage('#attendance-message',error.message,'error');}
+  finally{button.disabled=attendanceRosterLoading||currentAttendanceEvent?.status==='closed';}
 });
 $('#attendance-proof-dialog').addEventListener('close',()=>{$('#attendance-proof-image').removeAttribute('src');});
 $('#attendance-save').addEventListener('click',async()=>{
-  if(!currentAttendanceEvent)return;
+  if(!currentAttendanceEvent||attendanceRosterLoading||currentAttendanceEvent.status==='closed')return;
+  const eventId=currentAttendanceEvent.id,requestId=attendanceRosterRequest;
   const changes=currentAttendanceRows.flatMap(row=>{
     const select=document.querySelector('[data-attendance-status="'+CSS.escape(row.member_id)+'"]');
     const reason=document.querySelector('[data-attendance-reason="'+CSS.escape(row.member_id)+'"]');
@@ -1054,11 +1082,13 @@ $('#attendance-save').addEventListener('click',async()=>{
   if(!changes.length){showMessage('#attendance-message','Tidak ada perubahan untuk disimpan.');return;}
   const button=$('#attendance-save');button.disabled=true;showMessage('#attendance-message','Menyimpan status kehadiran…');
   try{
-    await api('rpc/save_secretariat_attendance_changes',{method:'POST',body:{p_event_id:currentAttendanceEvent.id,p_changes:changes}});
-    currentAttendanceRows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(currentAttendanceEvent.id));
+    await api('rpc/save_secretariat_attendance_changes',{method:'POST',body:{p_event_id:eventId,p_changes:changes}});
+    const rows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
+    if(requestId!==attendanceRosterRequest)return;
+    currentAttendanceRows=rows;
     renderAttendanceRoster();showMessage('#attendance-message','Rekap kehadiran berhasil disimpan.','success');
-  }catch(error){showMessage('#attendance-message',error.message,'error');}
-  finally{button.disabled=false;}
+  }catch(error){if(requestId===attendanceRosterRequest)showMessage('#attendance-message',error.message,'error');}
+  finally{button.disabled=attendanceRosterLoading||currentAttendanceEvent?.status==='closed';}
 });
 $('#attendance-export').addEventListener('click',()=>{
   if(!currentAttendanceEvent)return;
@@ -1272,7 +1302,12 @@ async function initialize(){
     const stored=localStorage.getItem('cssmora-admin-session')||sessionStorage.getItem('cssmora-admin-session');
     if(stored){session=JSON.parse(stored);saveSession(session);if(session.expires_at<Date.now()+60000)await refreshSession();await checkAdmin();}
     else{authView.hidden=false;adminView.hidden=true;}
-  }catch(error){saveSession(null);authView.hidden=false;adminView.hidden=true;showMessage('#auth-message',error.message,'error');}
+  }catch(error){
+    const invalidSession=error instanceof SyntaxError||error.status===401||error.status===403||error.authFailure===true;
+    if(invalidSession)saveSession(null);
+    authView.hidden=false;adminView.hidden=true;
+    showMessage('#auth-message',invalidSession?error.message:'Koneksi belum tersedia. Sesi tetap tersimpan; muat ulang untuk mencoba lagi.','error');
+  }
   finally{document.documentElement.classList.remove('admin-session-restoring');}
 }
 initialize();

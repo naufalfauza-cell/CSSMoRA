@@ -86,7 +86,9 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   assert.match(error.html, /Agenda belum tersedia/);
   const staleCache = await run([], { fail: true, cache: { items: [event('Agenda kedaluwarsa', '2026-11-09T03:00:00Z')] } });
   assert.doesNotMatch(staleCache.html, /Agenda kedaluwarsa/);
-  assert.match(staleCache.html, /Belum ada agenda mendatang/);
+  assert.match(staleCache.html, /Agenda belum tersedia/);
+  const withdrawnCache=await run([], {fail:true,cache:{items:[event('Agenda ditarik','2026-11-11T03:00:00Z')]}});
+  assert.doesNotMatch(withdrawnCache.html,/Agenda ditarik/);
 
   const slides = [1, 2, 3, 4, 5, 6, 7, 8].map(n => event(`Agenda ${n}`, `2026-11-${10+n}T03:00:00Z`));
   const carousel = await run(slides);
