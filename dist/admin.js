@@ -810,8 +810,7 @@ async function loadSecretarySection(tab){
   } else if(panel==='attendance-tools-panel') {
     await Promise.all([
       loadMembers(),
-      loadAttendanceEvents(),
-      loadAttendanceRecap()
+      loadAttendanceEvents()
     ]);
   } else if(panel==='letters-panel') {
     await ensureAdminData('letters',loadLetters);
@@ -976,6 +975,19 @@ async function loadAttendanceEvents(){
   }
 }
 function attendanceEventIsPublished(event){return event?.agenda?.status==='published';}
+function attendanceWibNowInputValue(){
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+function attendanceWibInputToIso(value){
+  const normalized=value.length===16?value+':00':value;
+  const date=new Date(normalized+'+07:00');
+  return Number.isFinite(date.getTime())?date.toISOString():null;
+}
+function attendanceDeadlineLabel(value){
+  if(!value)return '';
+  return new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value))+' WIB';
+}
 function renderAttendanceEvents(){
   const search=($('#attendance-event-filter').value||'').trim().toLocaleLowerCase('id-ID');
   const visible=attendanceEvents.filter(event=>!search||[event.title,event.agenda?.title,event.event_date,event.location].some(value=>String(value||'').toLocaleLowerCase('id-ID').includes(search)));
@@ -987,16 +999,19 @@ function renderAttendanceEvents(){
     const sourceClass=published?'':' is-muted';
     const title=event.agenda?.title||event.title;
     const status=event.status==='open'?'ABSENSI DIBUKA':'DITUTUP';
+    const deadline=event.auto_close_at?'<span class="attendance-auto-close-label">Tutup otomatis '+escapeHTML(attendanceDeadlineLabel(event.auto_close_at))+'</span>':'';
     const copy=published?'<button type="button" data-copy-event="'+escapeHTML(event.id)+'">Salin tautan</button>':'';
     const toggle=published?'<button type="button" data-toggle-event="'+escapeHTML(event.id)+'">'+(event.status==='open'?'Tutup absensi':'Buka absensi')+'</button>':'';
     const remove=!published?'<button type="button" data-delete-event="'+escapeHTML(event.id)+'">Hapus data</button>':'';
-    return '<article class="attendance-event-card" data-agenda-state="'+(published?'published':'unpublished')+'"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(event.id)+'"><span><strong>'+escapeHTML(title)+'</strong><small class="attendance-event-meta-line">'+escapeHTML(event.event_date)+' · '+escapeHTML(event.session_name||'Umum')+(event.location?' · '+escapeHTML(event.location):'')+' <span class="attendance-event-badge'+sourceClass+'">'+source+'</span></small></span><span class="record-status '+(event.status==='open'&&published?'published':'')+'">'+status+'</span></button><div class="attendance-event-actions">'+copy+toggle+remove+'</div></article>';
+    return '<article class="attendance-event-card" data-agenda-state="'+(published?'published':'unpublished')+'"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(event.id)+'"><span><strong>'+escapeHTML(title)+'</strong><small class="attendance-event-meta-line">'+escapeHTML(event.event_date)+' · '+escapeHTML(event.session_name||'Umum')+(event.location?' · '+escapeHTML(event.location):'')+' <span class="attendance-event-badge'+sourceClass+'">'+source+'</span>'+deadline+'</small></span><span class="record-status '+(event.status==='open'&&published?'published':'')+'">'+status+'</span></button><div class="attendance-event-actions">'+copy+toggle+remove+'</div></article>';
   }).join('');
 }
 $('#attendance-event-filter').addEventListener('input',renderAttendanceEvents);
+let attendanceRecapRows=[];
+let attendanceOpenEventId=null;
 async function refreshAttendanceData(){
   const selectedId=currentAttendanceEvent?.id;
-  await Promise.all([loadMembers(),loadAttendanceEvents(),loadAttendanceRecap()]);
+  await Promise.all([loadMembers(),loadAttendanceEvents(),$('#attendance-recap-card').hidden?Promise.resolve():loadAttendanceRecap()]);
   if(selectedId){
     if(attendanceEvents.some(row=>row.id===selectedId)){
       if(!attendanceRosterDirty)await loadAttendanceRoster(selectedId);
@@ -1025,9 +1040,19 @@ attendanceEventList.addEventListener('click',async event=>{
   if(toggle){
     const item=attendanceEvents.find(row=>row.id===toggle.dataset.toggleEvent);if(!item||!attendanceEventIsPublished(item))return;
     if(currentAttendanceEvent?.id===item.id&&attendanceRosterDirty){showMessage('#event-message','Simpan atau buang perubahan rekap sebelum mengubah status absensi.','error');return;}
+    if(item.status!=='open'){
+      attendanceOpenEventId=item.id;
+      $('#attendance-open-event-name').textContent=item.agenda?.title||item.title;
+      $('#attendance-auto-close-at').value='';
+      $('#attendance-auto-close-at').min=attendanceWibNowInputValue();
+      $('#attendance-open-message').textContent='';
+      $('#attendance-open-message').dataset.kind='';
+      $('#attendance-open-dialog').showModal();
+      return;
+    }
     toggle.disabled=true;
     try{
-      await api('secretariat_attendance_events?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',body:{status:item.status==='open'?'closed':'open'}});
+      await api('secretariat_attendance_events?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',body:{status:'closed',auto_close_at:null}});
       await loadAttendanceEvents();
       if(currentAttendanceEvent?.id===item.id)await loadAttendanceRoster(item.id);
     }catch(error){showMessage('#event-message',error.message,'error');toggle.disabled=false;}
@@ -1042,14 +1067,37 @@ attendanceEventList.addEventListener('click',async event=>{
     try{
       await deleteAttendanceEvent(item.id);
       if(currentAttendanceEvent?.id===item.id){currentAttendanceEvent=null;currentAttendanceRows=[];attendanceRosterDrafts.clear();attendanceRosterDirty=false;attendanceRosterPanel.hidden=true;}
-      await Promise.all([loadAttendanceEvents(),loadAttendanceRecap()]);
+      await Promise.all([loadAttendanceEvents(),$('#attendance-recap-card').hidden?Promise.resolve():loadAttendanceRecap()]);
       showMessage('#event-message','Daftar hadir dan datanya berhasil dihapus.','success');
     }catch(error){showMessage('#event-message',error.message,'error');remove.disabled=false;}
     return;
   }
   const select=event.target.closest('[data-event-id]');if(select)await loadAttendanceRoster(select.dataset.eventId);
 });
-let attendanceRecapRows=[];
+$('#attendance-open-cancel').addEventListener('click',()=>{attendanceOpenEventId=null;$('#attendance-open-dialog').close();});
+$('#attendance-open-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const item=attendanceEvents.find(row=>row.id===attendanceOpenEventId);
+  if(!item||!attendanceEventIsPublished(item))return;
+  const input=$('#attendance-auto-close-at'),message=$('#attendance-open-message'),button=$('#attendance-open-submit');
+  let autoCloseAt=null;
+  if(input.value){
+    autoCloseAt=attendanceWibInputToIso(input.value);
+    if(!autoCloseAt||Date.parse(autoCloseAt)<=Date.now()){
+      message.textContent='Pilih batas waktu setelah waktu sekarang.';message.dataset.kind='error';return;
+    }
+  }
+  button.disabled=true;message.textContent='Membuka absensi…';message.dataset.kind='';
+  try{
+    await api('secretariat_attendance_events?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',body:{status:'open',auto_close_at:autoCloseAt}});
+    $('#attendance-open-dialog').close();
+    attendanceOpenEventId=null;
+    await loadAttendanceEvents();
+    if(currentAttendanceEvent?.id===item.id)await loadAttendanceRoster(item.id);
+    showMessage('#event-message',autoCloseAt?'Absensi dibuka dan akan ditutup otomatis sesuai batas waktu.':'Absensi dibuka. Tutup manual saat kegiatan selesai.','success');
+  }catch(error){message.textContent=error.message;message.dataset.kind='error';}
+  finally{button.disabled=false;}
+});
 async function loadAttendanceRecap(){
   const list=$('#attendance-recap');
   list.innerHTML='<tr><td colspan="5" class="records-empty">Memuat rekap kehadiran…</td></tr>';
@@ -1062,6 +1110,25 @@ async function loadAttendanceRecap(){
     list.innerHTML='<tr><td colspan="5" class="records-empty">'+escapeHTML(error.message)+'</td></tr>';
   }
 }
+$('#attendance-recap-toggle').addEventListener('click',async()=>{
+  const button=$('#attendance-recap-toggle'),card=$('#attendance-recap-card'),show=card.hidden;
+  card.hidden=!show;
+  button.setAttribute('aria-expanded',String(show));
+  button.querySelector('[data-attendance-recap-label]').textContent=show?'Tutup akumulasi absen':'Lihat akumulasi absen';
+  if(show)await loadAttendanceRecap();
+});
+let attendanceDeadlineRefreshRunning=false;
+setInterval(async()=>{
+  if($('#attendance-tools-panel').hidden||attendanceDeadlineRefreshRunning)return;
+  const due=attendanceEvents.some(row=>row.status==='open'&&row.auto_close_at&&Date.parse(row.auto_close_at)<=Date.now());
+  if(!due)return;
+  attendanceDeadlineRefreshRunning=true;
+  const selectedId=currentAttendanceEvent?.id,wasOpen=currentAttendanceEvent?.status==='open';
+  try{
+    await loadAttendanceEvents();
+    if(selectedId&&wasOpen&&currentAttendanceEvent?.status==='closed'&&!attendanceRosterDirty)await loadAttendanceRoster(selectedId);
+  }catch{}finally{attendanceDeadlineRefreshRunning=false;}
+},15000);
 function renderAttendanceRecap(){
   const totalEvents=Number(attendanceRecapRows[0]?.completed_event_count||0);
   const attended=attendanceRecapRows.reduce((sum,row)=>sum+Number(row.attended_count||0),0);
@@ -1269,9 +1336,11 @@ function achievementDetailMarkup(app,team,{canReview=false,role=''}={}){
   const phone=String(app.leader_phone||'').replace(/\D/g,'').replace(/^0/,'62');
   const waText=encodeURIComponent(`Halo ${app.leader_name}, pengajuan bantuan biaya lomba “${app.competition_name}” telah disetujui CSSMoRA UNAIR. Nilai subsidi yang diajukan sebesar ${achievementMoney(app.requested_amount)}. Bukti transfer akan saya kirimkan melalui chat WhatsApp ini.`);
   const waLink='https://wa.me/'+phone+'?text='+waText;
+  const subsidyPercent=Number(app.subsidy_rate||0)*100;
+  const subsidyPercentLabel=(Number.isInteger(subsidyPercent)?subsidyPercent:subsidyPercent.toFixed(1))+'%';
   const approvalTrail=`<div class="achievement-approval-trail"><span class="${app.treasurer_decision?'is-done':''}"><b>1</b><strong>Bendahara</strong><small>${app.treasurer_decision?`${app.treasurer_decision==='approved'?'Disetujui':'Ditolak'} oleh Bendahara${app.treasurer_note?' · '+escapeHTML(app.treasurer_note):''}`:'Menunggu pemeriksaan bukti'}</small></span><span class="${app.chair_decision?'is-done':''}"><b>2</b><strong>Ketua</strong><small>${app.chair_decision?`${app.chair_decision==='approved'?'Disetujui':'Ditolak'} oleh Ketua${app.chair_note?' · '+escapeHTML(app.chair_note):''}`:app.status==='pending_ketua'?'Menunggu persetujuan Ketua':'Menunggu tahap Bendahara'}</small></span></div>`;
   const paymentPanel=app.status==='approved'?`<section class="achievement-payment-panel"><div class="achievement-payment-heading"><strong>Kirim konfirmasi ke peserta</strong><span class="record-status ${app.payment_shared_at?'published':''}">${app.payment_shared_at?'PESAN TERKIRIM':'BELUM TERKIRIM'}</span></div><p class="admin-muted">Pesan WhatsApp sudah disiapkan. Bendahara dapat mengirim bukti transfer secara manual dari HP sebelum mengirim pesan.</p><div class="achievement-payment-actions"><a href="${waLink}" target="_blank" rel="noopener noreferrer">Buka pesan WhatsApp ↗</a>${!app.payment_shared_at?`<button type="button" data-mark-payment-shared="${escapeHTML(app.id)}">Tandai pesan terkirim</button>`:''}</div>${app.payment_shared_at?`<small class="achievement-sent-at">Ditandai terkirim ${escapeHTML(new Date(app.payment_shared_at).toLocaleString('id-ID'))}</small>`:''}</section>`:''; 
-  return `<div class="achievement-detail-content"><div class="achievement-application-grid"><div><small>Ketua / peserta</small><strong>${escapeHTML(app.leader_name)}</strong></div><div><small>Kontak &amp; email resmi</small><strong>${escapeHTML(app.leader_phone)} · ${escapeHTML(app.official_email)}</strong></div><div><small>Biaya lomba</small><strong>${achievementMoney(app.fee_amount)}</strong></div><div><small>Subsidi ${Math.round(Number(app.subsidy_rate)*100)}%</small><strong>${achievementMoney(app.requested_amount)}</strong></div><div><small>Rekening pencairan</small><strong>${escapeHTML(app.bank_name)} · ${escapeHTML(app.account_number)} · ${escapeHTML(app.account_name)}</strong></div><div><small>Pengembalian hadiah</small><strong>Setuju 5% ke kas CSSMoRA</strong></div></div>${app.participation_type==='tim'?`<div class="achievement-team-row"><small>Anggota tim</small><span>${team.map(m=>`${escapeHTML(m.member_name)} · ${escapeHTML(m.cohort)}`).join(' &nbsp;·&nbsp; ')}</span></div>`:''}<div class="achievement-application-links"><a href="${escapeHTML(app.information_url)}" target="_blank" rel="noopener">Buka informasi lomba ↗</a><button type="button" data-achievement-proof="${escapeHTML(app.proof_path)}">Lihat bukti pendaftaran ↗</button></div>${approvalTrail}${canReview?`<div class="achievement-review-controls"><label>Catatan peninjauan <input type="text" maxlength="1000" data-review-note placeholder="Catatan singkat (opsional)"></label><button type="button" data-achievement-decision="rejected" class="achievement-reject">Tolak</button><button type="button" data-achievement-decision="approved" class="achievement-approve">Setujui ${role==='bendahara'?'&amp; teruskan ke Ketua':''}</button></div>`:''}${paymentPanel}</div>`;
+  return `<div class="achievement-detail-content"><div class="achievement-application-grid"><div><small>Ketua / peserta</small><strong>${escapeHTML(app.leader_name)}</strong></div><div><small>Kontak &amp; email resmi</small><strong>${escapeHTML(app.leader_phone)} · ${escapeHTML(app.official_email)}</strong></div><div><small>Biaya lomba</small><strong>${achievementMoney(app.fee_amount)}</strong></div><div><small>Subsidi ${subsidyPercentLabel}</small><strong>${achievementMoney(app.requested_amount)}</strong></div><div><small>Rekening pencairan</small><strong>${escapeHTML(app.bank_name)} · ${escapeHTML(app.account_number)} · ${escapeHTML(app.account_name)}</strong></div><div><small>Pengembalian hadiah</small><strong>Setuju 5% ke kas CSSMoRA</strong></div></div>${app.participation_type==='tim'?`<div class="achievement-team-row"><small>Anggota tim</small><span>${team.map(m=>`${escapeHTML(m.member_name)} · ${escapeHTML(m.cohort)}`).join(' &nbsp;·&nbsp; ')}</span></div>`:''}<div class="achievement-application-links"><a href="${escapeHTML(app.information_url)}" target="_blank" rel="noopener">Buka informasi lomba ↗</a><button type="button" data-achievement-proof="${escapeHTML(app.proof_path)}">Lihat bukti pendaftaran ↗</button></div>${approvalTrail}${canReview?`<div class="achievement-review-controls"><label>Catatan peninjauan <input type="text" maxlength="1000" data-review-note placeholder="Catatan singkat (opsional)"></label><button type="button" data-achievement-decision="rejected" class="achievement-reject">Tolak</button><button type="button" data-achievement-decision="approved" class="achievement-approve">Setujui ${role==='bendahara'?'&amp; teruskan ke Ketua':''}</button></div>`:''}${paymentPanel}</div>`;
 }
 function renderAchievementApplications(){
   const rows=achievementFilter==='all'?achievementApplications:achievementApplications.filter(row=>row.status===achievementFilter);
