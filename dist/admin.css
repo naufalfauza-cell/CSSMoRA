@@ -2010,3 +2010,17 @@
 .achievement-payment-file>span{margin-right:auto;color:#4a5c4e;font-size:9px}
 .achievement-payment-file a{color:#23633e}
 @media(max-width:650px){.achievement-approved-table{min-width:620px}.achievement-payment-file>span{flex-basis:100%}}
+
+/* Google Drive archive shortcut in the admin sidebar. */
+.admin-page .drive-nav-label{margin-top:20px}
+.admin-page .drive-shortcut{display:flex;align-items:center;gap:9px;min-height:48px;margin:0 4px;padding:6px 9px;border:1px solid #ffffff1c;border-radius:8px;color:#fff;text-decoration:none;transition:background .15s,border-color .15s}
+.admin-page .drive-shortcut:hover{border-color:#ffffff35;background:#ffffff12}
+.admin-page .drive-shortcut:focus-visible{outline:2px solid #d8f17c;outline-offset:2px}
+.admin-page .drive-shortcut-icon{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:7px;background:#fff}
+.admin-page .drive-shortcut-icon svg{width:18px;height:18px}
+.admin-page .drive-shortcut-copy{display:grid;gap:2px;min-width:0}
+.admin-page .drive-shortcut-copy strong{font:600 12px/1.3 'Plus Jakarta Sans',sans-serif}
+.admin-page .drive-shortcut-copy small{color:#ffffff9c;font-size:9px}
+.admin-page .drive-shortcut-arrow{margin-left:auto;color:#d8f17c;font-size:15px}
+.admin-app-shell.is-sidebar-collapsed .drive-shortcut{justify-content:center;padding:6px}
+.admin-app-shell.is-sidebar-collapsed .drive-shortcut-copy,.admin-app-shell.is-sidebar-collapsed .drive-shortcut-arrow,.admin-app-shell.is-sidebar-collapsed .drive-nav-label{display:none}
