@@ -32,8 +32,13 @@ const showMessage = (selector,message,kind='') => {
 };
 const saveSession = value => {
   session=value;
-  if(value)sessionStorage.setItem('cssmora-admin-session',JSON.stringify(value));
-  else sessionStorage.removeItem('cssmora-admin-session');
+  if(value){
+    localStorage.setItem('cssmora-admin-session',JSON.stringify(value));
+    sessionStorage.removeItem('cssmora-admin-session');
+  }else{
+    localStorage.removeItem('cssmora-admin-session');
+    sessionStorage.removeItem('cssmora-admin-session');
+  }
 };
 
 async function fetchTimed(url, options) {
@@ -520,6 +525,7 @@ document.querySelectorAll('.admin-tab').forEach(tab=>tab.addEventListener('click
     item.classList.toggle('is-active',selected);
     item.setAttribute('aria-selected',String(selected));
   });
+  try{localStorage.setItem('cssmora-admin-active-tab',tab.id);}catch{}
   document.querySelectorAll('.management-panel').forEach(panel=>{
     panel.hidden=panel.id!==tab.getAttribute('aria-controls');
   });
@@ -1047,8 +1053,9 @@ achievementList.addEventListener('click',async event=>{
 async function initialize(){
   if(!config?.url||!config?.publishableKey){showMessage('#auth-message','Konfigurasi Supabase belum tersedia.','error');return;}
   try{
-    const stored=sessionStorage.getItem('cssmora-admin-session');
-    if(stored){session=JSON.parse(stored);if(session.expires_at<Date.now()+60000)await refreshSession();await checkAdmin();}
+    const stored=localStorage.getItem('cssmora-admin-session')||sessionStorage.getItem('cssmora-admin-session');
+    if(stored){session=JSON.parse(stored);saveSession(session);if(session.expires_at<Date.now()+60000)await refreshSession();await checkAdmin();}
+    else{authView.hidden=false;adminView.hidden=true;}
   }catch(error){saveSession(null);authView.hidden=false;adminView.hidden=true;showMessage('#auth-message',error.message,'error');}
 }
 initialize();
