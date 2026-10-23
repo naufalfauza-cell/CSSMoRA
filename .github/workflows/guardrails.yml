@@ -22,4 +22,4 @@ jobs:
         with:
           node-version: 22
       - name: Run locked-behavior regression tests
-        run: node --test tests/agenda.test.cjs tests/known-audit-regressions.cjs tests/rescreen-regressions.cjs tests/project-guardrails.test.cjs
+        run: node --test tests/agenda.test.cjs tests/known-audit-regressions.cjs tests/rescreen-regressions.cjs tests/project-guardrails.test.cjs tests/subsidy-policy.test.cjs

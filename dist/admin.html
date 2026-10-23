@@ -160,7 +160,7 @@
               <form id="agenda-form">
                 <input id="agenda-record-id" name="recordId" type="hidden">
                 <label for="agenda-program">Program kerja</label><select id="agenda-program" name="programId" required><option value="">Pilih proker aktif…</option></select>
-                <label for="agenda-title-input">Nama kegiatan</label><input id="agenda-title-input" name="title" maxlength="140" required>
+                <label for="agenda-title-input">Nama kegiatan</label><input id="agenda-title-input" name="title" maxlength="140" required aria-describedby="agenda-title-hint"><small class="field-hint" id="agenda-title-hint">Otomatis dari proker, tetap bisa diedit.</small>
                 <div class="form-two"><div><label for="agenda-starts">Mulai (WIB)</label><input id="agenda-starts" name="startsAt" type="datetime-local" required></div><div><label for="agenda-ends">Selesai (opsional)</label><input id="agenda-ends" name="endsAt" type="datetime-local"></div></div>
                 <label for="agenda-location">Lokasi</label><input id="agenda-location" name="location" maxlength="180" placeholder="Contoh: Ruang rapat CSSMoRA">
                 <label for="agenda-description">Keterangan</label><textarea id="agenda-description" name="description" rows="4" maxlength="1500"></textarea>
