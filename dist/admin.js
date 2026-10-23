@@ -113,6 +113,11 @@ async function api(path,{method='GET',body,extraHeaders={}}={}) {
   if(!response.ok){const error=new Error(apiError(result));error.status=response.status;throw error;}
   return result;
 }
+window.CSSMoRAAdmin={
+  api,
+  showMessage,
+  context:()=>({isLeadership,isCompetitionAdmin,canManageProgramCycles:isCompetitionAdmin})
+};
 
 async function ensureAdminData(key, loader) {
   if(loadedAdminData.has(key))return;
@@ -655,6 +660,7 @@ document.querySelectorAll('.agenda-admin-tab').forEach(tab=>tab.addEventListener
     panel.hidden=panel.id!==tab.getAttribute('aria-controls');
   });
   $('#dashboard-title').textContent='Kegiatan · '+tab.textContent.replace(/^\d+\s*·\s*/,'').trim();
+  if(tab.id==='tab-program-workflow')void window.CSSMoRAProgramWorkflow?.load();
 }));
 document.querySelector('[data-open-schedule]').addEventListener('click',()=>$('#tab-schedule').click());
 
