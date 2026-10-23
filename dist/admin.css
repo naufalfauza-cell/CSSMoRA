@@ -2028,7 +2028,7 @@
 .program-library-grid .program-record-details{grid-column:1/-1}
 @media(min-width:901px){
  .admin-page .program-library-grid>.records-card{display:flex;min-height:100%;flex-direction:column}
- .admin-page .program-library-grid .program-record-list{flex:1 1 auto;max-height:calc(100vh - 300px);min-height:220px;align-content:start}
+ .admin-page .program-library-grid .program-record-list{flex:1 1 0;max-height:none;min-height:0;align-content:start;overflow:auto}
 }
 
 /* One System Prestasi menu with role-filtered work areas inside it. */
