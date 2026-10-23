@@ -48,6 +48,7 @@ test('the database versions the formula and preserves already-filed requests', (
   assert.match(migration, /alter column subsidy_rule_version set default 2/i);
   assert.match(migration, /p_fee_amount <= 15000 then 1\.000/i);
   assert.match(migration, /least\([\s\S]*40000/i);
+  assert.match(migration, /subsidy_amount_for_rule\\([\\s\\S]*::numeric \/ p_fee_amount/i);
   assert.match(migration, /generated always as \([\s\S]*subsidy_rule_version/i);
   assert.match(migration, /Versi aturan subsidi yang digunakan ketika pengajuan dibuat/i);
 });
