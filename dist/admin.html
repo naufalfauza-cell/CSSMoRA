@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./admin.css?v=20261022-agenda-jarkoman-v1">
+  <link rel="stylesheet" href="./workflows.css?v=20261023-org-workflows-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
     #session-restoring{display:none;min-height:calc(100vh - 120px);align-items:center;justify-content:center;gap:10px;color:#315d43;font:600 13px/1.5 "Plus Jakarta Sans",sans-serif}
@@ -26,6 +27,8 @@
   <script src="./supabase-config.js" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
   <script src="./admin.js?v=20261022-rescreen-fixes" defer></script>
+  <script src="./workflow-domain.js?v=20261023-org-workflows-v1" defer></script>
+  <script src="./workflows.js?v=20261023-org-workflows-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261022-copy-pills">
 </head>
 <body class="admin-page">
@@ -85,6 +88,9 @@
         <button class="admin-tab" id="tab-achievements" type="button" role="tab" aria-selected="false" aria-controls="achievements-panel">
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.9L12 3Z"/><path d="m9.5 20-1 2m6-2 1 2"/></svg></span><span class="module-copy"><strong>Prestasi</strong><small>Pengajuan biaya &amp; persetujuan</small></span><span class="module-state is-ready">Aktif</span>
         </button>
+        <button class="admin-tab" id="tab-achievement-recap" type="button" role="tab" aria-selected="false" aria-controls="achievement-recap-panel" hidden>
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V9m7 11V4m7 16v-7"/><path d="M3 20h18"/></svg></span><span class="module-copy"><strong>Rekap prestasi</strong><small>Verifikasi hasil lomba</small></span><span class="module-state is-ready">Aktif</span>
+        </button>
           <button class="admin-tab" id="tab-access" type="button" role="tab" aria-selected="false" aria-controls="access-panel" hidden>
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M17 14a5 5 0 0 1 3.5 5"/></svg></span><span class="module-copy"><strong>Akses pengurus</strong><small>Kelola peran dan hak akses</small></span><span class="module-state">Ketua/Wakil</span>
         </button>
@@ -135,11 +141,11 @@
       </div>
       <section class="management-panel agenda-management" id="agenda-panel" role="tabpanel" aria-labelledby="tab-agenda" hidden>
         <nav class="agenda-admin-tabs" role="tablist" aria-label="Kelola proker dan agenda">
-          <button class="agenda-admin-tab is-active" id="tab-programs" type="button" role="tab" aria-selected="true" aria-controls="programs-panel">1 · Daftar proker &amp; foto</button>
+          <button class="agenda-admin-tab is-active" id="tab-programs" type="button" role="tab" aria-selected="true" aria-controls="programs-panel">1 · Database proker</button>
           <button class="agenda-admin-tab" id="tab-schedule" type="button" role="tab" aria-selected="false" aria-controls="schedule-panel">2 · Jadwal agenda</button>
         </nav>
         <section class="agenda-admin-subpanel" id="programs-panel" role="tabpanel" aria-labelledby="tab-programs">
-          <div class="editor-heading program-library-heading"><div><span class="admin-kicker">PERPUSTAKAAN PROKER</span><h3>Program kerja dan fotonya</h3><p class="admin-muted">Tambahkan foto proker sekali. Pengurus dapat memilih proker yang sama saat membuat agenda baru.</p></div></div>
+          <div class="editor-heading program-library-heading"><div><span class="admin-kicker">DATABASE PROGRAM KERJA</span><h3>Data proker dan dokumentasi</h3><p class="admin-muted">Simpan siklus, tujuan, sasaran, PIC, anggaran, dan foto. Data dapat diperbarui kapan saja dan tetap tertaut ke agenda sebelumnya.</p></div></div>
           <div class="admin-columns program-library-grid">
             <section class="editor-card" aria-labelledby="program-editor-title">
               <div class="editor-heading"><div><span class="admin-kicker">DATA PROKER</span><h3 id="program-editor-title">Tambah proker</h3></div><button class="text-button" id="program-form-reset" type="button">Kosongkan</button></div>
@@ -155,6 +161,12 @@
                   <option value="ADVO">Advokasi</option>
                   <option value="MEDINFO">Medinfo</option>
                 </select>
+                <div class="form-two"><div><label for="program-cycle">Siklus proker</label><input id="program-cycle" name="cycle" maxlength="80" value="Tahunan" placeholder="Tahunan, semesteran, rutin bulanan" required></div><div><label for="program-period">Periode</label><input id="program-period" name="period_label" maxlength="24" placeholder="2026/2027"></div></div>
+                <label for="program-description">Gambaran proker</label><textarea id="program-description" name="description" rows="3" maxlength="2000" placeholder="Apa yang akan dilaksanakan?"></textarea>
+                <label for="program-goals">Tujuan</label><textarea id="program-goals" name="goals" rows="2" maxlength="1200" placeholder="Tujuan utama proker"></textarea>
+                <label for="program-target">Sasaran</label><textarea id="program-target" name="target" rows="2" maxlength="800" placeholder="Peserta atau penerima manfaat"></textarea>
+                <div class="form-two"><div><label for="program-schedule">Rencana waktu</label><input id="program-schedule" name="planned_schedule" maxlength="240" placeholder="Contoh: Oktober 2026"></div><div><label for="program-pic">PIC</label><input id="program-pic" name="pic" maxlength="240" placeholder="Nama / jabatan penanggung jawab"></div></div>
+                <label for="program-budget">Rencana anggaran (Rp)</label><input id="program-budget" name="budget_amount" type="number" min="0" max="10000000000" step="1" placeholder="Opsional">
                 <label for="program-photo">Foto kegiatan</label><input id="program-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required>
                 <p class="field-hint">Format JPG, PNG, atau WebP. Maksimal 8 MB.</p>
                 <div class="program-photo-preview" id="program-photo-preview" hidden><img id="program-photo-preview-image" alt="Pratinjau foto proker"><span id="program-photo-preview-label"></span></div>
@@ -199,8 +211,44 @@
           </div>
         </section>
       </section>
-      <section class="management-panel module-placeholder" id="finance-panel" role="tabpanel" aria-labelledby="tab-finance" hidden>
-        <div class="module-placeholder-card"><span class="module-icon" aria-hidden="true">Rp</span><div><span class="admin-kicker">MODUL KEUANGAN</span><h3>Pengelolaan bendahara</h3><p>Ruang untuk pencatatan kas, anggaran, prognosa, dan laporan keuangan sedang disiapkan.</p></div><span class="module-state">Belum aktif</span></div>
+      <section class="management-panel finance-management" id="finance-panel" role="tabpanel" aria-labelledby="tab-finance" hidden>
+        <div class="workflow-heading"><div><span class="admin-kicker">BENDAHARA · RKAP &amp; REALISASI</span><h3>Kas dan anggaran</h3><p>Catat transaksi berpasangan, bandingkan rencana dengan prognosa dan realisasi, lalu kirim ke AkunPro.</p></div><button class="member-option-button" id="finance-refresh" type="button">↻ Muat ulang</button></div>
+        <div class="finance-connection" id="finance-integration-status" role="status"><span class="finance-connection-dot"></span><span>Memeriksa koneksi AkunPro…</span></div>
+        <p class="form-message" id="finance-message" role="status" aria-live="polite"></p>
+        <div class="finance-summary" aria-label="Ringkasan kas">
+          <article><small>Total pemasukan</small><strong id="finance-total-income">Rp0</strong></article>
+          <article><small>Total pengeluaran</small><strong id="finance-total-expense">Rp0</strong></article>
+          <article><small>Saldo bersih tercatat</small><strong id="finance-net-balance">Rp0</strong></article>
+          <article><small>Belum terkirim ke AkunPro</small><strong id="finance-pending-count">0</strong></article>
+        </div>
+        <div class="finance-workspace">
+          <section class="editor-card" aria-labelledby="finance-entry-title">
+            <div class="editor-heading"><div><span class="admin-kicker">BUKU KAS</span><h3 id="finance-entry-title">Catat transaksi</h3></div></div>
+            <form id="finance-entry-form">
+              <input type="hidden" id="finance-transaction-id" name="record_id">
+              <div class="form-two"><div><label for="finance-direction">Arus kas</label><select id="finance-direction" name="direction" required><option value="expense">Pengeluaran</option><option value="income">Pemasukan</option></select></div><div><label for="finance-date">Tanggal</label><input id="finance-date" name="transaction_date" type="date" required></div></div>
+              <div class="form-two"><div><label for="finance-reference">Referensi</label><input id="finance-reference" name="reference" maxlength="80" required placeholder="Contoh: KW-2026-001"></div><div><label for="finance-amount">Nominal (Rp)</label><input id="finance-amount" name="amount" type="number" min="1" max="100000000000" step="1" required></div></div>
+              <label for="finance-description">Keterangan</label><input id="finance-description" name="description" maxlength="240" required placeholder="Ringkasan transaksi">
+              <label for="finance-budget-link">Pos anggaran</label><select id="finance-budget-link" name="budget_id"><option value="">Tanpa pos anggaran</option></select>
+              <div class="form-two"><div><label for="finance-cash-account">Akun kas / bank AkunPro</label><select id="finance-cash-account" required><option value="">Memuat akun…</option></select><input id="finance-cash-account-manual" type="text" maxlength="40" placeholder="Kode akun kas / bank" hidden></div><div><label for="finance-category-account">Akun kategori AkunPro</label><select id="finance-category-account" required><option value="">Memuat akun…</option></select><input id="finance-category-account-manual" type="text" maxlength="40" placeholder="Kode pendapatan / beban" hidden></div></div>
+              <p class="field-hint">Jurnal yang dikirim dibuat berimbang otomatis: pemasukan mendebit kas, pengeluaran mengkredit kas.</p>
+              <button class="admin-button" id="save-finance-entry" type="submit">Simpan transaksi <span aria-hidden="true">↗</span></button>
+            </form>
+          </section>
+          <section class="editor-card" aria-labelledby="finance-budget-title">
+            <div class="editor-heading"><div><span class="admin-kicker">RKAP &amp; PROGNOSA</span><h3 id="finance-budget-title">Tambah pos anggaran</h3></div></div>
+            <form id="finance-budget-form">
+              <input type="hidden" id="budget-record-id" name="record_id">
+              <div class="form-two"><div><label for="budget-year">Tahun</label><input id="budget-year" name="fiscal_year" type="number" min="2020" max="2100" required></div><div><label for="budget-division">Divisi</label><select id="budget-division" name="division" required><option value="">Pilih divisi</option><option>BPH</option><option>PSDM</option><option>P3M</option><option>ADVO</option><option>MEDINFO</option></select></div></div>
+              <label for="budget-label">Nama pos / proker</label><input id="budget-label" name="budget_label" maxlength="160" required placeholder="Contoh: CSS Sport">
+              <div class="form-two"><div><label for="budget-planned">RKAP (Rp)</label><input id="budget-planned" name="planned_amount" type="number" min="0" max="100000000000" required></div><div><label for="budget-forecast">Prognosa (Rp)</label><input id="budget-forecast" name="forecast_amount" type="number" min="0" max="100000000000" required></div></div>
+              <label for="budget-note">Catatan</label><textarea id="budget-note" name="note" rows="3" maxlength="800" placeholder="Opsional"></textarea>
+              <button class="admin-button" id="save-finance-budget" type="submit">Simpan anggaran <span aria-hidden="true">↗</span></button>
+            </form>
+          </section>
+        </div>
+        <section class="records-card finance-table-card" aria-labelledby="finance-budget-list-title"><div class="editor-heading"><div><span class="admin-kicker">RENCANA VS REALISASI</span><h3 id="finance-budget-list-title">Anggaran tersimpan</h3></div><span class="record-count" id="finance-budget-count">0 pos</span></div><div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>Tahun · divisi</th><th>Pos anggaran</th><th>RKAP</th><th>Prognosa</th><th>Realisasi</th><th>Selisih</th><th></th></tr></thead><tbody id="finance-budget-list"><tr><td colspan="7" class="records-empty">Belum ada anggaran.</td></tr></tbody></table></div></section>
+        <section class="records-card finance-table-card" aria-labelledby="finance-transaction-list-title"><div class="editor-heading"><div><span class="admin-kicker">JURNAL KAS</span><h3 id="finance-transaction-list-title">Transaksi tersimpan</h3></div><span class="record-count" id="finance-transaction-count">0 transaksi</span></div><div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>Tanggal</th><th>Referensi &amp; keterangan</th><th>Arus</th><th>Nominal</th><th>Sinkronisasi</th><th></th></tr></thead><tbody id="finance-transaction-list"><tr><td colspan="6" class="records-empty">Belum ada transaksi.</td></tr></tbody></table></div></section>
       </section>
       <section class="management-panel secretariat-management" id="secretariat-panel" role="tabpanel" aria-labelledby="tab-secretariat" hidden>
         <nav class="secretariat-tabs" role="tablist" aria-label="Ruang kerja sekretaris">
@@ -363,6 +411,16 @@
 
         </div>
       </section>
+      <section class="management-panel achievement-recap-management" id="achievement-recap-panel" role="tabpanel" aria-labelledby="tab-achievement-recap" hidden>
+        <div class="workflow-heading"><div><span class="admin-kicker">REKAP PRESTASI</span><h3>Verifikasi capaian lomba</h3><p>Hanya capaian yang disetujui yang akan tampil pada daftar publik.</p></div><button class="member-option-button" id="achievement-record-refresh" type="button">↻ Muat ulang</button></div>
+        <p class="form-message" id="achievement-record-message" role="status" aria-live="polite"></p>
+        <div class="achievement-record-toolbar"><div class="achievement-admin-filters" role="group" aria-label="Filter status capaian"><button type="button" class="achievement-filter is-active" data-achievement-record-filter="pending">Menunggu</button><button type="button" class="achievement-filter" data-achievement-record-filter="approved">Disetujui</button><button type="button" class="achievement-filter" data-achievement-record-filter="rejected">Ditolak</button><button type="button" class="achievement-filter" data-achievement-record-filter="all">Semua</button></div><input id="achievement-record-search" type="search" placeholder="Cari lomba atau nama…" aria-label="Cari capaian prestasi"><span class="record-count" id="achievement-record-count">—</span></div>
+        <div class="achievement-record-list" id="achievement-record-list"><p class="records-empty">Masuk ke sistem untuk memuat capaian.</p></div>
+      </section>
+      <dialog class="workflow-proof-dialog" id="achievement-record-proof-dialog" aria-labelledby="achievement-record-proof-title">
+        <form method="dialog"><button class="workflow-proof-close" id="achievement-record-proof-close" aria-label="Tutup sertifikat">×</button></form>
+        <h3 id="achievement-record-proof-title">Sertifikat prestasi</h3><iframe id="achievement-record-proof-frame" title="Sertifikat prestasi" referrerpolicy="no-referrer"></iframe>
+      </dialog>
       <section class="management-panel access-management-panel" id="access-panel" role="tabpanel" aria-labelledby="tab-access" hidden>
         <div class="access-heading">
           <div><span class="admin-kicker">PENGATURAN AKUN</span><h3>Akses pengurus</h3><p>Ketua dan Wakil Ketua mengatur peran berdasarkan tugas.</p></div>

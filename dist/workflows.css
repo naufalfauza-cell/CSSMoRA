@@ -1,0 +1,115 @@
+/* Organization workflows: compact admin finance and public achievement recap. */
+.workflow-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin:2px 0 15px}
+.workflow-heading h3{margin:4px 0;font-size:clamp(1.35rem,2vw,1.8rem);letter-spacing:-.04em}
+.workflow-heading p{max-width:680px;margin:5px 0 0;color:var(--muted);font-size:.82rem;line-height:1.55}
+.finance-connection{display:flex;align-items:center;gap:9px;margin:12px 0;padding:10px 13px;border:1px solid #dbe8d9;border-radius:13px;background:#f5f9f3;color:#48654f;font-size:.77rem;font-weight:700}
+.finance-connection[data-state=connected]{border-color:#b8ddc2;background:#edf8ef;color:#276341}
+.finance-connection[data-state=error]{border-color:#edcbc5;background:#fff5f2;color:#974438}
+.finance-connection-dot{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:#a6aa99}
+.finance-connection[data-state=connected] .finance-connection-dot{background:#36a45f;box-shadow:0 0 0 3px #36a45f20}
+.finance-connection[data-state=pending] .finance-connection-dot{background:#d89b39}
+.finance-connection[data-state=error] .finance-connection-dot{background:#c45243}
+.finance-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 16px}
+.finance-summary article{display:grid;gap:5px;min-width:0;padding:13px 15px;border:1px solid var(--line);border-radius:15px;background:var(--paper)}
+.finance-summary small{color:var(--muted);font-size:.69rem;font-weight:700}
+.finance-summary strong{overflow-wrap:anywhere;color:var(--ink);font-size:1.06rem;letter-spacing:-.035em}
+.finance-workspace{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:start;gap:14px;margin-bottom:15px}
+.finance-workspace .editor-card{padding:18px;border-radius:18px}
+.finance-workspace .editor-heading{margin-bottom:8px}
+.finance-workspace .editor-heading h3{font-size:1.2rem}
+.finance-workspace .editor-card form{gap:7px;margin-top:10px}
+.finance-workspace .editor-card label:not(.publish-toggle){margin-top:3px;font-size:.72rem}
+.finance-workspace .editor-card input,.finance-workspace .editor-card select,.finance-workspace .editor-card textarea{min-height:38px;padding:9px 11px;font-size:.78rem}
+.finance-workspace .editor-card textarea{min-height:70px}
+.finance-workspace .admin-button{margin-top:6px;padding:11px 14px;border-radius:12px;font-size:.79rem}
+.finance-workspace .field-hint{font-size:.68rem}
+.finance-table-card{margin-top:14px;padding:16px 18px;border-radius:18px}
+.finance-table-card .editor-heading{align-items:center;margin-bottom:11px}
+.finance-table-card .editor-heading h3{font-size:1.13rem}
+.workflow-table-wrap{width:100%;overflow:auto}
+.workflow-table{width:100%;border-collapse:collapse;text-align:left;font-size:.72rem}
+.workflow-table th{padding:9px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:.64rem;letter-spacing:.04em;white-space:nowrap}
+.workflow-table td{padding:10px;border-bottom:1px solid #edf0e9;vertical-align:middle;white-space:nowrap}
+.workflow-table td strong,.workflow-table td small{display:block}
+.workflow-table td strong{max-width:250px;overflow:hidden;text-overflow:ellipsis;font-size:.73rem}
+.workflow-table td small{max-width:240px;margin-top:3px;overflow:hidden;color:var(--muted);font-size:.64rem;text-overflow:ellipsis}
+.workflow-table td.is-over-budget{color:#a34334;font-weight:800}
+.workflow-table td.is-within-budget{color:#31724b;font-weight:800}
+.workflow-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px}
+.workflow-row-actions button{padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--green);font-size:.65rem;font-weight:800;cursor:pointer}
+.workflow-row-actions button:hover{background:#f2f7f1}
+.workflow-table .finance-sync-error{max-width:260px;color:#a1493b;white-space:normal}
+.record-status.finance-syncing{background:#fff6df;color:#8b641d}
+.finance-direction-pill{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:.64rem;font-weight:800}
+.finance-direction-pill.income{background:#e8f5e8;color:#286b42}
+.finance-direction-pill.expense{background:#fff1e9;color:#98522d}
+.program-cycle-pill,.program-period-pill{display:inline-flex;width:max-content;padding:3px 7px;border-radius:999px;background:#f0f2eb;color:#586b54;font-size:.62rem;font-weight:800}
+.program-period-pill{background:#eff5f6;color:#436775}
+.program-record-summary{display:block;margin-top:3px;color:var(--muted);font-size:.66rem;line-height:1.4}
+.program-record-details{grid-column:2/-1;margin-top:1px;color:var(--muted);font-size:.68rem}
+.program-record-details summary{width:max-content;color:var(--green);font-weight:800;cursor:pointer}
+.program-record-details>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.program-record-details span{overflow-wrap:anywhere;color:var(--ink);font-size:.68rem}
+.program-record-details small{display:block;margin-bottom:3px;color:var(--muted);font-size:.59rem;font-weight:800;text-transform:uppercase}
+.achievement-record-toolbar{display:flex;align-items:center;gap:10px;margin:12px 0}
+.achievement-record-toolbar input{width:min(320px,40vw);min-height:37px;padding:8px 11px;border:1px solid var(--line);border-radius:11px;background:#fff;font:inherit;font-size:.75rem}
+.achievement-record-toolbar .record-count{margin-left:auto;white-space:nowrap}
+.achievement-record-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.achievement-record-card{min-width:0;padding:16px;border:1px solid var(--line);border-radius:17px;background:var(--paper);box-shadow:0 5px 17px #17282007}
+.achievement-record-card>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.achievement-record-card h4{margin:8px 0 3px;font-size:1rem;letter-spacing:-.025em}
+.achievement-record-card header p,.achievement-record-members,.achievement-record-email,.achievement-record-note{margin:0;color:var(--muted);font-size:.72rem;line-height:1.5}
+.achievement-record-card header>button{flex:0 0 auto;padding:7px 10px;border:1px solid #d8e3d6;border-radius:999px;background:#f7faf5;color:var(--green);font-size:.67rem;font-weight:800;cursor:pointer}
+.achievement-record-meta{display:flex;gap:6px;margin:10px 0}
+.achievement-record-meta span{padding:4px 8px;border-radius:999px;background:#eff3e9;color:#53644f;font-size:.62rem;font-weight:800}
+.achievement-record-members{display:grid;gap:3px;color:var(--ink)}
+.achievement-record-members small{color:var(--muted);font-size:.62rem;font-weight:800;text-transform:uppercase}
+.achievement-record-email,.achievement-record-note{margin-top:7px}
+.achievement-record-review{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:end;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.achievement-record-review label{display:grid;gap:4px;color:var(--muted);font-size:.63rem;font-weight:800}
+.achievement-record-review input{min-width:0;min-height:34px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:.69rem}
+.achievement-record-review button{min-height:34px;padding:0 10px;border:0;border-radius:9px;font-size:.67rem;font-weight:800;cursor:pointer}
+.achievement-record-review button:disabled{opacity:.55;cursor:wait}
+.achievement-record-reject{background:#fbefed;color:#a1493b}
+.achievement-record-approve{background:#e8f3e7;color:#2d6c42}
+.workflow-proof-dialog{width:min(900px,92vw);height:min(760px,90vh);padding:20px;border:1px solid #dce6da;border-radius:20px;background:#f9faf7}
+.workflow-proof-dialog::backdrop{background:#0b1f15a6;backdrop-filter:blur(4px)}
+.workflow-proof-dialog form{display:flex;justify-content:flex-end;margin:0}
+.workflow-proof-close{width:34px;height:34px;border:0;border-radius:50%;background:#e8eee5;color:var(--green);font-size:1.4rem;cursor:pointer}
+.workflow-proof-dialog h3{margin:4px 0 12px;font-size:1rem}
+.workflow-proof-dialog iframe{width:100%;height:calc(100% - 60px);border:1px solid var(--line);border-radius:11px;background:#fff}
+.achievement-followup-link{display:grid;gap:8px;margin:20px 0;padding:17px 19px;border:1px solid #dfe8db;border-radius:18px;background:#f5f9f2}
+.achievement-followup-link p{max-width:520px;margin:0;color:var(--muted);font-size:.82rem;line-height:1.5}
+.achievement-followup-link a{width:max-content;padding:9px 13px;border-radius:999px;background:#e8f2e6;color:#23683f;font-size:.76rem;font-weight:800;text-decoration:none}
+.public-achievement-main{max-width:920px}
+.public-achievement-intro{margin-bottom:22px}
+.public-achievement-intro h1{font-size:clamp(2.4rem,7vw,4.6rem)}
+.public-achievement-recap{margin:42px 0 20px;padding:22px;border:1px solid var(--line);border-radius:22px;background:var(--paper);box-shadow:0 12px 34px #17282008}
+.public-achievement-recap-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:15px}
+.public-achievement-card{min-width:0;padding:14px;border:1px solid #e8ece4;border-radius:15px;background:#fff}
+.public-achievement-rank{display:inline-flex;padding:4px 8px;border-radius:999px;background:#edf6e9;color:#31714a;font-size:.65rem;font-weight:800}
+.public-achievement-card h3{margin:9px 0 4px;font-size:.92rem;line-height:1.35}
+.public-achievement-card p,.public-achievement-card small{display:block;margin:0;color:var(--muted);font-size:.7rem;line-height:1.5}
+.public-achievement-card small{margin-top:6px;color:#425548}
+.public-achievement-member{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid #e7ece2;border-radius:11px;background:#fff}
+.public-achievement-member input{width:16px;height:16px;accent-color:var(--green)}
+.public-achievement-member span{display:grid;gap:2px}
+.public-achievement-member strong{font-size:.75rem}
+.public-achievement-member small{color:var(--muted);font-size:.64rem}
+.public-achievement-team-list{display:grid;gap:6px;max-height:260px;overflow:auto;padding:9px;border:1px solid var(--line);border-radius:13px}
+.public-achievement-team-list>p{margin:5px;color:var(--muted);font-size:.74rem}
+@media(max-width:900px){.finance-workspace{grid-template-columns:1fr}.achievement-record-list{grid-template-columns:1fr}}
+@media(max-width:700px){
+ .finance-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .finance-summary article{padding:11px}
+ .finance-summary strong{font-size:.9rem}
+ .achievement-record-toolbar{flex-wrap:wrap}
+ .achievement-record-toolbar input{order:3;width:100%}
+ .achievement-record-toolbar .record-count{margin-left:auto}
+ .achievement-record-review{grid-template-columns:1fr 1fr}
+ .achievement-record-review label{grid-column:1/-1}
+ .program-record-details{grid-column:1/-1}
+ .program-record-details>div{grid-template-columns:1fr 1fr}
+ .public-achievement-recap-list{grid-template-columns:1fr}
+ .public-achievement-recap{padding:16px;border-radius:18px}
+}

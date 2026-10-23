@@ -21,6 +21,7 @@ const expandedAchievementIds=new Set();
 let competitions = [];
 let agendas = [];
 let programs = [];
+let programDetails = new Map();
 const programForm = $('#program-form');
 const programRecordList = $('#program-record-list');
 const programPhotoInput = $('#program-photo');
@@ -124,6 +125,14 @@ async function loadAdminPanel(panelId) {
     await ensureAdminData('agenda',loadAgenda);
     return;
   }
+  if(panelId==='finance-panel') {
+    await window.CSSMoRAWorkflows?.loadFinanceDashboard();
+    return;
+  }
+  if(panelId==='achievement-recap-panel') {
+    await window.CSSMoRAWorkflows?.loadAchievementRecords();
+    return;
+  }
   if(panelId==='secretariat-panel') {
     initializeSecretaryForms();
     const selected=document.querySelector('.secretariat-tab.is-active')||document.querySelector('.secretariat-tab');
@@ -159,6 +168,7 @@ async function checkAdmin() {
   const allowed=new Set();
   if(isCompetitionAdmin){allowed.add('tab-competitions');allowed.add('tab-agenda');}
   if(isLeadership||roleSet.has('bendahara')){allowed.add('tab-finance');allowed.add('tab-achievements');}
+  if(isLeadership||roleSet.has('bph_departemen'))allowed.add('tab-achievement-recap');
   if(isSecretariatAdmin)allowed.add('tab-secretariat');
   if(canManageRoles)allowed.add('tab-access');
   document.querySelectorAll('.admin-tab').forEach(tab=>{tab.hidden=!allowed.has(tab.id);});
@@ -378,7 +388,12 @@ async function loadPrograms() {
   loadedAdminData.delete('programs');
   programRecordList.innerHTML='<p class="records-empty">Memuat proker…</p>';
   try {
-    programs=await api('agenda_programs?select=*&order=name.asc');
+    const [rows,details]=await Promise.all([
+      api('agenda_programs?select=*&order=name.asc'),
+      api('cssmora_program_details?select=*&order=updated_at.desc')
+    ]);
+    programs=rows;
+    programDetails=new Map(details.map(detail=>[detail.program_id,detail]));
     renderPrograms();
     loadedAdminData.add('programs');
     renderProgramOptions();
@@ -393,11 +408,13 @@ function renderPrograms() {
     return;
   }
   const divisionLabels={BPH:'BPH',PSDM:'PSDM',P3M:'P3M',ADVO:'Advokasi',MEDINFO:'Medinfo'};
-  programRecordList.innerHTML=programs.map(program=>`<article class="program-record">
+  const money=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
+  programRecordList.innerHTML=programs.map(program=>{const detail=programDetails.get(program.id)||{};return `<article class="program-record">
     <img src="${escapeHTML(program.photo_url)}" alt="" loading="lazy">
-    <div class="program-record-copy"><strong>${escapeHTML(program.name)}</strong><div class="program-record-meta"><span class="program-division">${escapeHTML(divisionLabels[program.division]||'Divisi belum diatur')}</span><span class="record-status ${program.is_active?'published':''}">${program.is_active?'AKTIF':'NONAKTIF'}</span></div></div>
+    <div class="program-record-copy"><strong>${escapeHTML(program.name)}</strong><div class="program-record-meta"><span class="program-division">${escapeHTML(divisionLabels[program.division]||'Divisi belum diatur')}</span><span class="record-status ${program.is_active?'published':''}">${program.is_active?'AKTIF':'NONAKTIF'}</span><span class="program-cycle-pill">${escapeHTML(detail.cycle||'Siklus belum diisi')}</span>${detail.period_label?`<span class="program-period-pill">${escapeHTML(detail.period_label)}</span>`:''}</div><small class="program-record-summary">${escapeHTML(detail.description||'Belum ada deskripsi')}${detail.pic?` · PIC ${escapeHTML(detail.pic)}`:''}${detail.budget_amount!==null&&detail.budget_amount!==undefined?` · ${escapeHTML(money(detail.budget_amount))}`:''}</small></div>
     <div class="program-record-actions"><button type="button" data-program-action="edit" data-id="${escapeHTML(program.id)}">Edit</button><button type="button" data-program-action="toggle" data-id="${escapeHTML(program.id)}">${program.is_active?'Nonaktifkan':'Aktifkan'}</button><button type="button" class="program-delete-button" data-program-action="delete" data-id="${escapeHTML(program.id)}" aria-label="Hapus proker ${escapeHTML(program.name)}" title="Hapus proker"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v6m4-6v6"/></svg></button></div>
-  </article>`).join('');
+    <details class="program-record-details"><summary>Rincian database</summary><div><span><small>Tujuan</small>${escapeHTML(detail.goals||'—')}</span><span><small>Sasaran</small>${escapeHTML(detail.target||'—')}</span><span><small>Rencana waktu</small>${escapeHTML(detail.planned_schedule||'—')}</span></div></details>
+  </article>`;}).join('');
   programRecordList.querySelectorAll('img').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
 }
 function renderProgramOptions(selected='') {
@@ -413,6 +430,7 @@ function clearProgramEditor() {
   $('#program-record-id').value='';
   programPhotoInput.required=true;
   $('#program-active').checked=true;
+  programForm.elements.cycle.value='Tahunan';
   $('#program-editor-title').textContent='Tambah proker';
   $('#save-program').innerHTML='Simpan proker <span aria-hidden="true">↗</span>';
   $('#program-photo-preview').hidden=true;
@@ -436,9 +454,18 @@ programRecordList.addEventListener('click',async event=>{
   const program=programs.find(item=>item.id===button.dataset.id);
   if(!program)return;
   if(button.dataset.programAction==='edit') {
+    const detail=programDetails.get(program.id)||{};
     $('#program-record-id').value=program.id;
     programForm.elements.name.value=program.name;
     programForm.elements.division.value=program.division||'';
+    programForm.elements.cycle.value=detail.cycle||'Tahunan';
+    programForm.elements.period_label.value=detail.period_label||'';
+    programForm.elements.description.value=detail.description||'';
+    programForm.elements.goals.value=detail.goals||'';
+    programForm.elements.target.value=detail.target||'';
+    programForm.elements.planned_schedule.value=detail.planned_schedule||'';
+    programForm.elements.pic.value=detail.pic||'';
+    programForm.elements.budget_amount.value=detail.budget_amount??'';
     $('#program-active').checked=program.is_active;
     programPhotoInput.value='';
     programPhotoInput.required=false;
@@ -529,14 +556,25 @@ programForm.addEventListener('submit',async event=>{
     }
     const payload={name:programForm.elements.name.value.trim(),division,is_active:$('#program-active').checked};
     if(file){payload.photo_path=photoPath;payload.photo_url=photoUrl;}
-    if(existingId)await api(`agenda_programs?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
-    else await api('agenda_programs',{method:'POST',body:{id,...payload,photo_path:photoPath,photo_url:photoUrl}});
+    const rawBudget=programForm.elements.budget_amount.value;
+    const detailPayload={program_id:id,cycle:programForm.elements.cycle.value.trim(),period_label:programForm.elements.period_label.value.trim()||null,
+      description:programForm.elements.description.value.trim(),goals:programForm.elements.goals.value.trim(),target:programForm.elements.target.value.trim(),
+      planned_schedule:programForm.elements.planned_schedule.value.trim(),pic:programForm.elements.pic.value.trim(),budget_amount:rawBudget?Number(rawBudget):null};
+    const saveDetails=()=>api('cssmora_program_details?on_conflict=program_id',{method:'POST',body:detailPayload,extraHeaders:{Prefer:'resolution=merge-duplicates,return=representation'}});
+    if(existingId){
+      await saveDetails();
+      await api(`agenda_programs?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
+    }else{
+      await api('agenda_programs',{method:'POST',body:{id,...payload,photo_path:photoPath,photo_url:photoUrl}});
+      await saveDetails();
+    }
     if(file&&old?.photo_path)await deleteProgramPhoto(old.photo_path).catch(()=>{});
     await loadPrograms();
     await loadAgenda();
     clearProgramEditor();
     showMessage('#program-editor-message',existingId?'Perubahan proker berhasil disimpan.':'Proker dan fotonya berhasil ditambahkan.','success');
   } catch(error) {
+    if(!existingId&&uploadedPath)await api(`agenda_programs?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'}).catch(()=>{});
     if(uploadedPath)await deleteProgramPhoto(uploadedPath).catch(()=>{});
     showMessage('#program-editor-message',error.message,'error');
   } finally {
