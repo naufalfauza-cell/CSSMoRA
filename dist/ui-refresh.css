@@ -240,3 +240,54 @@ body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-annou
 }
 body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement):active:not(:disabled){transform:scale(.97)}
 body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement):disabled{opacity:.5;box-shadow:none}
+
+/* Lomba cards use the same photo-first rhythm as the public agenda. */
+.catalog-page .catalog-section{padding:34px 0 82px}
+.catalog-page .page-breadcrumb,.catalog-page .catalog-eyebrow,.catalog-page .catalog-subtitle,.catalog-page .quick-filters{display:none}
+.catalog-page .catalog-heading{margin:8px 0 18px}
+.catalog-page .catalog-heading h1{font-size:clamp(30px,3.6vw,42px);font-weight:600;letter-spacing:-.04em}
+.catalog-page .catalog-controls{margin-bottom:10px}
+.catalog-page .toolbar{gap:9px;margin-bottom:10px}
+.catalog-page .competition-grid{grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:14px}
+.catalog-page .competition-card{display:flex;min-width:0;min-height:100%;flex-direction:column;padding:9px;border:1px solid #e0e8dd;border-radius:20px;background:#fffefa;box-shadow:0 5px 16px #21442d08;text-align:left;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.catalog-page .competition-card:hover{transform:translateY(-3px);border-color:#c9d9c5;box-shadow:0 12px 25px #21442d12}
+.catalog-page .competition-card:focus-visible{outline:3px solid #75a87f;outline-offset:3px}
+.catalog-page .card-poster{display:grid;height:clamp(165px,15vw,215px);place-items:center;aspect-ratio:auto;border-radius:15px 15px 15px 7px;background:#f0f3ed;box-shadow:none}
+.catalog-page .poster-image{width:100%;height:100%;object-fit:contain;padding:3px;background:#f0f3ed}
+.catalog-page .poster-design{width:100%;height:100%;border-radius:15px 15px 15px 7px}
+.catalog-page .status-badge{top:9px;left:9px;padding:6px 9px;background:#fffffff2;color:#265b3d;font:600 10px var(--font);box-shadow:0 2px 9px #183f2714}
+.catalog-page .status-badge::before{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:#3f995a;content:"";vertical-align:1px}
+.catalog-page .status-badge.is-closed{background:#31463ced;color:#fff}
+.catalog-page .status-badge.is-closed::before{background:#d0d9d1}
+.catalog-page .card-meta{justify-content:flex-start;min-height:16px;margin:11px 3px 0;color:#65806a;font:600 9px var(--font);letter-spacing:.04em;text-transform:none}
+.catalog-page .card-title-row{flex:1;align-items:flex-start;margin:6px 3px 0}
+.catalog-page .card-title-row h3{font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+.catalog-page .card-title-row>span{width:25px;height:25px;background:#eaf1e7;font-size:14px}
+.catalog-page .competition-card>p{margin:5px 3px 10px;color:#708074;font-size:10px;line-height:1.4}
+.catalog-page .competition-card-facts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:auto;padding-top:9px;border-top:1px solid #e6ebe2}
+.catalog-page .competition-card-facts>span{display:grid;min-width:0;gap:3px}
+.catalog-page .competition-card-facts small{color:#849087;font-size:8px;line-height:1.3}
+.catalog-page .competition-card-facts strong{overflow:hidden;color:#315f43;font-size:10px;font-weight:600;line-height:1.35;text-overflow:ellipsis}
+.catalog-page .competition-card-facts>span:last-child strong{overflow-wrap:anywhere}
+.catalog-page .results-line{margin:12px 0;color:#6e7d71;font:500 11px var(--font);letter-spacing:0}
+.catalog-page .detail-poster{background:#f0f3ed}
+.catalog-page .detail-poster .poster-image{object-fit:contain}
+@media(max-width:1200px){.catalog-page .competition-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.catalog-page .card-poster{height:clamp(165px,20vw,215px)}}
+@media(max-width:850px){.catalog-page .competition-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.catalog-page .card-poster{height:clamp(155px,34vw,210px)}}
+@media(max-width:560px){
+ .catalog-page .catalog-section{padding:22px 0 60px}
+ .catalog-page .competition-grid{grid-template-columns:1fr;gap:10px}
+ .catalog-page .competition-card{display:grid;grid-template-columns:112px minmax(0,1fr);grid-template-rows:auto auto 1fr auto;column-gap:12px;padding:8px;border-radius:16px}
+ .catalog-page .card-poster{grid-column:1;grid-row:1/5;width:112px;height:145px;align-self:stretch;border-radius:12px 12px 12px 5px}
+ .catalog-page .status-badge{top:6px;left:6px;padding:5px 7px;font-size:8px}
+ .catalog-page .status-badge::before{width:5px;height:5px;margin-right:4px}
+ .catalog-page .card-meta,.catalog-page .card-title-row,.catalog-page .competition-card>p,.catalog-page .competition-card-facts{grid-column:2;margin-left:0;margin-right:0}
+ .catalog-page .card-meta{margin-top:2px}
+ .catalog-page .card-title-row{margin-top:4px}
+ .catalog-page .card-title-row h3{font-size:15px}
+ .catalog-page .card-title-row>span{width:22px;height:22px;font-size:12px}
+ .catalog-page .competition-card>p{margin:4px 0 6px;font-size:9px}
+ .catalog-page .competition-card-facts{gap:5px;padding-top:6px}
+ .catalog-page .competition-card-facts small{font-size:7px}
+ .catalog-page .competition-card-facts strong{font-size:9px}
+}
