@@ -455,6 +455,10 @@ function renderProgramOptions(selected='') {
   if(selected&&programs.some(program=>program.id===selected))select.value=selected;
   select.disabled=!programs.some(program=>program.is_active);
 }
+$('#agenda-program').addEventListener('change',()=>{
+  const selectedProgram=programs.find(program=>program.id===$('#agenda-program').value);
+  agendaForm.elements.title.value=selectedProgram?.name||'';
+});
 function clearProgramEditor() {
   if(!programForm)return;
   programForm.reset();
