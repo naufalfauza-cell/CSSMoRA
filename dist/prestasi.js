@@ -7,15 +7,16 @@ let roster=[];
 let selectedTeamIds=new Set();
 const fmtMoney=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
 const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function groupSubsidyRate(fee){if(fee<=20000)return 1;if(fee<=50000)return .75;if(fee<=80000)return .5;return .25;}
-function subsidyRate(type,fee){return groupSubsidyRate(fee)*(type==='individu'?.5:1);}
-function subsidyAmount(type,fee){const teamAmount=Math.round(fee*groupSubsidyRate(fee));return Math.round(teamAmount*(type==='individu'?.5:1));}
+function groupSubsidyRate(fee){if(fee<=15000)return 1;if(fee<=50000)return .75;if(fee<=80000)return .5;return .25;}
+function groupSubsidyAmount(fee){return Math.min(Math.round(fee*groupSubsidyRate(fee)),40000);}
+function subsidyAmount(type,fee){return Math.round(groupSubsidyAmount(fee)*(type==='individu'?.5:1));}
+function subsidyRate(type,fee){return fee>0?subsidyAmount(type,fee)/fee:groupSubsidyRate(fee)*(type==='individu'?.5:1);}
 function updateSubsidy(){
   const type=form.elements.participation_type.value,fee=Math.max(0,Number($('#fee-amount').value)||0),rate=subsidyRate(type,fee);
   const percentage=rate*100;
   $('#subsidy-rate').textContent=`${Number.isInteger(percentage)?percentage:percentage.toFixed(1)}%`;
   $('#requested-amount').textContent=fmtMoney(subsidyAmount(type,fee));
-  $('#subsidy-rules').textContent=type==='individu'?'Individu mendapat 50% dari nilai subsidi tim pada rentang biaya yang sama.':`Tim: ≤ Rp20.000 mendapat 100%; Rp20.001–50.000 mendapat 75%; Rp50.001–80.000 mendapat 50%; di atas Rp80.000 mendapat 25%.`;
+  $('#subsidy-rules').textContent=type==='individu'?'Individu menerima setengah dari nominal subsidi tim pada biaya yang sama (maksimal Rp20.000).':'Tim: sampai Rp15.000 disubsidi 100%; Rp15.001–50.000 75%; Rp50.001–80.000 50%; di atas Rp80.000 25%, maksimal Rp40.000 per pengajuan tim.';
 }
 function renderLeaderOptions(){
   const current=rosterSelect.value;
