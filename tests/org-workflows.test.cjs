@@ -4,29 +4,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const domain = require('../dist/workflow-domain.js');
 
-test('finance journal maps income and expense to balanced AkunPro lines', () => {
-  assert.deepEqual(domain.createJournal('income', 125000, '1101', '4101'), [
-    { account_code: '1101', debit: 125000, credit: 0 },
-    { account_code: '4101', debit: 0, credit: 125000 },
-  ]);
-  assert.deepEqual(domain.createJournal('expense', 80000, '1101', '5101'), [
-    { account_code: '5101', debit: 80000, credit: 0 },
-    { account_code: '1101', debit: 0, credit: 80000 },
-  ]);
-  assert.throws(() => domain.createJournal('expense', 10, '1101', '1101'), /kode akun/i);
-  assert.throws(() => domain.createJournal('income', 0, '1101', '4101'), /nominal/i);
-});
-
-test('budget actual counts linked expenses only and compares against RKAP', () => {
-  const transactions = [
-    { budget_id: 'b1', direction: 'expense', amount: 40000 },
-    { budget_id: 'b1', direction: 'expense', amount: 25000 },
-    { budget_id: 'b1', direction: 'income', amount: 100000 },
-    { budget_id: 'b2', direction: 'expense', amount: 90000 },
-  ];
-  assert.deepEqual(domain.budgetComparison(100000, 90000, transactions, 'b1'), {
-    actual: 65000, variance: -35000, forecastVariance: -10000, remaining: 35000,
-  });
+test('finance entry opens AkunPro and does not collect accounting data in CSSMoRA', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../dist/admin.html'), 'utf8');
+  const workflows = fs.readFileSync(path.join(__dirname, '../dist/workflows.js'), 'utf8');
+  assert.match(html, /Buka pencatatan di AkunPro/);
+  assert.match(html, /href="https:\/\/akunpro-one\.vercel\.app" target="_blank" rel="noopener noreferrer"/);
+  assert.match(html, /Buka AkunPro/);
+  assert.doesNotMatch(html, /id="finance-entry-form"|id="finance-budget-form"|Catat transaksi|Tambah pos anggaran/);
+  assert.doesNotMatch(workflows, /cssmora_finance_(budgets|transactions)|akunpro-integration|loadFinanceDashboard/);
 });
 
 test('achievement participant selection requires roster IDs and a real team', () => {
@@ -64,13 +49,14 @@ test('public achievement upload uses a private bucket and server-side origin and
   assert.match(endpoint, /submit_cssmora_achievement_record/);
 });
 
-test('AkunPro sync checks a signed-in CSSMoRA finance role and signs server-to-server requests', () => {
+test('AkunPro bridge is server-authenticated and unused by the CSSMoRA client', () => {
   const endpoint = fs.readFileSync(path.join(__dirname, '../supabase/functions/akunpro-integration/index.ts'), 'utf8');
+  const workflows = fs.readFileSync(path.join(__dirname, '../dist/workflows.js'), 'utf8');
   assert.match(endpoint, /auth\/v1\/user/);
   assert.match(endpoint, /\["ketua", "wakil", "bendahara"\]/);
   assert.match(endpoint, /AKUNPRO_BRIDGE_SECRET/);
   assert.match(endpoint, /X-CSSMoRA-Signature/);
   assert.match(endpoint, /claim_cssmora_finance_transaction/);
   assert.match(endpoint, /release_cssmora_finance_transaction/);
-  assert.doesNotMatch(endpoint, /AKUNPRO_BRIDGE_SECRET\s*\}\s*\}/);
+  assert.doesNotMatch(workflows, /akunpro-integration|requestAkunPro/);
 });
