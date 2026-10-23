@@ -50,7 +50,7 @@ Dokumen ini adalah sumber utama untuk semua agen, kontributor, dan alat AI. `AGE
 ### Pengajuan bantuan prestasi/lomba
 
 - Form meminta email resmi, identitas lomba, jenis individu/tim, peserta dari roster CSSMoRA, biaya, tautan informasi, dan rekening pencairan.
-- Subsidi tim mengikuti rentang biaya yang ditetapkan: Rp0–20.000 = 100%; Rp20.001–50.000 = 75%; Rp50.001–80.000 = 50%; di atas Rp80.000 = 25%. Pengajuan individu memakai 50% dari nilai subsidi tim pada rentang yang sama. Nilai pengajuan dihitung otomatis; perubahan rentang atau rumus harus mendapat instruksi eksplisit pemilik.
+- Aturan subsidi untuk pengajuan baru: total biaya pendaftaran sampai Rp15.000 mendapat subsidi 100%; Rp15.001–50.000 sebesar 75%; Rp50.001–80.000 sebesar 50%; di atas Rp80.000 sebesar 25%, dengan plafon Rp40.000 per pengajuan tim. Individu menerima 50% dari nominal subsidi tim pada total biaya yang sama (plafon efektif Rp20.000). Pengajuan yang sudah tercatat mempertahankan versi aturan saat diajukan. Nilai pengajuan dihitung otomatis; perubahan rumus berikutnya memerlukan instruksi eksplisit pemilik.
 - Persetujuan berjalan berurutan melalui Bendahara lalu Ketua, dengan jejak peninjauan dan catatan status.
 - Bukti pendaftaran disimpan untuk peninjauan. Bukti transfer dibagikan manual oleh Bendahara melalui WhatsApp; jangan mewajibkan unggah bukti transfer ke aplikasi. Peserta menyetujui pengembalian 5% hadiah ke kas CSSMoRA.
 - Setelah disetujui, daftar tetap berbentuk tabel; rincian dan status dibuka saat baris dipilih.
@@ -77,7 +77,7 @@ Dokumen ini adalah sumber utama untuk semua agen, kontributor, dan alat AI. `AGE
 Jalankan seluruh tes regresi:
 
 ```sh
-node --test tests/agenda.test.cjs tests/known-audit-regressions.cjs tests/rescreen-regressions.cjs tests/project-guardrails.test.cjs
+node --test tests/agenda.test.cjs tests/known-audit-regressions.cjs tests/rescreen-regressions.cjs tests/project-guardrails.test.cjs tests/subsidy-policy.test.cjs
 ```
 
 Perubahan SQL/RLS harus ditinjau terhadap hak akses per peran dan tidak boleh diuji dengan mengubah data production. Untuk setiap bug yang diperbaiki, tambahkan regresi yang akan gagal bila bug yang sama kembali.
