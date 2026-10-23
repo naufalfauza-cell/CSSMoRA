@@ -14,7 +14,7 @@ test('locked product and permission decisions remain documented', () => {
     'Gangguan jaringan sementara',
     'paling banyak enam agenda',
     'setelah lima hari',
-    'Rp15.001–50.000 sebesar 75%',
+    '75% dari bagian Rp15.001–Rp25.000',
     'Bendahara lalu Ketua',
     'Periode baru 2026/2027 mulai dari nomor 1',
     'Migrasi yang telah diterapkan ke Supabase bersifat append-only'
