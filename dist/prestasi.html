@@ -4,31 +4,44 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#087443">
-  <meta name="description" content="Ajukan bantuan biaya perlombaan CSSMoRA UNAIR.">
-  <title>Pengajuan Biaya Lomba — CSSMoRA UNAIR</title>
+  <meta name="description" content="Pengajuan bantuan biaya lomba dan pelaporan capaian prestasi CSSMoRA UNAIR.">
+  <title>Sistem Prestasi — CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./prestasi.css?v=20261022-form-v1">
+  <link rel="stylesheet" href="./prestasi.css?v=20261023-sistem-prestasi-v1">
+  <link rel="stylesheet" href="./workflows.css?v=20261023-sistem-prestasi-v1">
   <script src="./supabase-config.js" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./prestasi.js?v=20261022-upload-v1" defer></script>
+  <script src="./prestasi.js?v=20261023-sistem-prestasi-v1" defer></script>
+  <script src="./workflow-domain.js?v=20261023-sistem-prestasi-v1" defer></script>
+  <script src="./workflows.js?v=20261023-sistem-prestasi-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261022-soft-ui">
 </head>
-<body class="achievement-page">
+<body class="achievement-page public-achievement-page">
   <header class="achievement-header">
     <a href="./" class="achievement-brand"><img src="./assets/cssmora-logo.png" width="42" height="42" alt=""><span><strong>CSSMoRA</strong><small>UNAIR</small></span></a>
     <a href="./" class="achievement-home">Beranda <span aria-hidden="true">↗</span></a>
   </header>
-  <main class="achievement-main">
+  <main class="achievement-main public-achievement-main">
     <a href="./" class="achievement-back">← Kembali</a>
-    <section class="achievement-intro">
-      <span class="achievement-eyebrow">PENGEMBANGAN PRESTASI</span>
-      <h1>Ajukan bantuan<br><em>biaya lomba.</em></h1>
-      <p>Isi data lomba dan lampirkan bukti pendaftaran. Pengajuan diperiksa Bendahara lalu Ketua CSSMoRA.</p>
+    <section class="achievement-intro public-achievement-intro">
+      <span class="achievement-eyebrow">CSSMoRA UNAIR</span>
+      <h1>Sistem prestasi<br><em>CSSMoRA UNAIR.</em></h1>
+      <p>Ajukan bantuan lomba dan laporkan capaian dalam satu tempat.</p>
     </section>
+    <nav class="public-prestasi-tabs" role="tablist" aria-label="Layanan sistem prestasi">
+      <button id="tab-public-funding" type="button" role="tab" aria-selected="true" aria-controls="achievement-funding-panel" data-public-prestasi="funding">Pengajuan dana</button>
+      <button id="tab-public-report" type="button" role="tab" aria-selected="false" aria-controls="achievement-report-panel" data-public-prestasi="report">Lapor prestasi</button>
+    </nav>
+    <section class="public-prestasi-panel" id="achievement-funding-panel" role="tabpanel" aria-labelledby="tab-public-funding">
+      <section class="achievement-intro public-prestasi-subheading">
+        <span class="achievement-eyebrow">PENGAJUAN BANTUAN LOMBA</span>
+        <h2>Ajukan biaya lomba</h2>
+        <p>Pengajuan diperiksa Bendahara lalu Ketua CSSMoRA.</p>
+      </section>
     <form id="achievement-form" class="achievement-form" novalidate>
       <section class="achievement-card" aria-labelledby="competition-info-title">
         <div class="achievement-section-heading"><span>01</span><div><h2 id="competition-info-title">Informasi lomba</h2><p>Masukkan detail acara dan biaya pendaftaran.</p></div></div>
@@ -72,8 +85,65 @@
       </section>
       <div class="achievement-submit-area"><p id="achievement-message" class="achievement-message" role="status" aria-live="polite"></p><button id="submit-achievement" class="achievement-submit" type="submit">Kirim pengajuan <span aria-hidden="true">↗</span></button><small>Pengajuan masuk ke Bendahara, lalu diteruskan ke Ketua jika disetujui.</small></div>
     </form>
-    <aside class="achievement-followup-link"><span class="achievement-eyebrow">SUDAH MENDAPATKAN PRESTASI?</span><p>Laporkan capaian dan unggah sertifikat agar bisa masuk ke rekap prestasi CSSMoRA.</p><a href="./rekap-prestasi.html">Catat hasil lomba <span aria-hidden="true">↗</span></a></aside>
+    <aside class="achievement-followup-link"><span class="achievement-eyebrow">SUDAH MENDAPATKAN PRESTASI?</span><p>Laporkan capaian dan unggah sertifikat untuk diverifikasi pengurus.</p><a href="#lapor-prestasi" data-public-prestasi-link="report">Lapor capaian <span aria-hidden="true">↗</span></a></aside>
+    </section>
+    <section class="public-prestasi-panel" id="achievement-report-panel" role="tabpanel" aria-labelledby="tab-public-report" hidden>
+      <section class="achievement-intro public-prestasi-subheading" id="lapor-prestasi">
+        <span class="achievement-eyebrow">PELAPORAN CAPAIAN</span>
+        <h2>Lapor prestasi</h2>
+        <p>Isi sesuai informasi pada pengumuman atau sertifikat. Capaian tampil setelah diverifikasi pengurus.</p>
+      </section>
+      <form id="public-achievement-form" class="achievement-form" novalidate>
+        <section class="achievement-card" aria-labelledby="public-achievement-form-title">
+          <div class="achievement-section-heading"><span>01</span><div><h2 id="public-achievement-form-title">Data capaian</h2><p>Isi detail lomba, peserta, dan hasil.</p></div></div>
+          <label for="public-achievement-name">Nama lomba / kegiatan</label><input id="public-achievement-name" name="competition_name" maxlength="180" required placeholder="Contoh: Lomba Esai Nasional 2026">
+          <div class="achievement-grid-two">
+            <div><label for="public-achievement-level">Tingkat</label><select id="public-achievement-level" name="competition_level" required><option value="">Pilih tingkat</option><option value="lokal">Lokal</option><option value="regional">Regional</option><option value="nasional">Nasional</option><option value="internasional">Internasional</option></select></div>
+            <div><label for="public-achievement-category">Jenis lomba (opsional)</label><input id="public-achievement-category" name="competition_category" maxlength="100" placeholder="Esai, riset, debat, olahraga…"></div>
+          </div>
+          <label for="public-achievement-award">Hasil / peringkat</label><input id="public-achievement-award" name="award_title" maxlength="100" required placeholder="Juara 1, Juara 2, finalis…">
+          <label for="public-achievement-date">Tanggal pengumuman / kegiatan</label><input id="public-achievement-date" name="event_date" type="date" required>
+          <div class="participation-picker" role="group" aria-label="Jenis peserta">
+            <label class="participation-option"><input type="radio" name="public_participation_type" value="individu" checked><span><strong>Individu</strong><small>Satu anggota</small></span></label>
+            <label class="participation-option"><input type="radio" name="public_participation_type" value="tim"><span><strong>Tim</strong><small>Anggota CSSMoRA</small></span></label>
+          </div>
+          <label for="public-achievement-leader">Nama anggota</label><select id="public-achievement-leader" name="member_id" required><option value="">Memuat daftar anggota…</option></select>
+          <div id="public-achievement-team-fields" hidden>
+            <label for="public-achievement-member-search">Anggota tim lainnya</label><input id="public-achievement-member-search" type="search" placeholder="Cari nama anggota…" autocomplete="off">
+            <fieldset class="team-member-list" id="public-achievement-team-list"><legend class="sr-only">Pilih anggota tim</legend><p class="achievement-hint">Memuat daftar anggota…</p></fieldset>
+          </div>
+          <label for="public-achievement-email">Email untuk konfirmasi (opsional)</label><input id="public-achievement-email" name="contact_email" type="email" maxlength="254" placeholder="nama@email.com">
+        </section>
+        <section class="achievement-card" aria-labelledby="public-achievement-certificate-title">
+          <div class="achievement-section-heading"><span>02</span><div><h2 id="public-achievement-certificate-title">Sertifikat</h2><p>Unggah dokumen yang menunjukkan hasil lomba.</p></div></div>
+          <label for="public-achievement-certificate">Sertifikat / bukti penghargaan</label><input id="public-achievement-certificate" name="certificate" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required>
+          <p class="achievement-hint">JPG, PNG, WebP, atau PDF. Foto dikompres di perangkat dan disimpan privat; maksimal 5 MB setelah kompresi.</p>
+        </section>
+        <div class="achievement-submit-area"><p id="public-achievement-message" class="achievement-message" role="status" aria-live="polite"></p><button id="public-achievement-submit" class="achievement-submit" type="submit">Kirim capaian <span aria-hidden="true">↗</span></button><small>Pengurus akan memeriksa data dan sertifikat sebelum capaian dipublikasikan.</small></div>
+      </form>
+      <section class="public-achievement-recap" aria-labelledby="public-achievement-recap-title"><div class="achievement-section-heading"><span>03</span><div><h2 id="public-achievement-recap-title">Capaian terverifikasi</h2><p>Daftar capaian yang sudah disetujui pengurus.</p></div></div><div class="public-achievement-recap-list" id="public-achievement-recap-list"><p class="records-empty">Memuat rekap prestasi…</p></div></section>
+    </section>
   </main>
+  <script>
+    (()=>{
+      const tabs=[...document.querySelectorAll('[data-public-prestasi]')];
+      const panels=[...document.querySelectorAll('.public-prestasi-panel')];
+      const select=section=>{
+        const tab=tabs.find(item=>item.dataset.publicPrestasi===section)||tabs[0];
+        tabs.forEach(item=>{const active=item===tab;item.setAttribute('aria-selected',String(active));item.tabIndex=active?0:-1;});
+        panels.forEach(panel=>{panel.hidden=panel.id!==tab.getAttribute('aria-controls');});
+        const hash=tab.dataset.publicPrestasi==='report'?'#lapor-prestasi':'#pengajuan-dana';
+        if(location.hash!==hash)history.replaceState(null,'',hash);
+      };
+      tabs.forEach(tab=>tab.addEventListener('click',()=>select(tab.dataset.publicPrestasi)));
+      document.querySelectorAll('[data-public-prestasi-link]').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();select(link.dataset.publicPrestasiLink);window.scrollTo({top:0,behavior:'smooth'});}));
+      document.addEventListener('keydown',event=>{
+        if(!['ArrowLeft','ArrowRight'].includes(event.key)||!tabs.includes(document.activeElement))return;
+        event.preventDefault();const current=tabs.indexOf(document.activeElement),next=tabs[(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length];select(next.dataset.publicPrestasi);next.focus();
+      });
+      select(location.hash==='#lapor-prestasi'?'report':'funding');
+    })();
+  </script>
   <footer class="achievement-footer">CSSMoRA Universitas Airlangga</footer>
 </body>
 </html>
