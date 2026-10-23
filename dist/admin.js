@@ -396,7 +396,7 @@ function renderPrograms() {
   programRecordList.innerHTML=programs.map(program=>`<article class="program-record">
     <img src="${escapeHTML(program.photo_url)}" alt="" loading="lazy">
     <div class="program-record-copy"><strong>${escapeHTML(program.name)}</strong><div class="program-record-meta"><span class="program-division">${escapeHTML(divisionLabels[program.division]||'Divisi belum diatur')}</span><span class="record-status ${program.is_active?'published':''}">${program.is_active?'AKTIF':'NONAKTIF'}</span></div></div>
-    <div class="program-record-actions"><button type="button" data-program-action="edit" data-id="${escapeHTML(program.id)}">Edit</button><button type="button" data-program-action="toggle" data-id="${escapeHTML(program.id)}">${program.is_active?'Nonaktifkan':'Aktifkan'}</button></div>
+    <div class="program-record-actions"><button type="button" data-program-action="edit" data-id="${escapeHTML(program.id)}">Edit</button><button type="button" data-program-action="toggle" data-id="${escapeHTML(program.id)}">${program.is_active?'Nonaktifkan':'Aktifkan'}</button><button type="button" class="program-delete-button" data-program-action="delete" data-id="${escapeHTML(program.id)}" aria-label="Hapus proker ${escapeHTML(program.name)}" title="Hapus proker"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v6m4-6v6"/></svg></button></div>
   </article>`).join('');
   programRecordList.querySelectorAll('img').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
 }
@@ -448,6 +448,38 @@ programRecordList.addEventListener('click',async event=>{
     $('#program-photo-preview-label').textContent='Foto yang tersimpan · pilih file baru untuk mengganti';
     $('#program-photo-preview').hidden=false;
     document.getElementById('program-name').focus();
+    return;
+  }
+  if(button.dataset.programAction==='delete') {
+    button.disabled=true;
+    showMessage('#program-editor-message','Memeriksa agenda yang memakai proker ini…');
+    try {
+      const linkedAgendas=await api(`agenda?select=id,title,status&program_id=eq.${encodeURIComponent(program.id)}`);
+      if(linkedAgendas.length) {
+        const titles=linkedAgendas.map(item=>item.title).filter(Boolean).slice(0,2).join(' dan ');
+        showMessage('#program-editor-message',`Proker masih terhubung ke ${linkedAgendas.length} agenda${titles?` (“${titles}”)`:''}. Hapus atau ganti proker pada agenda terkait terlebih dahulu agar histori agenda dan fotonya tetap utuh.`,'error');
+        button.disabled=false;
+        return;
+      }
+      if(!window.confirm(`Hapus proker “${program.name}” beserta foto dokumentasinya?`)) {
+        showMessage('#program-editor-message','');
+        button.disabled=false;
+        return;
+      }
+      showMessage('#program-editor-message','Menghapus proker dan foto…');
+      const removed=await api(`agenda_programs?id=eq.${encodeURIComponent(program.id)}`,{method:'DELETE',extraHeaders:{Prefer:'return=representation'}});
+      if(!Array.isArray(removed)||!removed.some(item=>item.id===program.id))throw new Error('Proker tidak terhapus. Periksa akses akun lalu muat ulang.');
+      let photoWarning='';
+      try { await deleteProgramPhoto(program.photo_path); }
+      catch { photoWarning='Proker terhapus, tetapi foto belum dapat dibersihkan dari penyimpanan.'; }
+      const editingDeletedProgram=$('#program-record-id').value===program.id;
+      if(editingDeletedProgram)clearProgramEditor();
+      await Promise.all([loadPrograms(),loadAgenda()]);
+      showMessage('#program-editor-message',photoWarning||'Proker dan foto berhasil dihapus.',photoWarning?'error':'success');
+    } catch(error) {
+      showMessage('#program-editor-message',`Proker belum terhapus: ${error.message}`,'error');
+      button.disabled=false;
+    }
     return;
   }
   button.disabled=true;
