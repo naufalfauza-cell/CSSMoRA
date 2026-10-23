@@ -3,159 +3,10 @@
   const config=window.CSSMORA_SUPABASE;
   const domain=window.CSSMoRADomain;
   const escape=window.CSSMORA_ESCAPE||((value)=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])));
-  const money=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
   const dateLabel=value=>value?new Date(`${value}T00:00:00+07:00`).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Jakarta'}):'—';
-  const divisions={BPH:'BPH',PSDM:'PSDM',P3M:'P3M',ADVO:'Advokasi',MEDINFO:'Medinfo'};
-  let budgets=[];
-  let transactions=[];
-  let accounts=[];
   let records=[];
   let participants=[];
   let recordFilter='pending';
-
-  async function requestAkunPro(payload){
-    if(!window.CSSMORA_SUPABASE?.url||!window.CSSMORA_SUPABASE?.publishableKey)throw new Error('Konfigurasi Supabase CSSMoRA tidak tersedia.');
-    const response=await authenticatedFetch(`${config.url}/functions/v1/akunpro-integration`,{
-      method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(payload)
-    });
-    const result=await response.json().catch(()=>({}));
-    if(!response.ok){const error=new Error(result.error||'Koneksi AkunPro belum siap.');error.status=response.status;throw error;}
-    return result;
-  }
-  function setConnection(message,kind=''){
-    const node=$('#finance-integration-status');if(!node)return;
-    node.dataset.state=kind;node.innerHTML=`<span class="finance-connection-dot" aria-hidden="true"></span><span>${escape(message)}</span>`;
-  }
-  function accountCodeControl(side,values,placeholder){
-    const select=$(`#finance-${side}-account`),manual=$(`#finance-${side}-account-manual`);
-    const old=select.value||manual.value||'';
-    const options=values.map(account=>`<option value="${escape(account.code)}">${escape(account.code)} · ${escape(account.name)}</option>`).join('');
-    if(values.length){
-      select.innerHTML=`<option value="">Pilih akun…</option>${options}`;select.hidden=false;select.required=true;
-      manual.hidden=true;manual.required=false;select.value=values.some(a=>a.code===old)?old:'';
-    }else{
-      select.innerHTML='<option value="">Masukkan kode akun manual</option>';select.hidden=true;select.required=false;
-      manual.hidden=false;manual.required=true;manual.placeholder=placeholder;manual.value=old;
-    }
-  }
-  function renderFinanceAccounts(){
-    const direction=$('#finance-direction')?.value||'expense';
-    const cash=accounts.filter(row=>row.category==='Aset');
-    const category=accounts.filter(row=>row.category===(direction==='income'?'Pendapatan':'Beban'));
-    accountCodeControl('cash',cash,'Kode akun aset kas / bank AkunPro');
-    accountCodeControl('category',category,`Kode akun ${direction==='income'?'pendapatan':'beban'} AkunPro`);
-    if(!accounts.length)setConnection('AkunPro belum terhubung. Transaksi tetap tersimpan di antrean; isi kode akun yang benar untuk sinkronisasi.','pending');
-  }
-  function renderFinance(){
-    const totalIncome=transactions.filter(row=>row.direction==='income').reduce((sum,row)=>sum+Number(row.amount||0),0);
-    const totalExpense=transactions.filter(row=>row.direction==='expense').reduce((sum,row)=>sum+Number(row.amount||0),0);
-    $('#finance-total-income').textContent=money(totalIncome);
-    $('#finance-total-expense').textContent=money(totalExpense);
-    $('#finance-net-balance').textContent=money(totalIncome-totalExpense);
-    const pending=transactions.filter(row=>row.sync_status!=='synced').length;
-    $('#finance-pending-count').textContent=String(pending);
-    $('#finance-budget-count').textContent=`${budgets.length} pos`;
-    $('#finance-transaction-count').textContent=`${transactions.length} transaksi`;
-    const budgetSelect=$('#finance-budget-link');
-    const previous=budgetSelect.value;
-    budgetSelect.innerHTML='<option value="">Tanpa pos anggaran</option>'+budgets.map(row=>`<option value="${escape(row.id)}">${escape(row.fiscal_year)} · ${escape(divisions[row.division]||row.division)} · ${escape(row.budget_label)}</option>`).join('');
-    if(budgets.some(row=>row.id===previous))budgetSelect.value=previous;
-    const budgetBody=$('#finance-budget-list');
-    budgetBody.innerHTML=budgets.length?budgets.map(row=>{
-      const comparison=domain.budgetComparison(row.planned_amount,row.forecast_amount,transactions,row.id);
-      const actual=comparison.actual,delta=comparison.variance;
-      return `<tr><td>${escape(row.fiscal_year)}<small>${escape(divisions[row.division]||row.division)}</small></td><td><strong>${escape(row.budget_label)}</strong>${row.note?`<small>${escape(row.note)}</small>`:''}</td><td>${money(row.planned_amount)}</td><td>${money(row.forecast_amount)}</td><td>${money(actual)}</td><td class="${delta>0?'is-over-budget':'is-within-budget'}">${delta>0?'+':''}${money(delta)}</td><td><div class="workflow-row-actions"><button type="button" data-budget-action="edit" data-id="${escape(row.id)}">Edit</button><button type="button" data-budget-action="delete" data-id="${escape(row.id)}" aria-label="Hapus anggaran ${escape(row.budget_label)}">Hapus</button></div></td></tr>`;
-    }).join(''):'<tr><td colspan="7" class="records-empty">Belum ada anggaran.</td></tr>';
-    const txBody=$('#finance-transaction-list');
-    txBody.innerHTML=transactions.length?transactions.map(row=>{
-      const syncLabel=row.sync_status==='synced'?'TERKIRIM':row.sync_status==='syncing'?'SEDANG DIKIRIM':'ANTREAN';
-      const action=row.sync_status==='synced'?`<small>${escape(row.akunpro_transaction_id||'AkunPro')}</small>`:`<button type="button" data-transaction-action="sync" data-id="${escape(row.id)}">${row.sync_status==='syncing'?'Cek status':'Kirim'}</button>${row.sync_status==='pending'?`<button type="button" data-transaction-action="edit" data-id="${escape(row.id)}">Edit</button>`:''}`;
-      return `<tr><td>${dateLabel(row.transaction_date)}</td><td><strong>${escape(row.reference)}</strong><small>${escape(row.description)}</small>${row.last_sync_error?`<small class="finance-sync-error">${escape(row.last_sync_error)}</small>`:''}</td><td><span class="finance-direction-pill ${row.direction}">${row.direction==='income'?'Masuk':'Keluar'}</span></td><td>${money(row.amount)}</td><td><span class="record-status ${row.sync_status==='synced'?'published':row.sync_status==='syncing'?'finance-syncing':''}">${syncLabel}</span></td><td><div class="workflow-row-actions">${action}</div></td></tr>`;
-    }).join(''):'<tr><td colspan="6" class="records-empty">Belum ada transaksi.</td></tr>';
-  }
-  async function loadFinanceDashboard(){
-    const status=$('#finance-integration-status');if(!status)return;
-    setConnection('Memuat buku kas dan koneksi AkunPro…');
-    try{
-      const [budgetRows,transactionRows]=await Promise.all([
-        api('cssmora_finance_budgets?select=*&order=fiscal_year.desc,division.asc,budget_label.asc'),
-        api('cssmora_finance_transactions?select=*&order=transaction_date.desc,created_at.desc')
-      ]);
-      budgets=budgetRows||[];transactions=transactionRows||[];
-      try{
-        const result=await requestAkunPro({action:'accounts'});
-        accounts=Array.isArray(result.accounts)?result.accounts:[];
-        setConnection(`Terhubung ke AkunPro · ${accounts.length} akun tersedia`,'connected');
-      }catch(error){accounts=[];setConnection(error.message||'Integrasi AkunPro menunggu konfigurasi.','pending');}
-      renderFinanceAccounts();renderFinance();
-      if(accounts.length)setConnection(`Terhubung ke AkunPro · ${accounts.length} akun tersedia`,'connected');
-    }catch(error){setConnection('Data keuangan belum dapat dimuat.','error');showMessage('#finance-message',error.message,'error');}
-  }
-  async function syncFinanceTransaction(id){
-    const result=await requestAkunPro({action:'sync',transaction_id:id});
-    if(result.busy){showMessage('#finance-message','Transaksi sedang dikirim. Muat ulang sebentar lagi untuk melihat hasilnya.','');await loadFinanceDashboard();return;}
-    showMessage('#finance-message',result.duplicate?'Transaksi sudah tercatat di AkunPro.':'Transaksi berhasil dikirim ke AkunPro.','success');
-    await loadFinanceDashboard();
-  }
-  $('#finance-refresh')?.addEventListener('click',()=>void loadFinanceDashboard());
-  $('#finance-direction')?.addEventListener('change',renderFinanceAccounts);
-  $('#finance-budget-form')?.addEventListener('submit',async event=>{
-    event.preventDefault();const form=event.currentTarget,button=$('#save-finance-budget'),id=$('#budget-record-id').value;
-    if(!form.reportValidity())return;
-    button.disabled=true;
-    const body={fiscal_year:Number(form.elements.fiscal_year.value),division:form.elements.division.value,budget_label:form.elements.budget_label.value.trim(),
-      planned_amount:Number(form.elements.planned_amount.value),forecast_amount:Number(form.elements.forecast_amount.value),note:form.elements.note.value.trim()};
-    try{
-      if(id)await api(`cssmora_finance_budgets?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body});
-      else await api('cssmora_finance_budgets',{method:'POST',body,extraHeaders:{Prefer:'return=representation'}});
-      form.reset();$('#budget-record-id').value='';$('#save-finance-budget').innerHTML='Simpan anggaran <span aria-hidden="true">↗</span>';
-      await loadFinanceDashboard();showMessage('#finance-message','Anggaran dan prognosa tersimpan.','success');
-    }catch(error){showMessage('#finance-message',error.message,'error');}finally{button.disabled=false;}
-  });
-  $('#finance-budget-list')?.addEventListener('click',async event=>{
-    const button=event.target.closest('[data-budget-action]');if(!button)return;
-    const row=budgets.find(item=>item.id===button.dataset.id);if(!row)return;
-    if(button.dataset.budgetAction==='edit'){
-      const form=$('#finance-budget-form');$('#budget-record-id').value=row.id;
-      form.elements.fiscal_year.value=row.fiscal_year;form.elements.division.value=row.division;form.elements.budget_label.value=row.budget_label;
-      form.elements.planned_amount.value=row.planned_amount;form.elements.forecast_amount.value=row.forecast_amount;form.elements.note.value=row.note||'';
-      $('#save-finance-budget').innerHTML='Simpan perubahan <span aria-hidden="true">↗</span>';form.scrollIntoView({behavior:'smooth',block:'center'});return;
-    }
-    if(!window.confirm(`Hapus pos anggaran “${row.budget_label}”? Transaksi terkait akan tetap tersimpan tanpa tautan pos.`))return;
-    button.disabled=true;try{await api(`cssmora_finance_budgets?id=eq.${encodeURIComponent(row.id)}`,{method:'DELETE'});await loadFinanceDashboard();showMessage('#finance-message','Pos anggaran dihapus.','success');}catch(error){showMessage('#finance-message',error.message,'error');button.disabled=false;}
-  });
-  $('#finance-entry-form')?.addEventListener('submit',async event=>{
-    event.preventDefault();const form=event.currentTarget,button=$('#save-finance-entry');if(!form.reportValidity())return;
-    const id=$('#finance-transaction-id').value,direction=form.elements.direction.value;
-    const cashCode=$('#finance-cash-account').hidden?$('#finance-cash-account-manual').value.trim():$('#finance-cash-account').value;
-    const categoryCode=$('#finance-category-account').hidden?$('#finance-category-account-manual').value.trim():$('#finance-category-account').value;
-    try{domain.createJournal(direction,Number(form.elements.amount.value),cashCode,categoryCode);}catch(error){showMessage('#finance-message',error.message,'error');return;}
-    const body={transaction_date:form.elements.transaction_date.value,reference:form.elements.reference.value.trim(),description:form.elements.description.value.trim(),direction,
-      amount:Number(form.elements.amount.value),cash_account_code:cashCode,category_account_code:categoryCode,budget_id:form.elements.budget_id.value||null};
-    button.disabled=true;
-    try{
-      let transactionId=id;
-      if(id){await api(`cssmora_finance_transactions?id=eq.${encodeURIComponent(id)}&sync_status=eq.pending`,{method:'PATCH',body});}
-      else {const inserted=await api('cssmora_finance_transactions',{method:'POST',body,extraHeaders:{Prefer:'return=representation'}});transactionId=inserted?.[0]?.id;if(!transactionId)throw new Error('Transaksi belum tersimpan.');}
-      form.reset();$('#finance-transaction-id').value='';$('#finance-date').value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
-      $('#save-finance-entry').innerHTML='Simpan transaksi <span aria-hidden="true">↗</span>';
-      await loadFinanceDashboard();
-    try{await syncFinanceTransaction(transactionId);}catch(error){showMessage('#finance-message',`Transaksi tersimpan dan menunggu koneksi AkunPro: ${error.message}`,'');await loadFinanceDashboard();}
-    }catch(error){showMessage('#finance-message',error.message,'error');}finally{button.disabled=false;}
-  });
-  $('#finance-transaction-list')?.addEventListener('click',async event=>{
-    const button=event.target.closest('[data-transaction-action]');if(!button)return;
-    const row=transactions.find(item=>item.id===button.dataset.id);if(!row)return;
-    if(button.dataset.transactionAction==='edit'){
-      const form=$('#finance-entry-form');$('#finance-transaction-id').value=row.id;form.elements.transaction_date.value=row.transaction_date;
-      form.elements.reference.value=row.reference;form.elements.description.value=row.description;form.elements.direction.value=row.direction;form.elements.amount.value=row.amount;form.elements.budget_id.value=row.budget_id||'';
-      renderFinanceAccounts();
-      if($('#finance-cash-account').hidden)$('#finance-cash-account-manual').value=row.cash_account_code;else $('#finance-cash-account').value=row.cash_account_code;
-      if($('#finance-category-account').hidden)$('#finance-category-account-manual').value=row.category_account_code;else $('#finance-category-account').value=row.category_account_code;
-      $('#save-finance-entry').innerHTML='Simpan perubahan <span aria-hidden="true">↗</span>';form.scrollIntoView({behavior:'smooth',block:'center'});return;
-    }
-    button.disabled=true;try{await syncFinanceTransaction(row.id);}catch(error){showMessage('#finance-message',error.message,'error');await loadFinanceDashboard();button.disabled=false;}
-  });
 
   function renderAchievementRecords(){
     const query=$('#achievement-record-search').value.trim().toLowerCase();
@@ -185,9 +36,7 @@
     }catch(error){list.innerHTML=`<p class="records-empty">${escape(error.message)}</p>`;}
     finally{list.removeAttribute('aria-busy');}
   }
-  window.CSSMoRAWorkflows={loadFinanceDashboard,loadAchievementRecords};
-  $('#finance-budget-form')?.addEventListener('reset',()=>setTimeout(()=>{$('#budget-record-id').value='';$('#save-finance-budget').innerHTML='Simpan anggaran <span aria-hidden="true">↗</span>';},0));
-  $('#finance-entry-form')?.addEventListener('reset',()=>setTimeout(()=>{$('#finance-transaction-id').value='';$('#save-finance-entry').innerHTML='Simpan transaksi <span aria-hidden="true">↗</span>';},0));
+  window.CSSMoRAWorkflows={loadAchievementRecords};
   $('#achievement-record-refresh')?.addEventListener('click',()=>void loadAchievementRecords());
   $('#achievement-record-search')?.addEventListener('input',renderAchievementRecords);
   document.querySelectorAll('[data-achievement-record-filter]').forEach(button=>button.addEventListener('click',()=>{
@@ -257,7 +106,5 @@
     });
     void loadPublicRoster();void loadPublicAchievements();
   }
-  if($('#finance-date'))$('#finance-date').value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
   if($('#public-achievement-date'))$('#public-achievement-date').max=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
-  if($('#budget-year'))$('#budget-year').value=String(new Date().getFullYear());
 })();
