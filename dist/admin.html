@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./admin.css?v=20261023-sistem-prestasi-v2">
-  <link rel="stylesheet" href="./workflows.css?v=20261023-akunpro-launch-v1">
+  <link rel="stylesheet" href="./workflows.css?v=20261023-program-lpj-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
     #session-restoring{display:none;min-height:calc(100vh - 120px);align-items:center;justify-content:center;gap:10px;color:#315d43;font:600 13px/1.5 "Plus Jakarta Sans",sans-serif}
@@ -29,6 +29,8 @@
   <script src="./admin.js?v=20261023-sistem-prestasi-v2" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
   <script src="./workflows.js?v=20261023-akunpro-launch-v1" defer></script>
+  <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
+  <script src="./program-workflow.js?v=20261023-program-lpj-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261022-copy-pills">
 </head>
 <body class="admin-page">
@@ -113,6 +115,7 @@
         <nav class="agenda-admin-tabs" role="tablist" aria-label="Kelola proker dan agenda">
           <button class="agenda-admin-tab is-active" id="tab-programs" type="button" role="tab" aria-selected="true" aria-controls="programs-panel">1 · Database proker</button>
           <button class="agenda-admin-tab" id="tab-schedule" type="button" role="tab" aria-selected="false" aria-controls="schedule-panel">2 · Jadwal agenda</button>
+          <button class="agenda-admin-tab" id="tab-program-workflow" type="button" role="tab" aria-selected="false" aria-controls="program-workflow-panel">3 · Progres &amp; LPJ</button>
         </nav>
         <section class="agenda-admin-subpanel" id="programs-panel" role="tabpanel" aria-labelledby="tab-programs">
           <div class="editor-heading program-library-heading"><div><span class="admin-kicker">DATABASE PROGRAM KERJA</span><h3>Data proker dan dokumentasi</h3><p class="admin-muted">Simpan siklus, tujuan, sasaran, PIC, anggaran, dan foto. Data dapat diperbarui kapan saja dan tetap tertaut ke agenda sebelumnya.</p></div></div>
@@ -177,6 +180,46 @@
             <section class="records-card" aria-labelledby="agenda-records-title">
               <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="agenda-records-title">Agenda tersimpan</h3></div><div class="agenda-record-tools"><span class="record-count" id="agenda-record-count">—</span><button class="text-button" id="agenda-refresh" type="button">Muat ulang</button></div></div>
               <div class="record-list" id="agenda-record-list"><p class="records-empty">Memuat data…</p></div>
+            </section>
+          </div>
+        </section>
+        <section class="agenda-admin-subpanel" id="program-workflow-panel" role="tabpanel" aria-labelledby="tab-program-workflow" hidden>
+          <div class="program-workflow-heading"><div><span class="admin-kicker">MONITORING PROGRAM KERJA</span><h3>Progres, tenggat, dan LPJ</h3><p>Gunakan siklus proker yang sama dengan database dan agenda. Catatan kas tetap dikelola di AkunPro.</p></div><button class="text-button" id="program-workflow-refresh" type="button">Muat ulang</button></div>
+          <section class="program-reminders" id="program-reminders" aria-live="polite"><h4>Perlu ditindaklanjuti</h4><div id="program-reminder-list"><p class="records-empty">Memuat tenggat…</p></div></section>
+          <div class="admin-columns program-workflow-grid">
+            <section class="editor-card program-cycle-editor" aria-labelledby="program-cycle-editor-title">
+              <div class="editor-heading"><div><span class="admin-kicker">SIKLUS KERJA</span><h3 id="program-cycle-editor-title">Mulai monitoring proker</h3></div><button class="text-button" id="program-cycle-reset" type="button">Siklus baru</button></div>
+              <form id="program-cycle-form">
+                <input type="hidden" name="id" id="program-cycle-id">
+                <div class="form-two"><div><label for="program-cycle-program">Program kerja</label><select id="program-cycle-program" name="program_id" required><option value="">Pilih proker…</option></select></div><div><label for="program-cycle-period">Periode</label><input id="program-cycle-period" name="period_label" maxlength="24" required></div></div>
+                <div class="form-two"><div><label for="program-cycle-start">Mulai periode</label><input id="program-cycle-start" name="period_start" type="date"></div><div><label for="program-cycle-end">Akhir periode</label><input id="program-cycle-end" name="period_end" type="date"></div></div>
+                <div class="form-two"><div><label for="program-cycle-status">Status</label><select id="program-cycle-status" name="status"><option value="planning">Rencana</option><option value="ongoing">Berjalan</option></select></div><div><label for="program-cycle-deadline">Tenggat LPJ</label><input id="program-cycle-deadline" name="lpj_due_date" type="date"></div></div>
+                <label for="program-cycle-akunpro">Tautan anggaran AkunPro (opsional)</label><input id="program-cycle-akunpro" name="akunpro_url" type="url" placeholder="https://akunpro-one.vercel.app/…">
+                <label for="program-cycle-summary">Ringkasan pelaksanaan / LPJ</label><textarea id="program-cycle-summary" name="lpj_summary" rows="3" maxlength="5000" placeholder="Kegiatan yang dilaksanakan dan hasil utamanya"></textarea>
+                <label for="program-cycle-outputs">Luaran dan capaian</label><textarea id="program-cycle-outputs" name="output_summary" rows="2" maxlength="2000" placeholder="Contoh: jumlah peserta, produk, atau target tercapai"></textarea>
+                <label for="program-cycle-lessons">Evaluasi dan tindak lanjut</label><textarea id="program-cycle-lessons" name="lesson_learned" rows="2" maxlength="2000" placeholder="Catatan evaluasi untuk periode berikutnya"></textarea>
+                <p class="program-cycle-progress" id="program-cycle-progress">Progres 0% · 0 dari 0 tahapan selesai</p>
+                <button class="admin-button" id="save-program-cycle" type="submit">Simpan monitoring <span aria-hidden="true">↗</span></button>
+                <div class="program-cycle-actions" id="program-cycle-actions" hidden></div>
+                <p class="form-message" id="program-cycle-message" role="status" aria-live="polite"></p>
+              </form>
+              <section class="program-milestone-editor" aria-labelledby="program-milestone-title">
+                <div class="editor-heading"><div><span class="admin-kicker">CHECKPOINT</span><h4 id="program-milestone-title">Tahapan kerja</h4></div></div>
+                <form id="program-milestone-form" class="program-milestone-form" hidden>
+                  <input type="hidden" name="id" id="program-milestone-id">
+                  <label for="program-milestone-name">Nama tahapan</label><input id="program-milestone-name" name="title" maxlength="180" placeholder="Contoh: Publikasi pendaftaran" required>
+                  <div class="form-two"><div><label for="program-milestone-due">Tenggat</label><input id="program-milestone-due" name="due_date" type="date" required></div><div><label for="program-milestone-status">Status</label><select id="program-milestone-status" name="status"><option value="pending">Belum mulai</option><option value="in_progress">Berjalan</option><option value="completed">Selesai</option></select></div></div>
+                  <label for="program-milestone-note">Catatan (opsional)</label><input id="program-milestone-note" name="completion_note" maxlength="1000" placeholder="Catatan singkat">
+                  <button class="member-option-button" id="save-program-milestone" type="submit">Tambah tahapan</button>
+                </form>
+                <div class="program-milestone-list" id="program-milestone-list"><p class="records-empty">Pilih siklus untuk mengelola tahapan.</p></div>
+              </section>
+            </section>
+            <section class="records-card program-cycle-list-card" aria-labelledby="program-cycle-list-title">
+              <div class="editor-heading"><div><span class="admin-kicker">PEMANTAUAN</span><h3 id="program-cycle-list-title">Siklus proker</h3></div><div class="program-cycle-list-actions"><span class="record-count" id="program-cycle-count">—</span><button type="button" class="text-button" id="download-program-lpj" hidden>Unduh rekap LPJ</button></div></div>
+              <div class="program-cycle-list" id="program-cycle-list"><p class="records-empty">Pilih menu untuk memuat siklus.</p></div>
+              <section class="program-cycle-recap" id="program-cycle-recap" aria-labelledby="program-cycle-recap-title" hidden><div class="editor-heading"><div><span class="admin-kicker">REKAP AGENDA &amp; ABSENSI</span><h4 id="program-cycle-recap-title">Bahan LPJ otomatis</h4></div><button class="text-button" id="program-cycle-recap-refresh" type="button">Perbarui</button></div><div id="program-cycle-recap-list"><p class="records-empty">Belum ada agenda selesai.</p></div></section>
+              <details class="program-cycle-history" id="program-cycle-history" hidden><summary>Riwayat persetujuan</summary><div id="program-cycle-history-list"></div></details>
             </section>
           </div>
         </section>
