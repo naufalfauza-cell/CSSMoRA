@@ -2,47 +2,13 @@
 .workflow-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin:2px 0 15px}
 .workflow-heading h3{margin:4px 0;font-size:clamp(1.35rem,2vw,1.8rem);letter-spacing:-.04em}
 .workflow-heading p{max-width:680px;margin:5px 0 0;color:var(--muted);font-size:.82rem;line-height:1.55}
-.finance-connection{display:flex;align-items:center;gap:9px;margin:12px 0;padding:10px 13px;border:1px solid #dbe8d9;border-radius:13px;background:#f5f9f3;color:#48654f;font-size:.77rem;font-weight:700}
-.finance-connection[data-state=connected]{border-color:#b8ddc2;background:#edf8ef;color:#276341}
-.finance-connection[data-state=error]{border-color:#edcbc5;background:#fff5f2;color:#974438}
-.finance-connection-dot{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:#a6aa99}
-.finance-connection[data-state=connected] .finance-connection-dot{background:#36a45f;box-shadow:0 0 0 3px #36a45f20}
-.finance-connection[data-state=pending] .finance-connection-dot{background:#d89b39}
-.finance-connection[data-state=error] .finance-connection-dot{background:#c45243}
-.finance-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 16px}
-.finance-summary article{display:grid;gap:5px;min-width:0;padding:13px 15px;border:1px solid var(--line);border-radius:15px;background:var(--paper)}
-.finance-summary small{color:var(--muted);font-size:.69rem;font-weight:700}
-.finance-summary strong{overflow-wrap:anywhere;color:var(--ink);font-size:1.06rem;letter-spacing:-.035em}
-.finance-workspace{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:start;gap:14px;margin-bottom:15px}
-.finance-workspace .editor-card{padding:18px;border-radius:18px}
-.finance-workspace .editor-heading{margin-bottom:8px}
-.finance-workspace .editor-heading h3{font-size:1.2rem}
-.finance-workspace .editor-card form{gap:7px;margin-top:10px}
-.finance-workspace .editor-card label:not(.publish-toggle){margin-top:3px;font-size:.72rem}
-.finance-workspace .editor-card input,.finance-workspace .editor-card select,.finance-workspace .editor-card textarea{min-height:38px;padding:9px 11px;font-size:.78rem}
-.finance-workspace .editor-card textarea{min-height:70px}
-.finance-workspace .admin-button{margin-top:6px;padding:11px 14px;border-radius:12px;font-size:.79rem}
-.finance-workspace .field-hint{font-size:.68rem}
-.finance-table-card{margin-top:14px;padding:16px 18px;border-radius:18px}
-.finance-table-card .editor-heading{align-items:center;margin-bottom:11px}
-.finance-table-card .editor-heading h3{font-size:1.13rem}
-.workflow-table-wrap{width:100%;overflow:auto}
-.workflow-table{width:100%;border-collapse:collapse;text-align:left;font-size:.72rem}
-.workflow-table th{padding:9px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:.64rem;letter-spacing:.04em;white-space:nowrap}
-.workflow-table td{padding:10px;border-bottom:1px solid #edf0e9;vertical-align:middle;white-space:nowrap}
-.workflow-table td strong,.workflow-table td small{display:block}
-.workflow-table td strong{max-width:250px;overflow:hidden;text-overflow:ellipsis;font-size:.73rem}
-.workflow-table td small{max-width:240px;margin-top:3px;overflow:hidden;color:var(--muted);font-size:.64rem;text-overflow:ellipsis}
-.workflow-table td.is-over-budget{color:#a34334;font-weight:800}
-.workflow-table td.is-within-budget{color:#31724b;font-weight:800}
-.workflow-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px}
-.workflow-row-actions button{padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--green);font-size:.65rem;font-weight:800;cursor:pointer}
-.workflow-row-actions button:hover{background:#f2f7f1}
-.workflow-table .finance-sync-error{max-width:260px;color:#a1493b;white-space:normal}
-.record-status.finance-syncing{background:#fff6df;color:#8b641d}
-.finance-direction-pill{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:.64rem;font-weight:800}
-.finance-direction-pill.income{background:#e8f5e8;color:#286b42}
-.finance-direction-pill.expense{background:#fff1e9;color:#98522d}
+.finance-launch-card{display:flex;align-items:center;gap:17px;max-width:720px;padding:22px;border:1px solid #dce8da;border-radius:22px;background:linear-gradient(130deg,#f4f8f1,#fff)}
+.finance-launch-icon{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:15px;background:#e7f1e4;color:var(--green)}
+.finance-launch-icon svg{width:23px;height:23px}
+.finance-launch-copy{min-width:0}
+.finance-launch-copy h3{margin:5px 0;font-size:1.2rem;letter-spacing:-.035em}
+.finance-launch-copy p{margin:0 0 13px;color:var(--muted);font-size:.77rem;line-height:1.5}
+.finance-launch-button{display:inline-flex;width:max-content;min-width:154px;margin:0;padding:10px 13px;border-radius:11px;font-size:.76rem;text-decoration:none}
 .program-cycle-pill,.program-period-pill{display:inline-flex;width:max-content;padding:3px 7px;border-radius:999px;background:#f0f2eb;color:#586b54;font-size:.62rem;font-weight:800}
 .program-period-pill{background:#eff5f6;color:#436775}
 .program-record-summary{display:block;margin-top:3px;color:var(--muted);font-size:.66rem;line-height:1.4}
@@ -98,11 +64,10 @@
 .public-achievement-member small{color:var(--muted);font-size:.64rem}
 .public-achievement-team-list{display:grid;gap:6px;max-height:260px;overflow:auto;padding:9px;border:1px solid var(--line);border-radius:13px}
 .public-achievement-team-list>p{margin:5px;color:var(--muted);font-size:.74rem}
-@media(max-width:900px){.finance-workspace{grid-template-columns:1fr}.achievement-record-list{grid-template-columns:1fr}}
+@media(max-width:900px){.achievement-record-list{grid-template-columns:1fr}}
 @media(max-width:700px){
- .finance-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
- .finance-summary article{padding:11px}
- .finance-summary strong{font-size:.9rem}
+ .finance-launch-card{align-items:flex-start;padding:17px;border-radius:18px}
+ .finance-launch-button{width:100%}
  .achievement-record-toolbar{flex-wrap:wrap}
  .achievement-record-toolbar input{order:3;width:100%}
  .achievement-record-toolbar .record-count{margin-left:auto}
