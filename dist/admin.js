@@ -392,16 +392,18 @@ function renderPrograms() {
     programRecordList.innerHTML='<p class="records-empty">Belum ada proker. Tambahkan nama dan foto terlebih dahulu.</p>';
     return;
   }
+  const divisionLabels={BPH:'BPH',PSDM:'PSDM',P3M:'P3M',ADVO:'Advokasi',MEDINFO:'Medinfo'};
   programRecordList.innerHTML=programs.map(program=>`<article class="program-record">
     <img src="${escapeHTML(program.photo_url)}" alt="" loading="lazy">
-    <div class="program-record-copy"><strong>${escapeHTML(program.name)}</strong><span class="record-status ${program.is_active?'published':''}">${program.is_active?'AKTIF':'NONAKTIF'}</span></div>
+    <div class="program-record-copy"><strong>${escapeHTML(program.name)}</strong><div class="program-record-meta"><span class="program-division">${escapeHTML(divisionLabels[program.division]||'Divisi belum diatur')}</span><span class="record-status ${program.is_active?'published':''}">${program.is_active?'AKTIF':'NONAKTIF'}</span></div></div>
     <div class="program-record-actions"><button type="button" data-program-action="edit" data-id="${escapeHTML(program.id)}">Edit</button><button type="button" data-program-action="toggle" data-id="${escapeHTML(program.id)}">${program.is_active?'Nonaktifkan':'Aktifkan'}</button></div>
   </article>`).join('');
   programRecordList.querySelectorAll('img').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
 }
 function renderProgramOptions(selected='') {
   const select=$('#agenda-program');
-  select.innerHTML='<option value="">Pilih proker aktif…</option>'+programs.filter(program=>program.is_active).map(program=>`<option value="${escapeHTML(program.id)}">${escapeHTML(program.name)}</option>`).join('');
+  const divisionLabels={BPH:'BPH',PSDM:'PSDM',P3M:'P3M',ADVO:'Advokasi',MEDINFO:'Medinfo'};
+  select.innerHTML='<option value="">Pilih proker aktif…</option>'+programs.filter(program=>program.is_active).map(program=>`<option value="${escapeHTML(program.id)}">${escapeHTML(program.name)}${program.division?` · ${escapeHTML(divisionLabels[program.division]||program.division)}`:''}</option>`).join('');
   if(selected&&programs.some(program=>program.id===selected))select.value=selected;
   select.disabled=!programs.some(program=>program.is_active);
 }
@@ -436,6 +438,7 @@ programRecordList.addEventListener('click',async event=>{
   if(button.dataset.programAction==='edit') {
     $('#program-record-id').value=program.id;
     programForm.elements.name.value=program.name;
+    programForm.elements.division.value=program.division||'';
     $('#program-active').checked=program.is_active;
     programPhotoInput.value='';
     programPhotoInput.required=false;
@@ -463,6 +466,11 @@ programForm.addEventListener('submit',async event=>{
   const existingId=$('#program-record-id').value;
   const old=programs.find(item=>item.id===existingId);
   const file=programPhotoInput.files[0];
+  const division=programForm.elements.division.value;
+  if(!['BPH','PSDM','P3M','ADVO','MEDINFO'].includes(division)) {
+    showMessage('#program-editor-message','Pilih divisi proker terlebih dahulu.','error');
+    return;
+  }
   if(!existingId&&!file) {
     showMessage('#program-editor-message','Pilih foto untuk proker ini.','error');
     return;
@@ -487,7 +495,7 @@ programForm.addEventListener('submit',async event=>{
       await uploadProgramPhoto(file,uploadedPath);
       photoPath=uploadedPath;photoUrl=objectUrl(uploadedPath);
     }
-    const payload={name:programForm.elements.name.value.trim(),is_active:$('#program-active').checked};
+    const payload={name:programForm.elements.name.value.trim(),division,is_active:$('#program-active').checked};
     if(file){payload.photo_path=photoPath;payload.photo_url=photoUrl;}
     if(existingId)await api(`agenda_programs?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
     else await api('agenda_programs',{method:'POST',body:{id,...payload,photo_path:photoPath,photo_url:photoUrl}});

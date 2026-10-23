@@ -148,6 +148,11 @@
 .agenda-next-step>strong{font-size:.82rem;line-height:1.45}
 .agenda-next-step>button{padding:9px 12px;border:0;border-radius:999px;background:var(--green);color:#fff;font-size:.73rem;font-weight:800;cursor:pointer}
 .agenda-next-step>button b{margin-left:7px}
+
+/* Show each saved program's originating division without widening the library rows. */
+.program-record-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.program-record-meta .program-division{width:max-content;padding:3px 8px;border-radius:999px;background:#eef4ea;color:#48634c;font-size:.66rem;font-weight:800;line-height:1.2}
+.program-record-meta .record-status{font-size:.62rem}
 #agenda-program:disabled{background:#f0f1ec;color:#818981}
 @media(max-width:900px){.program-library-grid{grid-template-columns:1fr}}
 @media(max-width:600px){
