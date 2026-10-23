@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261022-agenda-jarkoman-v1">
+  <link rel="stylesheet" href="./admin.css?v=20261023-sistem-prestasi-v2">
   <link rel="stylesheet" href="./workflows.css?v=20261023-akunpro-launch-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261022-rescreen-fixes" defer></script>
+  <script src="./admin.js?v=20261023-sistem-prestasi-v2" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
   <script src="./workflows.js?v=20261023-akunpro-launch-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261022-copy-pills">
@@ -73,9 +73,6 @@
           </div>
           <div class="sidebar-nav-label">MENU</div>
           <nav class="admin-tabs module-grid" role="tablist" aria-label="Pilih bidang pengelolaan">
-        <button class="admin-tab is-active" id="tab-competitions" type="button" role="tab" aria-selected="true" aria-controls="competitions-panel">
-          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v2a4 4 0 0 0 4 4"/><path d="M16 6h3v2a4 4 0 0 1-4 4"/><path d="M12 12v4m-3 4h6m-5-4h4l1 4H9l1-4Z"/></svg></span><span class="module-copy"><strong>Lomba</strong><small>Poster, informasi, dan pendaftaran</small></span><span class="module-state is-ready">Aktif</span>
-        </button>
         <button class="admin-tab" id="tab-agenda" type="button" role="tab" aria-selected="false" aria-controls="agenda-panel">
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 9h17"/><path d="M12 12v3l2 1"/></svg></span><span class="module-copy"><strong>Kegiatan</strong><small>Proker, agenda, dan kalender</small></span><span class="module-state is-ready">Aktif</span>
         </button>
@@ -85,11 +82,8 @@
         <button class="admin-tab" id="tab-secretariat" type="button" role="tab" aria-selected="false" aria-controls="secretariat-panel">
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 5 20m10-16-2 16M3 9h17M2 15h17"/><path d="M18 4h3v16h-4"/></svg></span><span class="module-copy"><strong>Sekretaris</strong><small>Anggota, absensi, dan persuratan</small></span><span class="module-state is-ready">Aktif</span>
         </button>
-        <button class="admin-tab" id="tab-achievements" type="button" role="tab" aria-selected="false" aria-controls="achievements-panel">
-          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.9L12 3Z"/><path d="m9.5 20-1 2m6-2 1 2"/></svg></span><span class="module-copy"><strong>Prestasi</strong><small>Pengajuan biaya &amp; persetujuan</small></span><span class="module-state is-ready">Aktif</span>
-        </button>
-        <button class="admin-tab" id="tab-achievement-recap" type="button" role="tab" aria-selected="false" aria-controls="achievement-recap-panel" hidden>
-          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V9m7 11V4m7 16v-7"/><path d="M3 20h18"/></svg></span><span class="module-copy"><strong>Rekap prestasi</strong><small>Verifikasi hasil lomba</small></span><span class="module-state is-ready">Aktif</span>
+        <button class="admin-tab is-active" id="tab-achievements" type="button" role="tab" aria-selected="true" aria-controls="achievements-panel">
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v2a4 4 0 0 0 4 4m7-6h3v2a4 4 0 0 1-4 4M12 12v4m-3 4h6l-1-4h-4l-1 4Z"/><path d="m8 20-1 2m9-2 1 2"/></svg></span><span class="module-copy"><strong>Sistem prestasi</strong><small>Dana dan capaian lomba</small></span><span class="module-state is-ready">Aktif</span>
         </button>
           <button class="admin-tab" id="tab-access" type="button" role="tab" aria-selected="false" aria-controls="access-panel" hidden>
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M17 14a5 5 0 0 1 3.5 5"/></svg></span><span class="module-copy"><strong>Akses pengurus</strong><small>Kelola peran dan hak akses</small></span><span class="module-state">Ketua/Wakil</span>
@@ -106,7 +100,7 @@
           <header class="admin-topbar">
             <div class="admin-topbar-leading">
               <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Ciutkan atau tampilkan navigasi" aria-controls="admin-sidebar" aria-expanded="true"><span aria-hidden="true">☰</span></button>
-              <h2 id="dashboard-title">Lomba</h2>
+              <h2 id="dashboard-title">Sistem prestasi</h2>
             </div>
             <div class="admin-topbar-user">
               <div class="admin-user-copy"><span>RUANG PENGURUS</span><strong id="signed-in-as"></strong></div>
@@ -115,30 +109,6 @@
             </div>
           </header>
           <div class="admin-content-area">
-      <div class="management-panel" id="competitions-panel" role="tabpanel" aria-labelledby="tab-competitions">
-      <div class="admin-columns">
-        <section class="editor-card" aria-labelledby="editor-title">
-          <div class="editor-heading"><div><span class="admin-kicker">FORM LOMBA</span><h3 id="editor-title">Tambah lomba</h3></div><button class="text-button" id="form-reset" type="button">Kosongkan</button></div>
-          <form id="competition-form">
-            <input id="record-id" name="recordId" type="hidden">
-            <label for="title">Nama lomba</label><input id="title" name="title" maxlength="120" required>
-            <label for="subtitle">Nama program / subjudul</label><input id="subtitle" name="subtitle" maxlength="160">
-            <div class="form-two"><div><label for="category">Bidang</label><select id="category" name="category" required><option>Esai &amp; Riset</option><option>Bisnis &amp; Inovasi</option><option>Desain &amp; Media</option><option>Debat &amp; Public Speaking</option></select></div><div><label for="organizer">Penyelenggara</label><input id="organizer" name="organizer" maxlength="160" required></div></div>
-            <div class="form-two"><div><label for="deadline">Batas pendaftaran</label><input id="deadline" name="deadline" type="date" required></div><div><label for="fee">Biaya pendaftaran</label><input id="fee" name="fee" placeholder="Gratis / Rp50.000 per tim" maxlength="80" required></div></div>
-            <label for="competition-poster-file">Poster lomba</label><input id="competition-poster-file" type="file" accept="image/jpeg,image/png,image/webp"><input id="poster" name="poster" type="hidden"><small>JPG, PNG, atau WebP. Gambar dikompres otomatis.</small>
-            <label for="registration">Tautan pendaftaran resmi</label><input id="registration" name="registration" type="url" placeholder="https://…">
-            <label for="description">Deskripsi dan catatan</label><textarea id="description" name="description" rows="4" maxlength="1200"></textarea>
-            <label class="publish-toggle"><input id="published" name="published" type="checkbox"><span><strong>Terbitkan sekarang</strong><small>Lomba berstatus draft hanya terlihat oleh admin.</small></span></label>
-            <button class="admin-button" id="save-competition" type="submit">Simpan lomba <span aria-hidden="true">↗</span></button>
-            <p class="form-message" id="editor-message" role="status" aria-live="polite"></p>
-          </form>
-        </section>
-        <section class="records-card" aria-labelledby="records-title">
-          <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="records-title">Lomba tersimpan</h3></div><span class="record-count" id="record-count">—</span></div>
-          <div class="record-list" id="record-list"><p class="records-empty">Memuat data…</p></div>
-        </section>
-      </div>
-      </div>
       <section class="management-panel agenda-management" id="agenda-panel" role="tabpanel" aria-labelledby="tab-agenda" hidden>
         <nav class="agenda-admin-tabs" role="tablist" aria-label="Kelola proker dan agenda">
           <button class="agenda-admin-tab is-active" id="tab-programs" type="button" role="tab" aria-selected="true" aria-controls="programs-panel">1 · Database proker</button>
@@ -165,7 +135,7 @@
                 <label for="program-description">Gambaran proker</label><textarea id="program-description" name="description" rows="3" maxlength="2000" placeholder="Apa yang akan dilaksanakan?"></textarea>
                 <label for="program-goals">Tujuan</label><textarea id="program-goals" name="goals" rows="2" maxlength="1200" placeholder="Tujuan utama proker"></textarea>
                 <label for="program-target">Sasaran</label><textarea id="program-target" name="target" rows="2" maxlength="800" placeholder="Peserta atau penerima manfaat"></textarea>
-                <div class="form-two"><div><label for="program-schedule">Rencana waktu</label><input id="program-schedule" name="planned_schedule" maxlength="240" placeholder="Contoh: Oktober 2026"></div><div><label for="program-pic">PIC</label><input id="program-pic" name="pic" maxlength="240" placeholder="Nama / jabatan penanggung jawab"></div></div>
+                <div class="form-two"><div><label for="program-schedule">Rencana waktu</label><input id="program-schedule" name="planned_schedule" type="date" aria-describedby="program-schedule-hint"><small class="field-hint" id="program-schedule-hint">Pilih satu tanggal melalui kalender.</small><small class="field-hint program-schedule-legacy" id="program-schedule-legacy" hidden></small><button class="program-schedule-clear" id="program-schedule-clear" type="button" hidden>Hapus tanggal lama</button></div><div><label for="program-pic">PIC</label><input id="program-pic" name="pic" maxlength="240" placeholder="Nama / jabatan penanggung jawab"></div></div>
                 <label for="program-budget">Rencana anggaran (Rp)</label><input id="program-budget" name="budget_amount" type="number" min="0" max="10000000000" step="1" placeholder="Opsional">
                 <label for="program-photo">Foto kegiatan</label><input id="program-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required>
                 <p class="field-hint">Format JPG, PNG, atau WebP. Maksimal 8 MB.</p>
@@ -374,6 +344,36 @@
         </section>
       </section>
       <section class="management-panel achievement-admin-panel" id="achievements-panel" role="tabpanel" aria-labelledby="tab-achievements" hidden>
+        <nav class="achievement-admin-tabs" role="tablist" aria-label="Bagian sistem prestasi">
+          <button class="achievement-admin-tab is-active" id="tab-prestasi-competitions" type="button" role="tab" aria-selected="true" aria-controls="achievement-competition-panel" data-prestasi-section="competitions">Input lomba</button>
+          <button class="achievement-admin-tab" id="tab-achievement-applications" type="button" role="tab" aria-selected="false" aria-controls="achievement-funding-panel" data-prestasi-section="funding">Pengajuan dana</button>
+          <button class="achievement-admin-tab" id="tab-achievement-verification" type="button" role="tab" aria-selected="false" aria-controls="achievement-verification-panel" data-prestasi-section="verification">Verifikasi capaian</button>
+        </nav>
+      <section class="achievement-admin-subpanel" id="achievement-competition-panel" role="tabpanel" aria-labelledby="tab-prestasi-competitions" hidden>
+      <div class="admin-columns">
+        <section class="editor-card" aria-labelledby="editor-title">
+          <div class="editor-heading"><div><span class="admin-kicker">FORM LOMBA</span><h3 id="editor-title">Tambah lomba</h3></div><button class="text-button" id="form-reset" type="button">Kosongkan</button></div>
+          <form id="competition-form">
+            <input id="record-id" name="recordId" type="hidden">
+            <label for="title">Nama lomba</label><input id="title" name="title" maxlength="120" required>
+            <label for="subtitle">Nama program / subjudul</label><input id="subtitle" name="subtitle" maxlength="160">
+            <div class="form-two"><div><label for="category">Bidang</label><select id="category" name="category" required><option>Esai &amp; Riset</option><option>Bisnis &amp; Inovasi</option><option>Desain &amp; Media</option><option>Debat &amp; Public Speaking</option></select></div><div><label for="organizer">Penyelenggara</label><input id="organizer" name="organizer" maxlength="160" required></div></div>
+            <div class="form-two"><div><label for="deadline">Batas pendaftaran</label><input id="deadline" name="deadline" type="date" required></div><div><label for="fee">Biaya pendaftaran</label><input id="fee" name="fee" placeholder="Gratis / Rp50.000 per tim" maxlength="80" required></div></div>
+            <label for="competition-poster-file">Poster lomba</label><input id="competition-poster-file" type="file" accept="image/jpeg,image/png,image/webp"><input id="poster" name="poster" type="hidden"><small>JPG, PNG, atau WebP. Gambar dikompres otomatis.</small>
+            <label for="registration">Tautan pendaftaran resmi</label><input id="registration" name="registration" type="url" placeholder="https://…">
+            <label for="description">Deskripsi dan catatan</label><textarea id="description" name="description" rows="4" maxlength="1200"></textarea>
+            <label class="publish-toggle"><input id="published" name="published" type="checkbox"><span><strong>Terbitkan sekarang</strong><small>Lomba berstatus draft hanya terlihat oleh admin.</small></span></label>
+            <button class="admin-button" id="save-competition" type="submit">Simpan lomba <span aria-hidden="true">↗</span></button>
+            <p class="form-message" id="editor-message" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+        <section class="records-card" aria-labelledby="records-title">
+          <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="records-title">Lomba tersimpan</h3></div><span class="record-count" id="record-count">—</span></div>
+          <div class="record-list" id="record-list"><p class="records-empty">Memuat data…</p></div>
+        </section>
+      </div>
+      </section>
+        <section class="achievement-admin-subpanel" id="achievement-funding-panel" role="tabpanel" aria-labelledby="tab-achievement-applications">
         <div class="achievement-admin-heading"><div><span class="admin-kicker">PENGAJUAN BANTUAN LOMBA</span><h3>Peninjauan prestasi</h3><p>Setiap pengajuan disetujui Bendahara terlebih dahulu, lalu Ketua.</p></div><button class="member-option-button" id="achievement-refresh" type="button">↻ Muat ulang</button></div>
         <p class="form-message achievement-action-message" id="achievement-action-message" role="status" aria-live="polite"></p>
         <div class="achievement-admin-toolbar"><div class="achievement-admin-filters" role="group" aria-label="Filter status pengajuan"><button type="button" class="achievement-filter is-active" data-achievement-filter="all">Semua</button><button type="button" class="achievement-filter" data-achievement-filter="pending_bendahara">Menunggu Bendahara</button><button type="button" class="achievement-filter" data-achievement-filter="pending_ketua">Menunggu Ketua</button><button type="button" class="achievement-filter" data-achievement-filter="approved">Disetujui</button><button type="button" class="achievement-filter" data-achievement-filter="rejected">Ditolak</button></div><span class="record-count" id="achievement-count">—</span></div>
@@ -382,12 +382,13 @@
 
 
         </div>
-      </section>
-      <section class="management-panel achievement-recap-management" id="achievement-recap-panel" role="tabpanel" aria-labelledby="tab-achievement-recap" hidden>
+        </section>
+        <section class="achievement-admin-subpanel achievement-recap-management" id="achievement-verification-panel" role="tabpanel" aria-labelledby="tab-achievement-verification" hidden>
         <div class="workflow-heading"><div><span class="admin-kicker">REKAP PRESTASI</span><h3>Verifikasi capaian lomba</h3><p>Hanya capaian yang disetujui yang akan tampil pada daftar publik.</p></div><button class="member-option-button" id="achievement-record-refresh" type="button">↻ Muat ulang</button></div>
         <p class="form-message" id="achievement-record-message" role="status" aria-live="polite"></p>
         <div class="achievement-record-toolbar"><div class="achievement-admin-filters" role="group" aria-label="Filter status capaian"><button type="button" class="achievement-filter is-active" data-achievement-record-filter="pending">Menunggu</button><button type="button" class="achievement-filter" data-achievement-record-filter="approved">Disetujui</button><button type="button" class="achievement-filter" data-achievement-record-filter="rejected">Ditolak</button><button type="button" class="achievement-filter" data-achievement-record-filter="all">Semua</button></div><input id="achievement-record-search" type="search" placeholder="Cari lomba atau nama…" aria-label="Cari capaian prestasi"><span class="record-count" id="achievement-record-count">—</span></div>
         <div class="achievement-record-list" id="achievement-record-list"><p class="records-empty">Masuk ke sistem untuk memuat capaian.</p></div>
+        </section>
       </section>
       <dialog class="workflow-proof-dialog" id="achievement-record-proof-dialog" aria-labelledby="achievement-record-proof-title">
         <form method="dialog"><button class="workflow-proof-close" id="achievement-record-proof-close" aria-label="Tutup sertifikat">×</button></form>

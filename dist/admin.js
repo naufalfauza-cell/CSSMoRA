@@ -9,6 +9,8 @@ let session = null;
 let isCompetitionAdmin = false;
 let isSecretariatAdmin = false;
 let achievementRoles = [];
+let canReviewAchievementApplications = false;
+let canVerifyAchievementRecords = false;
 let isLeadership = false;
 let canManageRoles = false;
 let assignedRoles = [];
@@ -32,6 +34,11 @@ const loadedAdminData = new Set();
 const loadingAdminData = new Map();
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const programDateInputValue = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value||'')) ? String(value) : '';
+const programScheduleLabel = value => {
+  const date=programDateInputValue(value);
+  return date?new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Jakarta'}).format(new Date(`${date}T00:00:00+07:00`)):String(value||'—');
+};
 const baseHeaders = () => ({apikey:config.publishableKey,'Content-Type':'application/json'});
 const showMessage = (selector,message,kind='') => {
   const node=$(selector);
@@ -116,21 +123,9 @@ async function ensureAdminData(key, loader) {
 }
 
 async function loadAdminPanel(panelId) {
-  if(panelId==='competitions-panel') {
-    await ensureAdminData('competitions',loadRecords);
-    return;
-  }
   if(panelId==='agenda-panel') {
     await ensureAdminData('programs',loadPrograms);
     await ensureAdminData('agenda',loadAgenda);
-    return;
-  }
-  if(panelId==='finance-panel') {
-    await window.CSSMoRAWorkflows?.loadFinanceDashboard();
-    return;
-  }
-  if(panelId==='achievement-recap-panel') {
-    await window.CSSMoRAWorkflows?.loadAchievementRecords();
     return;
   }
   if(panelId==='secretariat-panel') {
@@ -140,13 +135,35 @@ async function loadAdminPanel(panelId) {
     return;
   }
   if(panelId==='achievements-panel') {
-    await loadAchievementDashboard();
+    const section=document.querySelector('.achievement-admin-tab.is-active')?.dataset.prestasiSection;
+    if(section==='competitions')await ensureAdminData('competitions',loadRecords);
+    else if(section==='verification')await window.CSSMoRAWorkflows?.loadAchievementRecords();
+    else await loadAchievementDashboard();
     return;
   }
   if(panelId==='access-panel'&&canManageRoles) {
     await loadRoleAssignments();
   }
 }
+
+function selectAchievementAdminSection(section,{load=false}={}) {
+  const tab=document.querySelector(`.achievement-admin-tab[data-prestasi-section="${section}"]`);
+  if(!tab||tab.hidden)return;
+  document.querySelectorAll('.achievement-admin-tab').forEach(item=>{
+    const selected=item===tab;
+    item.classList.toggle('is-active',selected);
+    item.setAttribute('aria-selected',String(selected));
+  });
+  document.querySelectorAll('.achievement-admin-subpanel').forEach(panel=>{
+    panel.hidden=panel.id!==tab.getAttribute('aria-controls');
+  });
+  try{localStorage.setItem('cssmora-admin-prestasi-section',section);}catch{}
+  if(load&&document.querySelector('#tab-achievements.is-active'))void loadAdminPanel('achievements-panel');
+}
+
+document.querySelectorAll('.achievement-admin-tab').forEach(tab=>tab.addEventListener('click',()=>{
+  selectAchievementAdminSection(tab.dataset.prestasiSection,{load:true});
+}));
 
 async function checkAdmin() {
   const user=session?.user;
@@ -159,6 +176,8 @@ async function checkAdmin() {
   isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen');
   isSecretariatAdmin=isLeadership||roleSet.has('sekretaris');
   achievementRoles=isLeadership?['ketua','bendahara']:(roleSet.has('bendahara')?['bendahara']:[]);
+  canReviewAchievementApplications=isLeadership||roleSet.has('bendahara');
+  canVerifyAchievementRecords=isLeadership||roleSet.has('bph_departemen');
   if(!roleSet.size)throw Object.assign(new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.'),{status:403});
 
   $('#signed-in-as').textContent=user.email;
@@ -166,16 +185,28 @@ async function checkAdmin() {
   adminView.hidden=false;
 
   const allowed=new Set();
-  if(isCompetitionAdmin){allowed.add('tab-competitions');allowed.add('tab-agenda');}
-  if(isLeadership||roleSet.has('bendahara')){allowed.add('tab-finance');allowed.add('tab-achievements');}
-  if(isLeadership||roleSet.has('bph_departemen'))allowed.add('tab-achievement-recap');
+  if(isCompetitionAdmin)allowed.add('tab-agenda');
+  if(isLeadership||roleSet.has('bendahara'))allowed.add('tab-finance');
+  if(isCompetitionAdmin||canReviewAchievementApplications||canVerifyAchievementRecords)allowed.add('tab-achievements');
   if(isSecretariatAdmin)allowed.add('tab-secretariat');
   if(canManageRoles)allowed.add('tab-access');
   document.querySelectorAll('.admin-tab').forEach(tab=>{tab.hidden=!allowed.has(tab.id);});
 
+  document.querySelectorAll('.achievement-admin-tab').forEach(tab=>{
+    tab.hidden=tab.dataset.prestasiSection==='competitions'?!isCompetitionAdmin:
+      tab.dataset.prestasiSection==='funding'?!canReviewAchievementApplications:!canVerifyAchievementRecords;
+  });
+  const storedPrestasiSection=(()=>{try{return localStorage.getItem('cssmora-admin-prestasi-section');}catch{return null;}})();
+  const preferredPrestasiSection=isCompetitionAdmin?'competitions':canReviewAchievementApplications?'funding':'verification';
+  const availablePrestasiSection=section=>section==='competitions'?isCompetitionAdmin:
+    section==='funding'?canReviewAchievementApplications:section==='verification'&&canVerifyAchievementRecords;
+  const prestasiSection=availablePrestasiSection(storedPrestasiSection)?storedPrestasiSection:preferredPrestasiSection;
+  selectAchievementAdminSection(prestasiSection);
+
   const savedTab=(()=>{try{return localStorage.getItem('cssmora-admin-active-tab');}catch{return null;}})();
-  const preferred=isCompetitionAdmin?'tab-competitions':isLeadership?'tab-finance':roleSet.has('bendahara')?'tab-achievements':isSecretariatAdmin?'tab-secretariat':'tab-access';
-  const target=Array.from(document.querySelectorAll('.admin-tab')).find(tab=>tab.id===savedTab&&!tab.hidden)
+  const preferred=isCompetitionAdmin?'tab-achievements':isLeadership?'tab-finance':roleSet.has('bendahara')?'tab-achievements':isSecretariatAdmin?'tab-secretariat':'tab-access';
+  const restoredTab=['tab-achievement-recap','tab-competitions'].includes(savedTab)?'tab-achievements':savedTab;
+  const target=Array.from(document.querySelectorAll('.admin-tab')).find(tab=>tab.id===restoredTab&&!tab.hidden)
     ||Array.from(document.querySelectorAll('.admin-tab')).find(tab=>tab.id===preferred&&!tab.hidden)
     ||Array.from(document.querySelectorAll('.admin-tab')).find(tab=>!tab.hidden);
   if(target)target.click();
@@ -413,7 +444,7 @@ function renderPrograms() {
     <img src="${escapeHTML(program.photo_url)}" alt="" loading="lazy">
     <div class="program-record-copy"><strong>${escapeHTML(program.name)}</strong><div class="program-record-meta"><span class="program-division">${escapeHTML(divisionLabels[program.division]||'Divisi belum diatur')}</span><span class="record-status ${program.is_active?'published':''}">${program.is_active?'AKTIF':'NONAKTIF'}</span><span class="program-cycle-pill">${escapeHTML(detail.cycle||'Siklus belum diisi')}</span>${detail.period_label?`<span class="program-period-pill">${escapeHTML(detail.period_label)}</span>`:''}</div><small class="program-record-summary">${escapeHTML(detail.description||'Belum ada deskripsi')}${detail.pic?` · PIC ${escapeHTML(detail.pic)}`:''}${detail.budget_amount!==null&&detail.budget_amount!==undefined?` · ${escapeHTML(money(detail.budget_amount))}`:''}</small></div>
     <div class="program-record-actions"><button type="button" data-program-action="edit" data-id="${escapeHTML(program.id)}">Edit</button><button type="button" data-program-action="toggle" data-id="${escapeHTML(program.id)}">${program.is_active?'Nonaktifkan':'Aktifkan'}</button><button type="button" class="program-delete-button" data-program-action="delete" data-id="${escapeHTML(program.id)}" aria-label="Hapus proker ${escapeHTML(program.name)}" title="Hapus proker"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v6m4-6v6"/></svg></button></div>
-    <details class="program-record-details"><summary>Rincian database</summary><div><span><small>Tujuan</small>${escapeHTML(detail.goals||'—')}</span><span><small>Sasaran</small>${escapeHTML(detail.target||'—')}</span><span><small>Rencana waktu</small>${escapeHTML(detail.planned_schedule||'—')}</span></div></details>
+    <details class="program-record-details"><summary>Rincian database</summary><div><span><small>Tujuan</small>${escapeHTML(detail.goals||'—')}</span><span><small>Sasaran</small>${escapeHTML(detail.target||'—')}</span><span><small>Rencana waktu</small>${escapeHTML(programScheduleLabel(detail.planned_schedule))}</span></div></details>
   </article>`;}).join('');
   programRecordList.querySelectorAll('img').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
 }
@@ -431,6 +462,10 @@ function clearProgramEditor() {
   programPhotoInput.required=true;
   $('#program-active').checked=true;
   programForm.elements.cycle.value='Tahunan';
+  programForm.elements.planned_schedule.dataset.legacyValue='';
+  programForm.elements.planned_schedule.dataset.clearLegacy='false';
+  $('#program-schedule-legacy').hidden=true;
+  $('#program-schedule-clear').hidden=true;
   $('#program-editor-title').textContent='Tambah proker';
   $('#save-program').innerHTML='Simpan proker <span aria-hidden="true">↗</span>';
   $('#program-photo-preview').hidden=true;
@@ -438,6 +473,21 @@ function clearProgramEditor() {
 }
 $('#program-form-reset').addEventListener('click',clearProgramEditor);
 $('#program-refresh').addEventListener('click',loadPrograms);
+programForm.elements.planned_schedule.addEventListener('input',()=>{
+  const input=programForm.elements.planned_schedule;
+  input.dataset.legacyValue='';
+  input.dataset.clearLegacy='false';
+  $('#program-schedule-legacy').hidden=true;
+  $('#program-schedule-clear').hidden=true;
+});
+$('#program-schedule-clear').addEventListener('click',()=>{
+  const input=programForm.elements.planned_schedule;
+  input.value='';
+  input.dataset.legacyValue='';
+  input.dataset.clearLegacy='true';
+  $('#program-schedule-legacy').hidden=true;
+  $('#program-schedule-clear').hidden=true;
+});
 programPhotoInput.addEventListener('change',()=>{
   const file=programPhotoInput.files[0];
   const preview=$('#program-photo-preview');
@@ -463,7 +513,14 @@ programRecordList.addEventListener('click',async event=>{
     programForm.elements.description.value=detail.description||'';
     programForm.elements.goals.value=detail.goals||'';
     programForm.elements.target.value=detail.target||'';
-    programForm.elements.planned_schedule.value=detail.planned_schedule||'';
+    const schedule=String(detail.planned_schedule||'');
+    const scheduleInput=programForm.elements.planned_schedule;
+    scheduleInput.value=programDateInputValue(schedule);
+    scheduleInput.dataset.legacyValue=schedule&&!scheduleInput.value?schedule:'';
+    scheduleInput.dataset.clearLegacy='false';
+    $('#program-schedule-legacy').textContent=scheduleInput.dataset.legacyValue?`Jadwal lama: ${schedule}`:'';
+    $('#program-schedule-legacy').hidden=!scheduleInput.dataset.legacyValue;
+    $('#program-schedule-clear').hidden=!scheduleInput.dataset.legacyValue;
     programForm.elements.pic.value=detail.pic||'';
     programForm.elements.budget_amount.value=detail.budget_amount??'';
     $('#program-active').checked=program.is_active;
@@ -559,7 +616,9 @@ programForm.addEventListener('submit',async event=>{
     const rawBudget=programForm.elements.budget_amount.value;
     const detailPayload={program_id:id,cycle:programForm.elements.cycle.value.trim(),period_label:programForm.elements.period_label.value.trim()||null,
       description:programForm.elements.description.value.trim(),goals:programForm.elements.goals.value.trim(),target:programForm.elements.target.value.trim(),
-      planned_schedule:programForm.elements.planned_schedule.value.trim(),pic:programForm.elements.pic.value.trim(),budget_amount:rawBudget?Number(rawBudget):null};
+      planned_schedule:programForm.elements.planned_schedule.value||(
+        programForm.elements.planned_schedule.dataset.clearLegacy==='true'?'':programForm.elements.planned_schedule.dataset.legacyValue||''
+      ),pic:programForm.elements.pic.value.trim(),budget_amount:rawBudget?Number(rawBudget):null};
     const saveDetails=()=>api('cssmora_program_details?on_conflict=program_id',{method:'POST',body:detailPayload,extraHeaders:{Prefer:'resolution=merge-duplicates,return=representation'}});
     if(existingId){
       await saveDetails();

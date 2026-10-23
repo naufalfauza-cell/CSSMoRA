@@ -2021,6 +2021,38 @@
 .achievement-payment-file a{color:#23633e}
 @media(max-width:650px){.achievement-approved-table{min-width:620px}.achievement-payment-file>span{flex-basis:100%}}
 
+/* Keep the program library columns equal and make one-off dates easy to scan. */
+.program-library-grid{align-items:stretch}
+.program-schedule-legacy{color:#8a7040}
+.program-schedule-clear{justify-self:start;padding:0;border:0;background:transparent;color:#9a483b;font:600 10px 'Plus Jakarta Sans',sans-serif;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.program-library-grid .program-record-details{grid-column:1/-1}
+@media(min-width:901px){
+ .admin-page .program-library-grid>.records-card{display:flex;min-height:100%;flex-direction:column}
+ .admin-page .program-library-grid .program-record-list{flex:1 1 auto;max-height:calc(100vh - 300px);min-height:220px;align-content:start}
+}
+
+/* One System Prestasi menu with role-filtered work areas inside it. */
+.achievement-admin-tabs{display:flex;flex-wrap:wrap;gap:5px;width:max-content;max-width:100%;margin:0 0 16px;padding:4px;border:1px solid #e2e9df;border-radius:999px;background:#fff}
+.achievement-admin-tab{min-height:34px;padding:0 13px;border:0;border-radius:999px;background:transparent;color:#617265;font:600 11px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:background .15s,color .15s,box-shadow .15s}
+.achievement-admin-tab:hover{background:#eef4eb;color:#245d3c}
+.achievement-admin-tab.is-active{background:#245d3c;color:#fff;box-shadow:0 2px 6px #173e2a1c}
+.achievement-admin-tab:focus-visible{outline:2px solid #8fb78d;outline-offset:2px}
+.achievement-admin-subpanel[hidden]{display:none!important}
+.achievement-admin-subpanel{min-width:0}
+@media(max-width:650px){.achievement-admin-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr;border-radius:12px}.achievement-admin-tab{padding-inline:8px}}
+
+/* Let the navigation use the full rail and keep archive access at its foot. */
+.admin-page .admin-sidebar{display:flex;flex-direction:column}
+.admin-page .admin-sidebar .admin-tabs.module-grid{flex:1 1 auto;align-content:space-evenly;grid-auto-rows:minmax(42px,auto);padding-block:8px}
+.admin-page .drive-nav-label{margin-top:14px}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab{min-height:46px;color:#f2f7f1}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active{color:#fff;background:#ffffff20;box-shadow:inset 3px 0 #e2f38f}
+.admin-page .admin-sidebar .admin-tabs.module-grid .module-icon{width:32px;height:32px;min-height:32px;flex-basis:32px;border:1px solid #ffffff18;border-radius:10px;background:linear-gradient(145deg,#ffffff25,#ffffff0c);color:#e4f28f;box-shadow:0 2px 8px #102a1d24}
+.admin-page .admin-sidebar .admin-tabs.module-grid .module-icon svg{width:19px;height:19px;stroke-width:1.75;filter:drop-shadow(0 1px 1px #102a1d4d)}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active .module-icon{border-color:#ffffff35;background:linear-gradient(145deg,#e3f398,#b5d77d);color:#244d3f;box-shadow:0 2px 8px #0d2e1e44}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab:focus-visible{outline:2px solid #e5f49a;outline-offset:2px}
+@media(max-width:900px){.admin-page .admin-sidebar .admin-tabs.module-grid{min-height:240px;align-content:space-evenly}}
+
 /* Google Drive archive shortcut in the admin sidebar. */
 .admin-page .drive-nav-label{margin-top:20px}
 .admin-page .drive-shortcut{display:flex;align-items:center;gap:9px;min-height:48px;margin:0 4px;padding:6px 9px;border:1px solid #ffffff1c;border-radius:8px;color:#fff;text-decoration:none;transition:background .15s,border-color .15s}

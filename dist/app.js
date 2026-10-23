@@ -18,10 +18,11 @@ function render() {
     return matchedText && (category==='all'||item.category===category) && (status==='all'||(status==='open')===isOpen(item));
   }).sort((a,b) => Number(isOpen(b))-Number(isOpen(a)) || (isOpen(a)?a.deadline.localeCompare(b.deadline):b.deadline.localeCompare(a.deadline)));
   grid.innerHTML = items.map(item => `<button class="competition-card" type="button" data-id="${escapeHTML(item.id)}" aria-label="Lihat detail ${escapeHTML(item.title)}">
-    <div class="card-poster">${poster(item)}<span class="status-badge ${isOpen(item)?'is-open':'is-closed'}">${isOpen(item)?'● Masih dibuka':'● Sudah ditutup'}</span></div>
-    <div class="card-meta"><span>${escapeHTML(item.category)}</span><span>CSSMoRA UNAIR</span></div>
+    <div class="card-poster">${poster(item)}<span class="status-badge ${isOpen(item)?'is-open':'is-closed'}">${isOpen(item)?'Masih dibuka':'Sudah ditutup'}</span></div>
+    <div class="card-meta"><span>${escapeHTML(item.category)}</span></div>
     <div class="card-title-row"><h3>${escapeHTML(item.title)}</h3><span aria-hidden="true">↗</span></div>
-    <p>${escapeHTML(item.organizer)}</p><div class="card-bottom"><span>Batas pendaftaran</span><strong>${formatDate(item.deadline)}</strong></div>
+    <p>${escapeHTML(item.organizer)}</p>
+    <div class="competition-card-facts"><span><small>Pendaftaran tutup</small><strong>${formatDate(item.deadline)}</strong></span><span><small>Biaya</small><strong>${escapeHTML(item.fee||'Lihat detail')}</strong></span></div>
   </button>`).join('');
   $('#result-count').textContent = `${items.length} lomba ditemukan`;
   $('#empty-state').hidden = items.length !== 0;
@@ -42,14 +43,12 @@ function detail(item, updateURL=true) {
   $('#catalog-page').hidden=true;
   $('#competition-detail-page').hidden=false;
   $('#detail-content').innerHTML=`<div class="detail-poster">${poster(item)}</div><div class="detail-info">
-    <p class="overline">INFO LOMBA</p>
     <span class="detail-status ${open?'is-open':'is-closed'}">${open?'● Masih dibuka':'● Sudah ditutup'}</span>
     <h1 id="detail-title">${escapeHTML(item.title)}</h1>
     <div class="detail-organizer"><small>PENYELENGGARA</small><strong>${escapeHTML(item.organizer||item.subtitle||'Belum dicantumkan')}</strong></div>
     ${item.description?`<p class="detail-description">${escapeHTML(item.description)}</p>`:''}
     <dl class="detail-facts"><div><dt>Batas pendaftaran</dt><dd>${formatDate(item.deadline)}<small>23.59 WIB</small></dd></div><div><dt>Biaya pendaftaran</dt><dd>${escapeHTML(item.fee||'Belum dicantumkan')}</dd></div><div><dt>Bidang</dt><dd>${escapeHTML(item.category)}</dd></div></dl>
     ${open&&url?`<a class="register-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Buka pendaftaran resmi <span aria-hidden="true">↗</span></a>`:`<span class="register-button disabled" aria-disabled="true">${open?'Tautan pendaftaran belum tersedia':'Pendaftaran telah ditutup'}</span>`}
-    <p class="detail-caution">Pastikan kembali persyaratan pada laman resmi penyelenggara sebelum mendaftar.</p>
   </div>`;
   document.title=`${item.title} — Info Lomba CSSMoRA UNAIR`;
   window.scrollTo({top:0,behavior:'auto'});
