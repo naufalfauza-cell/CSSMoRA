@@ -123,7 +123,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   const subsidyFunctions=subsidyClient.slice(subsidyClient.indexOf('function groupSubsidyRate('),subsidyClient.indexOf('function updateSubsidy('));
   const subsidyContext=vm.createContext({});
   vm.runInContext(subsidyFunctions+';globalThis.rates={groupSubsidyRate,subsidyRate,subsidyAmount};',subsidyContext);
-  for(const [fee,teamRate,individualRate] of [[15000,1,.5],[15001,.75,.375],[20000,.75,.375],[50000,.75,.375],[50001,.5,.25],[80000,.5,.25],[80001,.25,.125]]){
+  for(const [fee,teamRate,individualRate] of [[15000,1,.5],[15001,.75,.375],[25000,.75,.375],[25001,.5,.25],[40000,.5,.25],[40001,.25,.125],[80000,.25,.125],[80001,0,0]]){
     assert.equal(subsidyContext.rates.groupSubsidyRate(fee),teamRate);
     assert.equal(individualRate,teamRate/2);
     for(const type of ['tim','individu']){
@@ -133,8 +133,8 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   }
   assert.equal(Math.round(40000*subsidyContext.rates.subsidyRate('individu',40000)),15000);
   assert.equal(subsidyContext.rates.subsidyAmount('individu',40000),15000);
-  assert.equal(subsidyContext.rates.subsidyAmount('individu',20001),7501);
-  assert.equal(subsidyContext.rates.subsidyAmount('individu',50001),12501);
+  assert.equal(subsidyContext.rates.subsidyAmount('individu',20001),9376);
+  assert.equal(subsidyContext.rates.subsidyAmount('individu',50001),16250);
   const subsidyMigration=read('supabase/migrations/20261022183527_fix_individual_subsidy_and_attendance_deadline.sql');
   assert.match(subsidyMigration,/public\.cssmora_achievement_subsidy_rate\(p_participation_type, p_fee_amount\)/);
   assert.match(subsidyMigration,/generated always as \([\s\S]*cssmora_achievement_subsidy_rate\(participation_type, fee_amount\)/);
