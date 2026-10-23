@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./admin.css?v=20261022-agenda-jarkoman-v1">
-  <link rel="stylesheet" href="./workflows.css?v=20261023-org-workflows-v1">
+  <link rel="stylesheet" href="./workflows.css?v=20261023-akunpro-launch-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
     #session-restoring{display:none;min-height:calc(100vh - 120px);align-items:center;justify-content:center;gap:10px;color:#315d43;font:600 13px/1.5 "Plus Jakarta Sans",sans-serif}
@@ -27,8 +27,8 @@
   <script src="./supabase-config.js" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
   <script src="./admin.js?v=20261022-rescreen-fixes" defer></script>
-  <script src="./workflow-domain.js?v=20261023-org-workflows-v1" defer></script>
-  <script src="./workflows.js?v=20261023-org-workflows-v1" defer></script>
+  <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
+  <script src="./workflows.js?v=20261023-akunpro-launch-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261022-copy-pills">
 </head>
 <body class="admin-page">
@@ -80,7 +80,7 @@
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 9h17"/><path d="M12 12v3l2 1"/></svg></span><span class="module-copy"><strong>Kegiatan</strong><small>Proker, agenda, dan kalender</small></span><span class="module-state is-ready">Aktif</span>
         </button>
         <button class="admin-tab" id="tab-finance" type="button" role="tab" aria-selected="false" aria-controls="finance-panel">
-          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M7 14h4m3 0h3"/></svg></span><span class="module-copy"><strong>Bendahara</strong><small>Kas, anggaran, dan laporan</small></span><span class="module-state">Disiapkan</span>
+          <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M7 14h4m3 0h3"/></svg></span><span class="module-copy"><strong>Bendahara</strong><small>Buka pencatatan di AkunPro</small></span><span class="module-state is-ready">AkunPro</span>
         </button>
         <button class="admin-tab" id="tab-secretariat" type="button" role="tab" aria-selected="false" aria-controls="secretariat-panel">
           <span class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 5 20m10-16-2 16M3 9h17M2 15h17"/><path d="M18 4h3v16h-4"/></svg></span><span class="module-copy"><strong>Sekretaris</strong><small>Anggota, absensi, dan persuratan</small></span><span class="module-state is-ready">Aktif</span>
@@ -212,43 +212,15 @@
         </section>
       </section>
       <section class="management-panel finance-management" id="finance-panel" role="tabpanel" aria-labelledby="tab-finance" hidden>
-        <div class="workflow-heading"><div><span class="admin-kicker">BENDAHARA · RKAP &amp; REALISASI</span><h3>Kas dan anggaran</h3><p>Catat transaksi berpasangan, bandingkan rencana dengan prognosa dan realisasi, lalu kirim ke AkunPro.</p></div><button class="member-option-button" id="finance-refresh" type="button">↻ Muat ulang</button></div>
-        <div class="finance-connection" id="finance-integration-status" role="status"><span class="finance-connection-dot"></span><span>Memeriksa koneksi AkunPro…</span></div>
-        <p class="form-message" id="finance-message" role="status" aria-live="polite"></p>
-        <div class="finance-summary" aria-label="Ringkasan kas">
-          <article><small>Total pemasukan</small><strong id="finance-total-income">Rp0</strong></article>
-          <article><small>Total pengeluaran</small><strong id="finance-total-expense">Rp0</strong></article>
-          <article><small>Saldo bersih tercatat</small><strong id="finance-net-balance">Rp0</strong></article>
-          <article><small>Belum terkirim ke AkunPro</small><strong id="finance-pending-count">0</strong></article>
-        </div>
-        <div class="finance-workspace">
-          <section class="editor-card" aria-labelledby="finance-entry-title">
-            <div class="editor-heading"><div><span class="admin-kicker">BUKU KAS</span><h3 id="finance-entry-title">Catat transaksi</h3></div></div>
-            <form id="finance-entry-form">
-              <input type="hidden" id="finance-transaction-id" name="record_id">
-              <div class="form-two"><div><label for="finance-direction">Arus kas</label><select id="finance-direction" name="direction" required><option value="expense">Pengeluaran</option><option value="income">Pemasukan</option></select></div><div><label for="finance-date">Tanggal</label><input id="finance-date" name="transaction_date" type="date" required></div></div>
-              <div class="form-two"><div><label for="finance-reference">Referensi</label><input id="finance-reference" name="reference" maxlength="80" required placeholder="Contoh: KW-2026-001"></div><div><label for="finance-amount">Nominal (Rp)</label><input id="finance-amount" name="amount" type="number" min="1" max="100000000000" step="1" required></div></div>
-              <label for="finance-description">Keterangan</label><input id="finance-description" name="description" maxlength="240" required placeholder="Ringkasan transaksi">
-              <label for="finance-budget-link">Pos anggaran</label><select id="finance-budget-link" name="budget_id"><option value="">Tanpa pos anggaran</option></select>
-              <div class="form-two"><div><label for="finance-cash-account">Akun kas / bank AkunPro</label><select id="finance-cash-account" required><option value="">Memuat akun…</option></select><input id="finance-cash-account-manual" type="text" maxlength="40" placeholder="Kode akun kas / bank" hidden></div><div><label for="finance-category-account">Akun kategori AkunPro</label><select id="finance-category-account" required><option value="">Memuat akun…</option></select><input id="finance-category-account-manual" type="text" maxlength="40" placeholder="Kode pendapatan / beban" hidden></div></div>
-              <p class="field-hint">Jurnal yang dikirim dibuat berimbang otomatis: pemasukan mendebit kas, pengeluaran mengkredit kas.</p>
-              <button class="admin-button" id="save-finance-entry" type="submit">Simpan transaksi <span aria-hidden="true">↗</span></button>
-            </form>
-          </section>
-          <section class="editor-card" aria-labelledby="finance-budget-title">
-            <div class="editor-heading"><div><span class="admin-kicker">RKAP &amp; PROGNOSA</span><h3 id="finance-budget-title">Tambah pos anggaran</h3></div></div>
-            <form id="finance-budget-form">
-              <input type="hidden" id="budget-record-id" name="record_id">
-              <div class="form-two"><div><label for="budget-year">Tahun</label><input id="budget-year" name="fiscal_year" type="number" min="2020" max="2100" required></div><div><label for="budget-division">Divisi</label><select id="budget-division" name="division" required><option value="">Pilih divisi</option><option>BPH</option><option>PSDM</option><option>P3M</option><option>ADVO</option><option>MEDINFO</option></select></div></div>
-              <label for="budget-label">Nama pos / proker</label><input id="budget-label" name="budget_label" maxlength="160" required placeholder="Contoh: CSS Sport">
-              <div class="form-two"><div><label for="budget-planned">RKAP (Rp)</label><input id="budget-planned" name="planned_amount" type="number" min="0" max="100000000000" required></div><div><label for="budget-forecast">Prognosa (Rp)</label><input id="budget-forecast" name="forecast_amount" type="number" min="0" max="100000000000" required></div></div>
-              <label for="budget-note">Catatan</label><textarea id="budget-note" name="note" rows="3" maxlength="800" placeholder="Opsional"></textarea>
-              <button class="admin-button" id="save-finance-budget" type="submit">Simpan anggaran <span aria-hidden="true">↗</span></button>
-            </form>
-          </section>
-        </div>
-        <section class="records-card finance-table-card" aria-labelledby="finance-budget-list-title"><div class="editor-heading"><div><span class="admin-kicker">RENCANA VS REALISASI</span><h3 id="finance-budget-list-title">Anggaran tersimpan</h3></div><span class="record-count" id="finance-budget-count">0 pos</span></div><div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>Tahun · divisi</th><th>Pos anggaran</th><th>RKAP</th><th>Prognosa</th><th>Realisasi</th><th>Selisih</th><th></th></tr></thead><tbody id="finance-budget-list"><tr><td colspan="7" class="records-empty">Belum ada anggaran.</td></tr></tbody></table></div></section>
-        <section class="records-card finance-table-card" aria-labelledby="finance-transaction-list-title"><div class="editor-heading"><div><span class="admin-kicker">JURNAL KAS</span><h3 id="finance-transaction-list-title">Transaksi tersimpan</h3></div><span class="record-count" id="finance-transaction-count">0 transaksi</span></div><div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>Tanggal</th><th>Referensi &amp; keterangan</th><th>Arus</th><th>Nominal</th><th>Sinkronisasi</th><th></th></tr></thead><tbody id="finance-transaction-list"><tr><td colspan="6" class="records-empty">Belum ada transaksi.</td></tr></tbody></table></div></section>
+        <article class="finance-launch-card">
+          <span class="finance-launch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 14h4m4 0h2"/></svg></span>
+          <div class="finance-launch-copy">
+            <span class="admin-kicker">BENDAHARA · AKUNPRO</span>
+            <h3>Kelola keuangan di AkunPro</h3>
+            <p>Pencatatan kas, anggaran, dan laporan dilakukan langsung di AkunPro.</p>
+            <a class="admin-button finance-launch-button" href="https://akunpro-one.vercel.app" target="_blank" rel="noopener noreferrer">Buka AkunPro <span aria-hidden="true">↗</span></a>
+          </div>
+        </article>
       </section>
       <section class="management-panel secretariat-management" id="secretariat-panel" role="tabpanel" aria-labelledby="tab-secretariat" hidden>
         <nav class="secretariat-tabs" role="tablist" aria-label="Ruang kerja sekretaris">
