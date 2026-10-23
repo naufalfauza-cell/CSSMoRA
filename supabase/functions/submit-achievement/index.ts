@@ -1,3 +1,5 @@
+import { createStorageProvider } from "../_shared/storage-provider.mjs";
+
 const corsHeaders = (origin: string) => ({
   ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
   "Access-Control-Allow-Headers": "apikey, content-type",
@@ -23,8 +25,6 @@ const allowedOrigin = (origin: string | null) => {
     )) || u.origin==="http://localhost:4173";
   }catch{return false;}
 };
-const storageObjectUrl = (base: string, path: string) =>
-  base + "/storage/v1/object/cssmora-prestasi-proofs/" + path.split("/").map(encodeURIComponent).join("/");
 const bytesStartWith = (bytes: Uint8Array, signature: number[]) =>
   signature.every((value, index) => bytes[index] === value);
 const toHex = (bytes: Uint8Array) =>
@@ -88,11 +88,8 @@ async function consumeIpLimit(base: string, serviceKey: string, ip: string): Pro
   return await response.json() === true;
 }
 
-async function removeUploadedProof(base: string, serviceKey: string, path: string) {
-  await fetch(storageObjectUrl(base, path), {
-    method: "DELETE",
-    headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey },
-  }).catch(() => undefined);
+async function removeUploadedProof(storage: { remove(bucket: string, path: string): Promise<{ ok: boolean }> }, path: string) {
+  await storage.remove("cssmora-prestasi-proofs", path).catch(() => undefined);
 }
 
 Deno.serve(async (request: Request) => {
@@ -104,6 +101,7 @@ Deno.serve(async (request: Request) => {
   const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (!base || !serviceKey) return json({ error: "Layanan pengajuan belum siap." }, 503, origin);
+  const storage = createStorageProvider({ baseUrl: base, apiKey: serviceKey });
 
   let path = "";
   let uploaded = false;
@@ -160,19 +158,9 @@ Deno.serve(async (request: Request) => {
     }
 
     path = "applications/" + id + "/proof." + extension;
-    const upload = await fetch(storageObjectUrl(base, path), {
-      method: "POST",
-      headers: {
-        apikey: serviceKey,
-        Authorization: "Bearer " + serviceKey,
-        "Content-Type": proof.type,
-        "x-upsert": "false",
-      },
-      body: proofBytes,
-    });
+    const upload = await storage.upload("cssmora-prestasi-proofs", path, proofBytes, { contentType: proof.type });
     if (!upload.ok) {
-      const detail = await upload.json().catch(() => ({}));
-      throw new Error(String(detail.message ?? "Bukti pendaftaran gagal diunggah."));
+      throw new Error(upload.errorMessage || "Bukti pendaftaran gagal diunggah.");
     }
     uploaded = true;
 
@@ -189,7 +177,7 @@ Deno.serve(async (request: Request) => {
     const result = await submission.json().catch(() => ({}));
     if (!submission.ok) {
       const message = String(result.message ?? "Pengajuan belum berhasil disimpan.");
-      await removeUploadedProof(base, serviceKey, path);
+      await removeUploadedProof(storage, path);
       uploaded = false;
       const status = submission.status === 429 ? 429 :
         (submission.status >= 500 || submission.status === 401 || submission.status === 403 ? 503 : 400);
@@ -197,7 +185,7 @@ Deno.serve(async (request: Request) => {
     }
     return json(result, 201, origin);
   } catch (error) {
-    if (uploaded && path) await removeUploadedProof(base, serviceKey, path);
+    if (uploaded && path) await removeUploadedProof(storage, path);
     console.error("submit-achievement failed:", error);
     const message = error instanceof Error ? error.message : "Pengajuan belum berhasil disimpan.";
     const status = /maksimal 5 MB/i.test(message) ? 413 : /tidak dapat diperiksa/i.test(message) ? 503 : 400;

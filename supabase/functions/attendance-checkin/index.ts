@@ -1,8 +1,16 @@
+import { createStorageProvider } from "../_shared/storage-provider.mjs";
+
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-attendance-cleanup-secret",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Content-Type": "application/json",
   "Cache-Control": "no-store",
+};
+type FileStorageProvider = {
+  info(bucket: string, path: string): Promise<{ ok: boolean; status: number; sizeBytes: number; contentType: string; uploadedAt: string | null }>;
+  createSignedUrl(bucket: string, path: string, expiresIn: number): Promise<{ ok: boolean; url: string }>;
+  createSignedUploadUrl(bucket: string, path: string): Promise<{ ok: boolean; url: string }>;
+  removeMany(bucket: string, paths: string[]): Promise<{ ok: boolean }>;
 };
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders });
@@ -29,7 +37,7 @@ async function recordAttempt(supabaseUrl: string, headers: Record<string, string
 function requestIp(request: Request) {
   return request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 }
-async function adminProofUrl(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>) {
+async function adminProofUrl(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, storage: FileStorageProvider) {
   const authorization = request.headers.get("Authorization") ?? "";
   if (!authorization.startsWith("Bearer ")) return json({ error: "Silakan login sebagai pengurus." }, 401);
   const userResponse = await fetch(supabaseUrl + "/auth/v1/user", {
@@ -57,19 +65,12 @@ async function adminProofUrl(request: Request, url: URL, supabaseUrl: string, se
   if (!record) return json({ error: "Rekap absensi tidak ditemukan." }, 404);
   if (record.proof_deleted_at) return json({ error: "Foto bukti sudah dihapus otomatis setelah 5 hari." }, 410);
   if (!record.proof_path) return json({ error: "Foto bukti tidak tersedia." }, 404);
-  const safePath = String(record.proof_path).split("/").map(encodeURIComponent).join("/");
-  const signResponse = await fetch(supabaseUrl + "/storage/v1/object/sign/attendance-proofs/" + safePath, {
-    method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({ expiresIn: 300 }),
-  });
-  const signed = await signResponse.json().catch(() => ({}));
+  const signResponse = await storage.createSignedUrl("attendance-proofs", String(record.proof_path), 300);
   if (!signResponse.ok) return json({ error: "Foto bukti sudah tidak tersedia." }, 404);
-  const signedPath = signed.signedURL ?? signed.signedUrl;
-  if (!signedPath) return json({ error: "Tautan foto tidak dapat dibuat." }, 500);
-  return json({ signed_url: supabaseUrl + "/storage/v1" + signedPath });
+  if (!signResponse.url) return json({ error: "Tautan foto tidak dapat dibuat." }, 500);
+  return json({ signed_url: signResponse.url });
 }
-async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>) {
+async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, storage: FileStorageProvider) {
   const candidate = request.headers.get("x-attendance-cleanup-secret") ?? "";
   if (candidate.length < 32) return json({ error: "Akses pembersihan ditolak." }, 401);
   const verifyResponse = await fetch(supabaseUrl + "/rest/v1/rpc/verify_attendance_photo_cleanup_secret", {
@@ -99,19 +100,14 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
   if (!paths.length) return json({ success: true, deleted: 0, records_updated: 0 });
 
   const infoResults = await Promise.all(paths.map(async (path: string) => {
-    const safePath = path.split("/").map(encodeURIComponent).join("/");
-    const response = await fetch(supabaseUrl + "/storage/v1/object/info/attendance-proofs/" + safePath, { headers });
+    const response = await storage.info("attendance-proofs", path);
     return { path, status: response.status, exists: response.ok };
   }));
   if (infoResults.some(item => !item.exists && item.status !== 404)) return json({ error: "Status foto lama belum dapat diperiksa." }, 500);
   const existingPaths = infoResults.filter(item => item.exists).map(item => item.path);
   const missingPaths = infoResults.filter(item => item.status === 404).map(item => item.path);
   if (existingPaths.length) {
-    const removeResponse = await fetch(supabaseUrl + "/storage/v1/object/attendance-proofs", {
-      method: "DELETE",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ prefixes: existingPaths }),
-    });
+    const removeResponse = await storage.removeMany("attendance-proofs", existingPaths);
     if (!removeResponse.ok) return json({ error: "Foto lama belum dapat dihapus dari Storage." }, 500);
   }
 
@@ -156,7 +152,7 @@ async function validateAttendanceMember(supabaseUrl: string, headers: Record<str
   if (record.status !== "belum") return { error: "Absensi sudah tercatat. Hubungi sekretaris bila perlu koreksi.", status: 409 };
   return { member, record, cohort, studyProgram };
 }
-async function preparePhotoUpload(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, event: Record<string, unknown>, input: Record<string, unknown>) {
+async function preparePhotoUpload(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, event: Record<string, unknown>, input: Record<string, unknown>, storage: FileStorageProvider) {
   if (event.event_date !== todayJakarta()) return json({ error: "Absensi hanya tersedia pada tanggal kegiatan." }, 403);
   const validated = await validateAttendanceMember(supabaseUrl, headers, String(event.id), input);
   if (validated.error) return json({ error: validated.error }, validated.status ?? 400);
@@ -176,8 +172,7 @@ async function preparePhotoUpload(request: Request, supabaseUrl: string, service
   const path = String(event.id) + "/" + member.id + "/proof.jpg";
   if (record.proof_path && record.proof_path !== path) return json({ error: "Foto bukti sudah disiapkan dengan jalur berbeda." }, 409);
   if (record.proof_path === path && record.proof_expires_at && Date.parse(record.proof_expires_at) > Date.now()) {
-    const safePath = path.split("/").map(encodeURIComponent).join("/");
-    const existing = await fetch(supabaseUrl + "/storage/v1/object/info/attendance-proofs/" + safePath, { headers });
+    const existing = await storage.info("attendance-proofs", path);
     if (existing.ok) return json({ path, already_uploaded: true });
   }
 
@@ -191,24 +186,16 @@ async function preparePhotoUpload(request: Request, supabaseUrl: string, service
   if (!reserveResponse.ok) return json({ error: "Slot foto belum dapat disiapkan." }, 500);
   if (!(await reserveResponse.json()).length) return json({ error: "Absensi sudah tercatat. Hubungi sekretaris bila perlu koreksi." }, 409);
 
-  const safePath = path.split("/").map(encodeURIComponent).join("/");
-  const signResponse = await fetch(supabaseUrl + "/storage/v1/object/upload/sign/attendance-proofs/" + safePath, {
-    method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({}),
-  });
-  const signed = await signResponse.json().catch(() => ({}));
+  const signResponse = await storage.createSignedUploadUrl("attendance-proofs", path);
   if (!signResponse.ok) {
-    const existing = await fetch(supabaseUrl + "/storage/v1/object/info/attendance-proofs/" + safePath, { headers });
+    const existing = await storage.info("attendance-proofs", path);
     if (existing.ok) return json({ path, already_uploaded: true });
     return json({ error: "Tautan unggah foto belum dapat dibuat." }, 500);
   }
-  const signedPath = signed.url ?? signed.signedURL ?? signed.signedUrl;
-  if (!signedPath) return json({ error: "Tautan unggah foto tidak valid." }, 500);
-  const signedUrl = signedPath.startsWith("http") ? signedPath : supabaseUrl + "/storage/v1" + signedPath;
-  return json({ path, signed_upload_url: signedUrl, expires_in_seconds: 7200 });
+  if (!signResponse.url) return json({ error: "Tautan unggah foto tidak valid." }, 500);
+  return json({ path, signed_upload_url: signResponse.url, expires_in_seconds: 7200 });
 }
-async function finalizeAttendance(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, event: Record<string, unknown>, input: Record<string, unknown>) {
+async function finalizeAttendance(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, event: Record<string, unknown>, input: Record<string, unknown>, storage: FileStorageProvider) {
   if (event.event_date !== todayJakarta()) return json({ error: "Absensi hanya tersedia pada tanggal kegiatan." }, 403);
   const validated = await validateAttendanceMember(supabaseUrl, headers, String(event.id), input);
   if (validated.error) return json({ error: validated.error }, validated.status ?? 400);
@@ -217,14 +204,12 @@ async function finalizeAttendance(request: Request, supabaseUrl: string, service
   const expectedPath = String(event.id) + "/" + member.id + "/proof.jpg";
   const photoPath = String(input.photo_path ?? "");
   if (photoPath !== expectedPath || record.proof_path !== expectedPath) return json({ error: "Foto bukti belum berhasil diunggah." }, 400);
-  const safePath = photoPath.split("/").map(encodeURIComponent).join("/");
-  const infoResponse = await fetch(supabaseUrl + "/storage/v1/object/info/attendance-proofs/" + safePath, { headers });
+  const infoResponse = await storage.info("attendance-proofs", photoPath);
   if (!infoResponse.ok) return json({ error: "Foto belum ditemukan di penyimpanan. Coba kirim ulang." }, 400);
-  const info = await infoResponse.json();
-  const size = Number(info.size ?? info.metadata?.size ?? 0);
-  const contentType = String(info.contentType ?? info.content_type ?? info.metadata?.mimetype ?? "").toLowerCase();
+  const size = infoResponse.sizeBytes;
+  const contentType = infoResponse.contentType;
   if (!size || size > 512000 || contentType !== "image/jpeg") return json({ error: "Foto harus berupa JPG dengan ukuran maksimal 500 KB." }, 400);
-  const uploadedAt = new Date(info.createdAt ?? info.created_at ?? Date.now()).toISOString();
+  const uploadedAt = new Date(infoResponse.uploadedAt ?? Date.now()).toISOString();
   const expiresAt = new Date(Date.parse(uploadedAt) + 5 * 24 * 60 * 60 * 1000).toISOString();
 
   const windowStart = new Date(Math.floor(Date.now() / 30000) * 30000).toISOString();
@@ -284,7 +269,7 @@ async function getActiveEvents(supabaseUrl: string, headers: Record<string, stri
   return json({ events: availableEvents.filter((event: { agenda_id?: string | null }) => publishedIds.has(event.agenda_id)) });
 }
 
-async function deleteAttendanceEvent(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>) {
+async function deleteAttendanceEvent(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, storage: FileStorageProvider) {
   const authorization = request.headers.get("Authorization") ?? "";
   if (!authorization.startsWith("Bearer ")) return json({ error: "Silakan login sebagai pengurus." }, 401);
   const userResponse = await fetch(supabaseUrl + "/auth/v1/user", {
@@ -329,11 +314,7 @@ async function deleteAttendanceEvent(request: Request, url: URL, supabaseUrl: st
   }
   const paths = [...new Set(proofPaths)];
   if (paths.length) {
-    const storageResponse = await fetch(supabaseUrl + "/storage/v1/object/attendance-proofs", {
-      method: "DELETE",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ prefixes: paths }),
-    });
+    const storageResponse = await storage.removeMany("attendance-proofs", paths);
     if (!storageResponse.ok) return json({ error: "Foto bukti belum dapat dihapus. Data absensi tetap tersimpan." }, 500);
   }
 
@@ -417,11 +398,12 @@ async function handleRequest(request: Request) {
   if (!supabaseUrl || !serviceKey) return json({ error: "Layanan absensi belum siap." }, 500);
   const url = new URL(request.url);
   const headers = { apikey: serviceKey, Authorization: "Bearer " + serviceKey };
+  const storage = createStorageProvider({ baseUrl: supabaseUrl, apiKey: serviceKey });
   const mode = url.searchParams.get("mode") ?? "";
   if (request.method === "GET" && mode === "active") return getActiveEvents(supabaseUrl, headers);
-  if (request.method === "GET" && mode === "proof-url") return adminProofUrl(request, url, supabaseUrl, serviceKey, headers);
-  if (request.method === "POST" && mode === "cleanup") return cleanExpiredAttendancePhotos(request, supabaseUrl, serviceKey, headers);
-  if (request.method === "POST" && mode === "delete-event") return deleteAttendanceEvent(request, url, supabaseUrl, serviceKey, headers);
+  if (request.method === "GET" && mode === "proof-url") return adminProofUrl(request, url, supabaseUrl, serviceKey, headers, storage);
+  if (request.method === "POST" && mode === "cleanup") return cleanExpiredAttendancePhotos(request, supabaseUrl, serviceKey, headers, storage);
+  if (request.method === "POST" && mode === "delete-event") return deleteAttendanceEvent(request, url, supabaseUrl, serviceKey, headers, storage);
 
   let input: Record<string, unknown> = {};
   if (request.method === "POST") input = await request.clone().json().catch(() => ({}));
@@ -457,8 +439,8 @@ async function handleRequest(request: Request) {
     if (mode === "options") return rosterOptions(request, url, supabaseUrl, serviceKey, headers, event);
     return json({ title: event.title, event_date: event.event_date, session_name: event.session_name });
   }
-  if (action === "prepare_upload") return preparePhotoUpload(request, supabaseUrl, serviceKey, headers, event, input);
-  if (action === "finalize") return finalizeAttendance(request, supabaseUrl, serviceKey, headers, event, input);
+  if (action === "prepare_upload") return preparePhotoUpload(request, supabaseUrl, serviceKey, headers, event, input, storage);
+  if (action === "finalize") return finalizeAttendance(request, supabaseUrl, serviceKey, headers, event, input, storage);
   return json({ error: "Unggah foto bukti diperlukan untuk mencatat kehadiran." }, 400);
 }
 const allowedOrigin = (origin: string | null) => {

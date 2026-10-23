@@ -1,3 +1,5 @@
+import { createStorageProvider } from "../_shared/storage-provider.mjs";
+
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_BODY_BYTES = MAX_FILE_BYTES + 64 * 1024;
 const corsHeaders = (origin: string) => ({
@@ -22,7 +24,6 @@ const allowedOrigin = (origin: string | null) => {
     ) || u.origin === "http://localhost:4173";
   } catch { return false; }
 };
-const storageUrl = (base: string, path: string) => base + "/storage/v1/object/cssmora-achievement-certificates/" + path.split("/").map(encodeURIComponent).join("/");
 const begins = (bytes: Uint8Array, signature: number[]) => signature.every((value, index) => bytes[index] === value);
 const serviceKey = () => {
   const direct = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -59,8 +60,8 @@ async function consumeLimit(base: string, key: string, ip: string) {
   if (!response.ok) throw new Error("Batas laporan belum dapat diperiksa.");
   return await response.json() === true;
 }
-async function removeFile(base: string, key: string, path: string) {
-  await fetch(storageUrl(base, path), { method: "DELETE", headers: { apikey: key, Authorization: `Bearer ${key}` } }).catch(() => undefined);
+async function removeFile(storage: { remove(bucket: string, path: string): Promise<{ ok: boolean }> }, path: string) {
+  await storage.remove("cssmora-achievement-certificates", path).catch(() => undefined);
 }
 Deno.serve(async request => {
   const origin = request.headers.get("origin") ?? "";
@@ -69,6 +70,7 @@ Deno.serve(async request => {
   if (request.method !== "POST") return json({ error: "Metode permintaan tidak didukung." }, 405, origin);
   const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, ""), key = serviceKey();
   if (!base || !key) return json({ error: "Layanan laporan prestasi belum siap." }, 503, origin);
+  const storage = createStorageProvider({ baseUrl: base, apiKey: key });
   let path = "", uploaded = false;
   try {
     if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("multipart/form-data;")) return json({ error: "Format laporan tidak valid." }, 415, origin);
@@ -97,9 +99,7 @@ Deno.serve(async request => {
     if (forwarded === "unknown") return json({ error: "Jaringan tidak dapat diverifikasi. Coba lagi dari koneksi normal." }, 503, origin);
     if (!await consumeLimit(base, key, forwarded)) return json({ error: "Terlalu banyak laporan dari jaringan ini. Coba lagi satu jam lagi." }, 429, origin);
     path = `records/${id}/certificate.${extension}`;
-    const upload = await fetch(storageUrl(base, path), {
-      method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": certificate.type, "x-upsert": "false" }, body: bytes,
-    });
+    const upload = await storage.upload("cssmora-achievement-certificates", path, bytes, { contentType: certificate.type });
     if (!upload.ok) throw new Error("Sertifikat gagal disimpan. Coba kirim ulang.");
     uploaded = true;
     const rpcPayload = {
@@ -119,13 +119,13 @@ Deno.serve(async request => {
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      await removeFile(base, key, path); uploaded = false;
+      await removeFile(storage, path); uploaded = false;
       const status = response.status >= 500 ? 503 : 400;
       return json({ error: status === 400 ? String(result.message ?? "Data laporan belum valid.") : "Layanan laporan prestasi belum siap. Coba lagi." }, status, origin);
     }
     return json(result, 201, origin);
   } catch (error) {
-    if (uploaded && path) await removeFile(base, key, path);
+    if (uploaded && path) await removeFile(storage, path);
     console.error("submit-achievement-record failed", error instanceof Error ? error.message : "unknown error");
     const message = error instanceof Error ? error.message : "Laporan capaian belum berhasil dikirim.";
     const status = /maksimal 5 MB/i.test(message) ? 413 : /belum dapat diperiksa|gagal disimpan|layanan laporan/i.test(message) ? 503 : 400;
