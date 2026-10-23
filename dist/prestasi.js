@@ -7,8 +7,8 @@ let roster=[];
 let selectedTeamIds=new Set();
 const fmtMoney=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
 const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function groupSubsidyRate(fee){if(fee<=15000)return 1;if(fee<=50000)return .75;if(fee<=80000)return .5;return .25;}
-function groupSubsidyAmount(fee){return Math.min(Math.round(fee*groupSubsidyRate(fee)),40000);}
+function groupSubsidyRate(fee){if(fee<=15000)return 1;if(fee<=25000)return .75;if(fee<=40000)return .5;if(fee<=80000)return .25;return 0;}
+function groupSubsidyAmount(fee){fee=Math.max(0,Number(fee)||0);if(fee<=15000)return fee;if(fee<=25000)return 15000+Math.round((fee-15000)*.75);if(fee<=40000)return 22500+Math.round((fee-25000)*.5);if(fee<=80000)return 30000+Math.round((fee-40000)*.25);return 40000;}
 function subsidyAmount(type,fee){return Math.round(groupSubsidyAmount(fee)*(type==='individu'?.5:1));}
 function subsidyRate(type,fee){return fee>0?subsidyAmount(type,fee)/fee:groupSubsidyRate(fee)*(type==='individu'?.5:1);}
 function updateSubsidy(){
@@ -16,7 +16,7 @@ function updateSubsidy(){
   const percentage=rate*100;
   $('#subsidy-rate').textContent=`${Number.isInteger(percentage)?percentage:percentage.toFixed(1)}%`;
   $('#requested-amount').textContent=fmtMoney(subsidyAmount(type,fee));
-  $('#subsidy-rules').textContent=type==='individu'?'Individu menerima setengah dari nominal subsidi tim pada biaya yang sama (maksimal Rp20.000).':'Tim: sampai Rp15.000 disubsidi 100%; Rp15.001–50.000 75%; Rp50.001–80.000 50%; di atas Rp80.000 25%, maksimal Rp40.000 per pengajuan tim.';
+  $('#subsidy-rules').textContent=type==='individu'?'Individu menerima 50% dari nominal subsidi tim pada biaya yang sama, maksimal Rp20.000.':'Subsidi tim bertahap: 100% dari Rp15.000 pertama; 75% dari bagian Rp15.001–25.000; 50% dari bagian Rp25.001–40.000; 25% dari bagian Rp40.001–80.000. Maksimal Rp40.000 per pengajuan tim.';
 }
 function renderLeaderOptions(){
   const current=rosterSelect.value;
