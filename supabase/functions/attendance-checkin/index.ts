@@ -244,29 +244,27 @@ async function finalizeAttendance(request: Request, supabaseUrl: string, service
 }
 async function getActiveEvents(supabaseUrl: string, headers: Record<string, string>) {
   const query = new URLSearchParams({
-    select: "id,title,event_date,session_name,public_token,agenda_id,auto_close_at",
+    select: "id,title,event_date,session_name,public_token,agenda_id,auto_close_at,agenda!inner(id)",
     status: "eq.open",
     event_date: "eq." + todayJakarta(),
+    "agenda.status": "eq.published",
     order: "created_at.asc",
   });
-  const response = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?" + query.toString(), { headers });
-  if (!response.ok) return json({ error: "Kegiatan aktif belum dapat dimuat." }, 500);
-  const events = await response.json();
-  const now = Date.now();
-  const availableEvents = events.filter((event: { auto_close_at?: string | null }) =>
-    !event.auto_close_at || Date.parse(event.auto_close_at) > now
-  );
-  const agendaIds = [...new Set(availableEvents.map((event: { agenda_id?: string | null }) => String(event.agenda_id ?? "")).filter(isUuid))];
-  if (!agendaIds.length) return json({ events: [] });
-  const agendaQuery = new URLSearchParams({
-    select: "id",
-    status: "eq.published",
-    id: "in.(" + agendaIds.join(",") + ")",
-  });
-  const agendaResponse = await fetch(supabaseUrl + "/rest/v1/agenda?" + agendaQuery.toString(), { headers });
-  if (!agendaResponse.ok) return json({ error: "Status agenda kalender belum dapat diperiksa." }, 500);
-  const publishedIds = new Set((await agendaResponse.json()).map((agenda: { id: string }) => agenda.id));
-  return json({ events: availableEvents.filter((event: { agenda_id?: string | null }) => publishedIds.has(event.agenda_id)) });
+  try {
+    const response = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?" + query.toString(), {
+      headers,
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) return json({ error: "Kegiatan aktif belum dapat dimuat. Coba lagi sebentar." }, 502);
+    const events = await response.json();
+    const now = Date.now();
+    return json({ events: events
+      .filter((event: { auto_close_at?: string | null }) => !event.auto_close_at || Date.parse(event.auto_close_at) > now)
+      .map(({ agenda: _agenda, ...event }: Record<string, unknown>) => event)
+    });
+  } catch {
+    return json({ error: "Layanan absensi terlalu lama merespons. Coba lagi sebentar." }, 503);
+  }
 }
 
 async function deleteAttendanceEvent(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, storage: FileStorageProvider) {

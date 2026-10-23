@@ -15,7 +15,7 @@
   }
   async function refreshAttendanceEntry() {
     try {
-      const response = await fetch(config.url + "/functions/v1/attendance-checkin?mode=active", {
+      const response = await window.cssmoraFetch(config.url + "/functions/v1/attendance-checkin?mode=active", {
         headers: { apikey: config.publishableKey }
       });
       if (!response.ok) {
@@ -34,6 +34,6 @@
     }
   }
   refreshAttendanceEntry();
-  window.setInterval(refreshAttendanceEntry, 30000);
+  window.setInterval(() => { if (!document.hidden) void refreshAttendanceEntry(); }, 30000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshAttendanceEntry(); });
 })();

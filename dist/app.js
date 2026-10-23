@@ -87,7 +87,7 @@ async function loadCompetitions() {
     order: 'deadline.asc'
   });
   try {
-    const response = await fetch(`${config.url}/rest/v1/competitions?${params}`, {
+    const response = await window.cssmoraFetch(`${config.url}/rest/v1/competitions?${params}`, {
       headers: {
         apikey: config.publishableKey,
         Authorization: `Bearer ${config.publishableKey}`

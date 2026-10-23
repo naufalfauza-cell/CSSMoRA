@@ -30,7 +30,7 @@ function renderTeamOptions(){
 }
 async function loadRoster(){
   try{
-    const response=await fetch(`${config.url}/rest/v1/rpc/cssmora_achievement_member_roster`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:'{}'});
+    const response=await window.cssmoraFetch(`${config.url}/rest/v1/rpc/cssmora_achievement_member_roster`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:'{}'});
     const rows=await response.json();if(!response.ok)throw new Error(rows.message||'Roster gagal dimuat.');
     roster=rows;renderLeaderOptions();renderTeamOptions();
   }catch(error){rosterSelect.innerHTML='<option value="">Roster tidak dapat dimuat</option>';$('#achievement-message').textContent=error.message;$('#achievement-message').dataset.kind='error';}
@@ -70,7 +70,7 @@ form.addEventListener('submit',async event=>{
     const body=new FormData();
     body.append('payload',JSON.stringify(payload));
     body.append('proof',file,sourceFile.name||('proof.'+ext));
-    const submit=await fetch(`${config.url}/functions/v1/submit-achievement`,{
+    const submit=await window.cssmoraFetch(`${config.url}/functions/v1/submit-achievement`,{
       method:'POST',headers:{apikey:config.publishableKey},body
     });
     const result=await submit.json().catch(()=>({}));

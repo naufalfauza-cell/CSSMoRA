@@ -66,7 +66,7 @@ const record = (name,e)=>{
     memberById: () => ({ full_name: 'Contoh', cohort: 2024, nia: '001' }),
     escapeHTML: value => String(value ?? ''), attendanceStatusLabel: value => value,
     setInterval() {},
-    document: { querySelectorAll: selector => selector.includes('[data-attendance-proof]') ? [proofButton] : [] }
+    document: { hidden:false, addEventListener(){}, querySelectorAll: selector => selector.includes('[data-attendance-proof]') ? [proofButton] : [] }
   });
   vm.runInContext(admin.slice(admin.indexOf('function renderAttendanceRoster'), admin.indexOf('async function getAttendanceProofUrl')), render);
   render.renderAttendanceRoster();
@@ -88,14 +88,15 @@ const record = (name,e)=>{
   get('#leader-member').value = 'leader'; get('#fee-amount').value = '20000';
   get('#proof-file').files = [new File([new Uint8Array([255, 216, 255])], 'proof.jpg', { type: 'image/jpeg' })];
   let submitted;
+  const prestasiFetch = async (url, options) => {
+    if (url.includes('member_roster')) return { ok: true, json: async () => [{ id: 'leader', full_name: 'Contoh', cohort: 2024 }] };
+    submitted = JSON.parse(options.body.get('payload'));
+    return { ok: true, json: async () => ({ request_number: 'AUDIT', requested_amount: 10000 }) };
+  };
   const prestasi = vm.createContext({
-    window: { CSSMORA_SUPABASE: { url: 'https://example.invalid', publishableKey: 'test' }, CSSMoRAUpload: { compressImage: async file => file } },
+    window: { CSSMORA_SUPABASE: { url: 'https://example.invalid', publishableKey: 'test' }, CSSMoRAUpload: { compressImage: async file => file }, cssmoraFetch: prestasiFetch },
     document: { querySelector: get, querySelectorAll: () => [] }, Intl, FormData, crypto, console,
-    fetch: async (url, options) => {
-      if (url.includes('member_roster')) return { ok: true, json: async () => [{ id: 'leader', full_name: 'Contoh', cohort: 2024 }] };
-      submitted = JSON.parse(options.body.get('payload'));
-      return { ok: true, json: async () => ({ request_number: 'AUDIT', requested_amount: 10000 }) };
-    }
+    fetch: prestasiFetch
   });
   vm.runInContext(read('dist/prestasi.js'), prestasi);
   await new Promise(setImmediate);

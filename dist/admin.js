@@ -241,7 +241,7 @@ authForm.addEventListener('submit',async event=>{
 });
 
 $('#logout').addEventListener('click',async()=>{
-  try{if(session?.access_token)await fetch(`${config.url}/auth/v1/logout`,{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${session.access_token}`}});}catch{}
+  try{if(session?.access_token)await fetchTimed(`${config.url}/auth/v1/logout`,{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${session.access_token}`}});}catch{}
   saveSession(null);
   adminView.hidden=true;
   authView.hidden=false;
@@ -451,7 +451,7 @@ function renderPrograms() {
     <div class="program-record-actions"><button type="button" data-program-action="edit" data-id="${escapeHTML(program.id)}">Edit</button><button type="button" data-program-action="toggle" data-id="${escapeHTML(program.id)}">${program.is_active?'Nonaktifkan':'Aktifkan'}</button><button type="button" class="program-delete-button" data-program-action="delete" data-id="${escapeHTML(program.id)}" aria-label="Hapus proker ${escapeHTML(program.name)}" title="Hapus proker"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v6m4-6v6"/></svg></button></div>
     <details class="program-record-details"><summary>Rincian database</summary><div><span><small>Tujuan</small>${escapeHTML(detail.goals||'—')}</span><span><small>Sasaran</small>${escapeHTML(detail.target||'—')}</span><span><small>Rencana waktu</small>${escapeHTML(programScheduleLabel(detail.planned_schedule))}</span></div></details>
   </article>`;}).join('');
-  programRecordList.querySelectorAll('img').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
+  programRecordList.querySelectorAll('img').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.webp?v=20261023-perf-assets';},{once:true}));
 }
 function renderProgramOptions(selected='') {
   const select=$('#agenda-program');
@@ -1266,7 +1266,7 @@ $('#attendance-recap-toggle').addEventListener('click',async()=>{
 });
 let attendanceDeadlineRefreshRunning=false;
 setInterval(async()=>{
-  if($('#attendance-tools-panel').hidden||attendanceDeadlineRefreshRunning)return;
+  if(document.hidden||$('#attendance-tools-panel').hidden||attendanceDeadlineRefreshRunning)return;
   const due=attendanceEvents.some(row=>row.status==='open'&&row.auto_close_at&&Date.parse(row.auto_close_at)<=Date.now());
   if(!due)return;
   attendanceDeadlineRefreshRunning=true;
@@ -1372,7 +1372,8 @@ async function refreshOpenAttendanceRoster(){
     }
   }catch{}
 }
-setInterval(()=>{if(!$('#attendance-tools-panel').hidden)void refreshOpenAttendanceRoster();},5000);
+setInterval(()=>{if(!document.hidden&&!$('#attendance-tools-panel').hidden)void refreshOpenAttendanceRoster();},15000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#attendance-tools-panel').hidden)void refreshOpenAttendanceRoster();});
 async function getAttendanceProofUrl(eventId,memberId){
   const endpoint=config.url+'/functions/v1/attendance-checkin?mode=proof-url&event_id='+encodeURIComponent(eventId)+'&member_id='+encodeURIComponent(memberId);
   const response=await authenticatedFetch(endpoint,{method:'GET',headers:{apikey:config.publishableKey}});

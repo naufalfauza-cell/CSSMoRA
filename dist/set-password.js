@@ -11,7 +11,7 @@ function message(text, kind = '') {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${config.url}/auth/v1/${path}`, {
+  const response = await window.cssmoraFetch(`${config.url}/auth/v1/${path}`, {
     ...options,
     headers: { apikey: config.publishableKey, 'Content-Type': 'application/json', ...(options.headers || {}) }
   });

@@ -29,7 +29,7 @@ function apiUrl(params = {}) {
 }
 async function request(method, params = {}, body) {
   const url = apiUrl(params);
-  const response = await fetch(url, {
+  const response = await window.cssmoraFetch(url, {
     method,
     headers: { apikey: config.publishableKey, "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined
@@ -260,11 +260,11 @@ form.addEventListener("submit", async event => {
       const formData = new FormData();
       formData.append("cacheControl", "3600");
       formData.append("", compressedPhoto, "proof.jpg");
-      const uploadResponse = await fetch(upload.signed_upload_url, {
+      const uploadResponse = await window.cssmoraFetch(upload.signed_upload_url, {
         method: "PUT",
         headers: { apikey: config.publishableKey, "x-upsert": "false" },
         body: formData
-      });
+      }, 30000);
       const uploadResult = await uploadResponse.json().catch(() => ({}));
       if (!uploadResponse.ok) throw new Error(uploadResult.message || uploadResult.error || "Foto belum berhasil diunggah. Coba lagi.");
     }
@@ -285,7 +285,7 @@ window.addEventListener("beforeunload", () => { if (photoPreviewUrl) URL.revokeO
 
 if (config?.url && config?.publishableKey) {
   void refreshActiveEvents();
-  refreshTimer = window.setInterval(() => void refreshActiveEvents(true), 30000);
+  refreshTimer = window.setInterval(() => { if (!document.hidden) void refreshActiveEvents(true); }, 30000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshActiveEvents(true); });
 } else {
   hideCheckin("Layanan absensi belum siap. Coba muat ulang halaman.", "error");
