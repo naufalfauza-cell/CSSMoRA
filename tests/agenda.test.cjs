@@ -123,7 +123,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   const subsidyFunctions=subsidyClient.slice(subsidyClient.indexOf('function groupSubsidyRate('),subsidyClient.indexOf('function updateSubsidy('));
   const subsidyContext=vm.createContext({});
   vm.runInContext(subsidyFunctions+';globalThis.rates={groupSubsidyRate,subsidyRate,subsidyAmount};',subsidyContext);
-  for(const [fee,teamRate,individualRate] of [[20000,1,.5],[20001,.75,.375],[50000,.75,.375],[50001,.5,.25],[80000,.5,.25],[80001,.25,.125]]){
+  for(const [fee,teamRate,individualRate] of [[15000,1,.5],[15001,.75,.375],[20000,.75,.375],[50000,.75,.375],[50001,.5,.25],[80000,.5,.25],[80001,.25,.125]]){
     assert.equal(subsidyContext.rates.subsidyRate('tim',fee),teamRate);
     assert.equal(subsidyContext.rates.subsidyRate('individu',fee),individualRate);
   }
