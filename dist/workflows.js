@@ -71,14 +71,14 @@
     const renderTeam=()=>{const term=$('#public-achievement-member-search').value.trim().toLowerCase(),leader=memberSelect.value;const available=roster.filter(person=>person.id!==leader&&person.full_name.toLowerCase().includes(term));memberList.innerHTML=available.length?available.map(person=>`<label class="public-achievement-member"><input type="checkbox" value="${escape(person.id)}" ${selected.has(person.id)?'checked':''}><span><strong>${escape(person.full_name)}</strong></span></label>`).join(''):'<p>Tidak ada nama yang cocok.</p>';};
     async function loadPublicAchievements(){
       try{
-        const response=await fetch(`${config.url}/rest/v1/rpc/cssmora_public_achievement_recap`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:'{}'});
+        const response=await window.cssmoraFetch(`${config.url}/rest/v1/rpc/cssmora_public_achievement_recap`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:'{}'});
         const rows=await response.json();if(!response.ok)throw new Error('Rekap prestasi belum dapat dimuat.');
         const list=$('#public-achievement-recap-list');
         list.innerHTML=rows.length?rows.map(row=>`<article class="public-achievement-card"><span class="public-achievement-rank">${escape(row.award_title)}</span><h3>${escape(row.competition_name)}</h3><p>${dateLabel(row.event_date)} · ${escape(row.competition_level)}${row.competition_category?` · ${escape(row.competition_category)}`:''}</p><small>${escape((row.participant_names||[]).join(', '))}</small></article>`).join(''):'<p class="records-empty">Belum ada capaian yang dipublikasikan.</p>';
       }catch{const list=$('#public-achievement-recap-list');if(list)list.innerHTML='<p class="records-empty">Rekap prestasi belum dapat dimuat.</p>';}
     }
     async function loadPublicRoster(){
-      try{const response=await fetch(`${config.url}/rest/v1/rpc/cssmora_public_achievement_member_roster`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:'{}'});const rows=await response.json();if(!response.ok)throw new Error(rows.message||'Roster anggota tidak dapat dimuat.');roster=rows;renderLeader();renderTeam();}
+      try{const response=await window.cssmoraFetch(`${config.url}/rest/v1/rpc/cssmora_public_achievement_member_roster`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:'{}'});const rows=await response.json();if(!response.ok)throw new Error(rows.message||'Roster anggota tidak dapat dimuat.');roster=rows;renderLeader();renderTeam();}
       catch(error){memberSelect.innerHTML='<option value="">Roster tidak dapat dimuat</option>';$('#public-achievement-message').textContent=error.message;$('#public-achievement-message').dataset.kind='error';}
     }
     document.querySelectorAll('input[name="public_participation_type"]').forEach(input=>input.addEventListener('change',()=>{$('#public-achievement-team-fields').hidden=publicForm.elements.public_participation_type.value!=='tim';if(publicForm.elements.public_participation_type.value!=='tim')selected.clear();renderTeam();}));
@@ -99,7 +99,7 @@
           competition_category:publicForm.elements.competition_category.value.trim(),participation_type:type,award_title:publicForm.elements.award_title.value.trim(),
           event_date:publicForm.elements.event_date.value,contact_email:publicForm.elements.contact_email.value.trim()||null,member_ids:ids};
         const body=new FormData();body.append('payload',JSON.stringify(payload));body.append('certificate',file,`certificate.${extension}`);
-        const response=await fetch(`${config.url}/functions/v1/submit-achievement-record`,{method:'POST',headers:{apikey:config.publishableKey},body});
+        const response=await window.cssmoraFetch(`${config.url}/functions/v1/submit-achievement-record`,{method:'POST',headers:{apikey:config.publishableKey},body});
         const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Capaian belum berhasil dikirim.');
         message.innerHTML=`Laporan <strong>${escape(result.request_number||'')}</strong> terkirim dan menunggu verifikasi pengurus.`;message.dataset.kind='success';publicForm.reset();selected.clear();$('#public-achievement-team-fields').hidden=true;renderLeader();renderTeam();
       }catch(error){message.textContent=error.message;message.dataset.kind='error';}finally{button.disabled=false;button.innerHTML='Kirim capaian <span aria-hidden="true">↗</span>';}

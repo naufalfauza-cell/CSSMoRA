@@ -23,6 +23,10 @@
   let viewYear=Number(dayKey(new Date()).slice(0,4));
   let viewMonth=Number(dayKey(new Date()).slice(5,7))-1;
   let selectedDay=null;
+  let loadingMonth=false;
+  let monthLoadFailed=false;
+  let monthRequest=0;
+  let monthController=null;
 
   const monthKey=()=>`${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
   const eventEnd=event=>event.ends_at?new Date(event.ends_at):new Date(dayKey(new Date(event.starts_at))+'T23:59:59.999+07:00');
@@ -57,6 +61,8 @@
     return `${dateTime.format(start)} sampai ${dateTime.format(end)} WIB`;
   };
   const renderList=()=>{
+    if(loadingMonth){list.innerHTML='<p class="agenda-loading" role="status">Memuat agenda bulan ini…</p>';return;}
+    if(monthLoadFailed){list.innerHTML='<div class="agenda-empty"><strong>Agenda belum dapat dimuat</strong>Periksa koneksi lalu coba lagi.<button class="agenda-reset-filter" type="button" data-agenda-retry>Muat ulang agenda</button></div>';return;}
     const base=eventsInView();
     const shown=selectedDay?base.filter(event=>overlapsDay(event,selectedDay)):base;
     filterNote.hidden=!selectedDay;
@@ -71,7 +77,7 @@
     list.innerHTML=shown.map(event=>{
       const count=countdown(event);
       const program=event.program||null;
-      const image=program?.photo_url||'./assets/cssmora-logo.png';
+      const image=program?.photo_url||'./assets/cssmora-logo.webp?v=20261023-perf-assets';
       const label=program?.name||'CSSMoRA UNAIR';
       const location=event.location?`<span><b aria-hidden="true">⌖</b>${esc(event.location)}</span>`:'';
       return `<article class="agenda-event-card">
@@ -87,7 +93,7 @@
     }).join('');
     list.querySelectorAll('.agenda-card-photo img').forEach(image=>image.addEventListener('error',()=>{
       if(image.dataset.fallback)return;
-      image.dataset.fallback='true';image.src='./assets/cssmora-logo.png';
+      image.dataset.fallback='true';image.src='./assets/cssmora-logo.webp?v=20261023-perf-assets';
     },{once:true}));
   };
   const renderCalendar=()=>{
@@ -127,7 +133,7 @@
   const render=()=>{renderCalendar();renderList();};
   const setMonth=offset=>{
     const next=new Date(Date.UTC(viewYear,viewMonth+offset,1,12));
-    viewYear=next.getUTCFullYear();viewMonth=next.getUTCMonth();selectedDay=null;render();
+    viewYear=next.getUTCFullYear();viewMonth=next.getUTCMonth();selectedDay=null;void loadMonth();
   };
 
   document.getElementById('month-prev').addEventListener('click',()=>setMonth(-1));
@@ -139,25 +145,31 @@
     document.getElementById('month-title').scrollIntoView({behavior:'smooth',block:'start'});
   });
   resetFilter.addEventListener('click',()=>{selectedDay=null;render();});
+  list.addEventListener('click',event=>{if(event.target.closest('[data-agenda-retry]'))void loadMonth();});
 
-  (async()=>{
+  async function loadMonth(){
+    const requestId=++monthRequest;
+    monthController?.abort();
+    monthController=new AbortController();
+    const controller=monthController;
+    loadingMonth=true;monthLoadFailed=false;events=[];render();
     try{
+      const monthStart=new Date(Date.UTC(viewYear,viewMonth,1)-7*60*60*1000).toISOString();
+      const nextMonthStart=new Date(Date.UTC(viewYear,viewMonth+1,1)-7*60*60*1000).toISOString();
       const headers={apikey:config.publishableKey,Authorization:`Bearer ${config.publishableKey}`};
-      const agendaQuery=new URLSearchParams({select:'id,title,starts_at,ends_at,location,description,program_id,status',status:'eq.published',order:'starts_at.asc',limit:'1000'});
-      const programsQuery=new URLSearchParams({select:'id,name,photo_url,is_active'});
-      const [agendaResponse,programResponse]=await Promise.all([
-        fetch(`${config.url}/rest/v1/agenda?${agendaQuery}`,{headers}),
-        fetch(`${config.url}/rest/v1/agenda_programs?${programsQuery}`,{headers})
-      ]);
-      if(!agendaResponse.ok||!programResponse.ok)throw new Error('Agenda belum bisa dimuat.');
-      const [rows,programRows]=await Promise.all([agendaResponse.json(),programResponse.json()]);
-      const programMap=new Map(programRows.map(program=>[program.id,program]));
-      events=rows.map(event=>({...event,program:programMap.get(event.program_id)||null}));
-      render();
+      const agendaQuery=new URLSearchParams({select:'id,title,starts_at,ends_at,location,description,program:agenda_programs(id,name,photo_url)',status:'eq.published',starts_at:'lt.'+nextMonthStart,or:'(ends_at.gte.'+monthStart+',starts_at.gte.'+monthStart+')',order:'starts_at.asc',limit:'250'});
+      const response=await window.cssmoraFetch(`${config.url}/rest/v1/agenda?${agendaQuery}`,{headers,signal:controller.signal});
+      if(!response.ok)throw new Error('Agenda belum bisa dimuat.');
+      const rows=await response.json();
+      if(requestId!==monthRequest)return;
+      events=rows.map(event=>({...event,program:event.program||null}));
+      loadingMonth=false;render();
     }catch(error){
+      if(requestId!==monthRequest)return;
       list.innerHTML='<div class="agenda-empty"><strong>Agenda belum bisa dimuat</strong>Coba muat ulang halaman beberapa saat lagi.</div>';
-    }
-  })();
+      loadingMonth=false;monthLoadFailed=true;render();
+    }finally{if(monthController===controller)monthController=null;}
+  }
   setInterval(()=>{todayLabel.textContent=fullDate.format(new Date());renderList();},60000);
-  renderCalendar();
+  void loadMonth();
 })();

@@ -41,11 +41,11 @@
       const start = new Date(event.starts_at);
       const date = '<div class="event-date"><b>'+parts(start,{day:'numeric'})+'</b><span>'+parts(start,{month:'short'})+'</span></div>';
       const program=event.program||null;
-      const photo=program?.photo_url||'./assets/cssmora-logo.png';
+      const photo=program?.photo_url||'./assets/cssmora-logo.webp?v=20261023-perf-assets';
       const photoName=program?.name||event.title;
       return '<article class="event-item'+(index===0?' on':'')+'" role="group" aria-roledescription="slide" aria-label="Agenda '+(index+1)+' dari '+items.length+'"><img class="event-photo" src="'+esc(photo)+'" alt="Foto '+esc(photoName)+'" loading="eager" decoding="async" fetchpriority="'+(index===0?'high':'auto')+'"><div class="event-content">'+date+'<div class="event-body"><span class="event-when">'+esc(eventTime(event))+'</span><strong>'+esc(event.title)+'</strong>'+(event.location?'<p>'+esc(event.location)+'</p>':'')+'</div></div></article>';
     }).join('') + (items.length>1 ? '<div class="event-carousel-tools"><button type="button" class="event-arrow" data-step="-1" aria-label="Agenda sebelumnya">‹</button><span class="event-position" aria-live="polite">1 dari '+items.length+' · '+esc(month)+'</span><button type="button" class="event-arrow" data-step="1" aria-label="Agenda berikutnya">›</button></div><div class="event-dots" aria-label="Pilih agenda">'+items.map((_,index)=>'<button type="button" data-slide="'+index+'" aria-label="Tampilkan agenda '+(index+1)+'"'+(index===0?' class="on" aria-current="true"':'')+'></button>').join('')+'</div>' : '');
-    box.querySelectorAll('.event-photo').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
+    box.querySelectorAll('.event-photo').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.webp?v=20261023-perf-assets';},{once:true}));
     if(items.length<2) return;
 
     const slides = Array.from(box.querySelectorAll('.event-item'));
@@ -82,7 +82,7 @@
     try{localStorage.removeItem(cacheKey);}catch{}
     try{
       const params=new URLSearchParams({
-        select:'id,title,starts_at,ends_at,location,program_id',
+        select:'id,title,starts_at,ends_at,location,program:agenda_programs(id,name,photo_url)',
         status:'eq.published',
         starts_at:'lt.'+bounds.end,
         or:'(and(ends_at.is.null,starts_at.gte.'+bounds.dayStart+'),ends_at.gte.'+bounds.start+')',
@@ -90,16 +90,11 @@
         limit:'6'
       });
       const headers={apikey:cfg.publishableKey,Authorization:'Bearer '+cfg.publishableKey};
-      const programsQuery=new URLSearchParams({select:'id,name,photo_url'});
-      const [response,programResponse]=await Promise.all([
-        fetch(cfg.url+'/rest/v1/agenda?'+params,{headers}),
-        fetch(cfg.url+'/rest/v1/agenda_programs?'+programsQuery,{headers})
-      ]);
-      if(!response.ok||!programResponse.ok)throw new Error('Supabase request failed: '+response.status+' '+programResponse.status);
-      const [rows,programs]=await Promise.all([response.json(),programResponse.json()]);
-      const programMap=new Map(programs.map(program=>[program.id,program]));
+      const response=await window.cssmoraFetch(cfg.url+'/rest/v1/agenda?'+params,{headers});
+      if(!response.ok)throw new Error('Supabase request failed: '+response.status);
+      const rows=await response.json();
       const now=Date.now();
-      const items=rows.filter(event=>eventEnd(event).getTime()>=now).map(event=>({...event,program:programMap.get(event.program_id)||null})).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).slice(0,6);
+      const items=rows.filter(event=>eventEnd(event).getTime()>=now).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).slice(0,6);
       if(!items.length)state('▦','Belum ada agenda mendatang','Agenda bulan '+bounds.label+' yang diterbitkan pengurus akan tampil di sini.');
       else render(items,bounds.label);
     }catch(error){

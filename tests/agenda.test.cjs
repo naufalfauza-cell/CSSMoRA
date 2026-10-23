@@ -36,7 +36,6 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
     fetch: async url => {
       const requestUrl = new URL(url);
       if (requestUrl.pathname.endsWith('/agenda')) requested = requestUrl;
-      if (requestUrl.pathname.endsWith('/agenda_programs')) return { ok: !fail, status: fail ? 503 : 200, json: async () => [] };
       const params = requestUrl.searchParams;
       const query = params.get('or');
       const endCutoff = Date.parse(query.match(/ends_at\.gte\.([^)]+)/)[1]);
@@ -49,6 +48,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
       return { ok: !fail, status: fail ? 503 : 200, json: async () => selected };
     }
   };
+  context.window.cssmoraFetch = (...args) => context.fetch(...args);
   vm.runInNewContext(source, context, { timeout: 1000 });
   await new Promise(setImmediate);
   return { html: box.innerHTML, requested, timers, activeTimers: [...activeTimers] };
@@ -114,7 +114,7 @@ async function run(rows, { now = '2026-11-10T03:00:00Z', fail = false, cache = n
   assert.match(attendanceHtml,/attendance-roster-filter/);
   assert.match(attendanceAdmin,/data-delete-event/);
   assert.match(attendanceAdmin,/Number\(b\.status==='hadir'\)-Number\(a\.status==='hadir'\)/);
-  assert.match(attendanceAdmin,/setInterval\(\(\)=>\{if\(!\$\('#attendance-tools-panel'\)\.hidden\)void refreshOpenAttendanceRoster\(\);\},5000\)/);
+  assert.match(attendanceAdmin,/setInterval\(\(\)=>\{if\(!document\.hidden&&!\$\('#attendance-tools-panel'\)\.hidden\)void refreshOpenAttendanceRoster\(\);\},15000\)/);
   assert.match(attendanceFunction,/mode === "delete-event"/);
   assert.match(attendanceFunction,/status: "eq\.published"/);
   assert.match(attendanceFunction,/event\.agenda_id/);

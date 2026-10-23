@@ -368,7 +368,7 @@
 .agenda-videotron .event-dots::-webkit-scrollbar{display:none}
 .agenda-videotron .event-dots button{flex:0 0 auto;background:#ffffffa3}
 .agenda-videotron .event-dots button.on{background:#f2d46d}
-.agenda-videotron .event-empty{position:absolute;inset:0;display:grid;align-content:center;border:0;border-radius:inherit;background:linear-gradient(180deg,#112b1d2e,#07150de8),url('./assets/cssmora-logo.png') center/cover;color:#fff}
+.agenda-videotron .event-empty{position:absolute;inset:0;display:grid;align-content:center;border:0;border-radius:inherit;background:linear-gradient(180deg,#112b1d2e,#07150de8),url('./assets/cssmora-logo.webp?v=20261023-perf-assets') center/cover;color:#fff}
 .agenda-videotron .event-empty strong{font-size:15px}
 .agenda-videotron .event-empty p{font-size:11px;color:#e2e9e3}
 @media(max-width:760px){
