@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 24760)
+Total output lines: 1572
+
 const $ = selector => document.querySelector(selector);
 const config = window.CSSMORA_SUPABASE;
 const authView = $('#auth-view');
@@ -21,6 +24,7 @@ const expandedAchievementIds=new Set();
 let competitions = [];
 let agendas = [];
 let programs = [];
+let programDetails = new Map();
 const programForm = $('#program-form');
 const programRecordList = $('#program-record-list');
 const programPhotoInput = $('#program-photo');
@@ -124,6 +128,14 @@ async function loadAdminPanel(panelId) {
     await ensureAdminData('agenda',loadAgenda);
     return;
   }
+  if(panelId==='finance-panel') {
+    await window.CSSMoRAWorkflows?.loadFinanceDashboard();
+    return;
+  }
+  if(panelId==='achievement-recap-panel') {
+    await window.CSSMoRAWorkflows?.loadAchievementRecords();
+    return;
+  }
   if(panelId==='secretariat-panel') {
     initializeSecretaryForms();
     const selected=document.querySelector('.secretariat-tab.is-active')||document.querySelector('.secretariat-tab');
@@ -159,6 +171,7 @@ async function checkAdmin() {
   const allowed=new Set();
   if(isCompetitionAdmin){allowed.add('tab-competitions');allowed.add('tab-agenda');}
   if(isLeadership||roleSet.has('bendahara')){allowed.add('tab-finance');allowed.add('tab-achievements');}
+  if(isLeadership||roleSet.has('bph_departemen'))allowed.add('tab-achievement-recap');
   if(isSecretariatAdmin)allowed.add('tab-secretariat');
   if(canManageRoles)allowed.add('tab-access');
   document.querySelectorAll('.admin-tab').forEach(tab=>{tab.hidden=!allowed.has(tab.id);});
@@ -378,7 +391,12 @@ async function loadPrograms() {
   loadedAdminData.delete('programs');
   programRecordList.innerHTML='<p class="records-empty">Memuat proker…</p>';
   try {
-    programs=await api('agenda_programs?select=*&order=name.asc');
+    const [rows,details]=await Promise.all([
+      api('agenda_programs?select=*&order=name.asc'),
+      api('cssmora_program_details?select=*&order=updated_at.desc')
+    ]);
+    programs=rows;
+    programDetails=new Map(details.map(detail=>[detail.program_id,detail]));
     renderPrograms();
     loadedAdminData.add('programs');
     renderProgramOptions();
@@ -393,11 +411,13 @@ function renderPrograms() {
     return;
   }
   const divisionLabels={BPH:'BPH',PSDM:'PSDM',P3M:'P3M',ADVO:'Advokasi',MEDINFO:'Medinfo'};
-  programRecordList.innerHTML=programs.map(program=>`<article class="program-record">
+  const money=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
+  programRecordList.innerHTML=programs.map(program=>{const detail=programDetails.get(program.id)||{};return `<article class="program-record">
     <img src="${escapeHTML(program.photo_url)}" alt="" loading="lazy">
-    <div class="program-record-copy"><strong>${escapeHTML(program.name)}</strong><div class="program-record-meta"><span class="program-division">${escapeHTML(divisionLabels[program.division]||'Divisi belum diatur')}</span><span class="record-status ${program.is_active?'published':''}">${program.is_active?'AKTIF':'NONAKTIF'}</span></div></div>
+    <div class="program-record-copy"><strong>${escapeHTML(program.name)}</strong><div class="program-record-meta"><span class="program-division">${escapeHTML(divisionLabels[program.division]||'Divisi belum diatur')}</span><span class="record-status ${program.is_active?'published':''}">${program.is_active?'AKTIF':'NONAKTIF'}</span><span class="program-cycle-pill">${escapeHTML(detail.cycle||'Siklus belum diisi')}</span>${detail.period_label?`<span class="program-period-pill">${escapeHTML(detail.period_label)}</span>`:''}</div><small class="program-record-summary">${escapeHTML(detail.description||'Belum ada deskripsi')}${detail.pic?` · PIC ${escapeHTML(detail.pic)}`:''}${detail.budget_amount!==null&&detail.budget_amount!==undefined?` · ${escapeHTML(money(detail.budget_amount))}`:''}</small></div>
     <div class="program-record-actions"><button type="button" data-program-action="edit" data-id="${escapeHTML(program.id)}">Edit</button><button type="button" data-program-action="toggle" data-id="${escapeHTML(program.id)}">${program.is_active?'Nonaktifkan':'Aktifkan'}</button><button type="button" class="program-delete-button" data-program-action="delete" data-id="${escapeHTML(program.id)}" aria-label="Hapus proker ${escapeHTML(program.name)}" title="Hapus proker"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v6m4-6v6"/></svg></button></div>
-  </article>`).join('');
+    <details class="program-record-details"><summary>Rincian database</summary><div><span><small>Tujuan</small>${escapeHTML(detail.goals||'—')}</span><span><small>Sasaran</small>${escapeHTML(detail.target||'—')}</span><span><small>Rencana waktu</small>${escapeHTML(detail.planned_schedule||'—')}</span></div></details>
+  </article>`;}).join('');
   programRecordList.querySelectorAll('img').forEach(image=>image.addEventListener('error',()=>{image.src='./assets/cssmora-logo.png';},{once:true}));
 }
 function renderProgramOptions(selected='') {
@@ -413,6 +433,7 @@ function clearProgramEditor() {
   $('#program-record-id').value='';
   programPhotoInput.required=true;
   $('#program-active').checked=true;
+  programForm.elements.cycle.value='Tahunan';
   $('#program-editor-title').textContent='Tambah proker';
   $('#save-program').innerHTML='Simpan proker <span aria-hidden="true">↗</span>';
   $('#program-photo-preview').hidden=true;
@@ -436,9 +457,18 @@ programRecordList.addEventListener('click',async event=>{
   const program=programs.find(item=>item.id===button.dataset.id);
   if(!program)return;
   if(button.dataset.programAction==='edit') {
+    const detail=programDetails.get(program.id)||{};
     $('#program-record-id').value=program.id;
     programForm.elements.name.value=program.name;
     programForm.elements.division.value=program.division||'';
+    programForm.elements.cycle.value=detail.cycle||'Tahunan';
+    programForm.elements.period_label.value=detail.period_label||'';
+    programForm.elements.description.value=detail.description||'';
+    programForm.elements.goals.value=detail.goals||'';
+    programForm.elements.target.value=detail.target||'';
+    programForm.elements.planned_schedule.value=detail.planned_schedule||'';
+    programForm.elements.pic.value=detail.pic||'';
+    programForm.elements.budget_amount.value=detail.budget_amount??'';
     $('#program-active').checked=program.is_active;
     programPhotoInput.value='';
     programPhotoInput.required=false;
@@ -529,14 +559,25 @@ programForm.addEventListener('submit',async event=>{
     }
     const payload={name:programForm.elements.name.value.trim(),division,is_active:$('#program-active').checked};
     if(file){payload.photo_path=photoPath;payload.photo_url=photoUrl;}
-    if(existingId)await api(`agenda_programs?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
-    else await api('agenda_programs',{method:'POST',body:{id,...payload,photo_path:photoPath,photo_url:photoUrl}});
+    const rawBudget=programForm.elements.budget_amount.value;
+    const detailPayload={program_id:id,cycle:programForm.elements.cycle.value.trim(),period_label:programForm.elements.period_label.value.trim()||null,
+      description:programForm.elements.description.value.trim(),goals:programForm.elements.goals.value.trim(),target:programForm.elements.target.value.trim(),
+      planned_schedule:programForm.elements.planned_schedule.value.trim(),pic:programForm.elements.pic.value.trim(),budget_amount:rawBudget?Number(rawBudget):null};
+    const saveDetails=()=>api('cssmora_program_details?on_conflict=program_id',{method:'POST',body:detailPayload,extraHeaders:{Prefer:'resolution=merge-duplicates,return=representation'}});
+    if(existingId){
+      await saveDetails();
+      await api(`agenda_programs?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
+    }else{
+      await api('agenda_programs',{method:'POST',body:{id,...payload,photo_path:photoPath,photo_url:photoUrl}});
+      await saveDetails();
+    }
     if(file&&old?.photo_path)await deleteProgramPhoto(old.photo_path).catch(()=>{});
     await loadPrograms();
     await loadAgenda();
     clearProgramEditor();
     showMessage('#program-editor-message',existingId?'Perubahan proker berhasil disimpan.':'Proker dan fotonya berhasil ditambahkan.','success');
   } catch(error) {
+    if(!existingId&&uploadedPath)await api(`agenda_programs?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'}).catch(()=>{});
     if(uploadedPath)await deleteProgramPhoto(uploadedPath).catch(()=>{});
     showMessage('#program-editor-message',error.message,'error');
   } finally {
@@ -730,328 +771,7 @@ generateAnnouncementButton.addEventListener('click',async()=>{
     if(!response.ok)throw new Error(result.error||'Jarkoman belum berhasil dibuat. Coba lagi.');
     announcementPreview.value=result.announcement||'';
     announcementPreview.dispatchEvent(new Event('input',{bubbles:true}));
-    announcementStatus.textContent='Jarkoman siap ditinjau. Silakan sesuaikan sebelum dibagikan.';
-    announcementStatus.dataset.kind='success';
-  }catch(error){
-    announcementStatus.textContent=error.message;
-    announcementStatus.dataset.kind='error';
-  }finally{
-    generateAnnouncementButton.disabled=false;
-    generateAnnouncementButton.textContent='Buat jarkoman ✦';
-  }
-});
-announcementPreview.addEventListener('input',()=>{$('#copy-announcement').disabled=!announcementPreview.value.trim();});
-$('#copy-announcement').addEventListener('click',async()=>{
-  if(!announcementPreview.value.trim())return;
-  try{
-    await navigator.clipboard.writeText(announcementPreview.value);
-    announcementStatus.textContent='Teks jarkoman disalin.';
-    announcementStatus.dataset.kind='success';
-  }catch{
-    announcementPreview.focus();announcementPreview.select();
-    const copied=document.execCommand('copy');
-    announcementStatus.textContent=copied?'Teks jarkoman disalin.':'Pilih teks lalu salin secara manual.';
-    announcementStatus.dataset.kind=copied?'success':'error';
-  }
-});
-
-agendaForm.addEventListener('submit',async event=>{
-  event.preventDefault();
-  const submit=$('#save-agenda');
-  const starts=agendaForm.elements.startsAt.value;
-  const ends=agendaForm.elements.endsAt.value;
-  if(ends&&new Date(agendaIso(ends))<=new Date(agendaIso(starts))) {
-    showMessage('#agenda-editor-message','Waktu selesai harus setelah waktu mulai.','error');
-    return;
-  }
-  const existingId=$('#agenda-record-id').value;
-  const payload={
-    title:agendaForm.elements.title.value.trim(),
-    starts_at:agendaIso(starts),
-    ends_at:agendaIso(ends),
-    location:agendaForm.elements.location.value.trim()||null,
-    description:agendaForm.elements.description.value.trim()||null,
-    status:agendaForm.elements.published.checked?'published':'draft',
-    program_id:agendaForm.elements.programId.value
-  };
-  submit.disabled=true;
-  showMessage('#agenda-editor-message','Menyimpan…');
-  try {
-    if(existingId) {
-      await api(`agenda?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
-      showMessage('#agenda-editor-message','Perubahan agenda berhasil disimpan.','success');
-    } else {
-      await api('agenda',{method:'POST',body:payload});
-      showMessage('#agenda-editor-message','Agenda berhasil ditambahkan.','success');
-    }
-    await loadAgenda();
-    clearAgendaEditor();
-    showMessage('#agenda-editor-message',existingId?'Perubahan agenda berhasil disimpan.':'Agenda berhasil ditambahkan.','success');
-  } catch(error) {
-    showMessage('#agenda-editor-message',error.message,'error');
-  } finally {
-    submit.disabled=false;
-  }
-});
-
-
-const memberForm=$('#member-form');
-const memberList=$('#member-record-list');
-const attendanceEventList=$('#attendance-event-list');
-const attendanceRosterPanel=$('#attendance-roster-panel');
-const letterForm=$('#letter-form');
-let members=[];
-let attendanceEvents=[];
-let currentAttendanceEvent=null;
-let currentAttendanceRows=[];
-
-const memberById=id=>members.find(member=>member.id===id);
-const localDateInput=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const csvCell=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
-function downloadCSV(name,rows){
-  const csv='\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
-  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  const link=document.createElement('a');link.href=url;link.download=name;link.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-function parseCSV(text){
-  const delimiter=(text.split(/\r?\n/,1)[0].match(/;/g)||[]).length>(text.split(/\r?\n/,1)[0].match(/,/g)||[]).length?';':',';
-  const rows=[];let row=[],cell='',quoted=false;
-  for(let i=0;i<text.length;i++){
-    const ch=text[i];
-    if(quoted&&ch==='"'&&text[i+1]==='"'){cell+='"';i++;}
-    else if(ch==='"')quoted=!quoted;
-    else if(ch===delimiter&&!quoted){row.push(cell);cell='';}
-    else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell='';}
-    else cell+=ch;
-  }
-  if(cell||row.length){row.push(cell);if(row.some(v=>v.trim()))rows.push(row);}
-  return rows;
-}
-const normHeader=value=>String(value||'').replace(/^\uFEFF/,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
-function showSecretaryTab(tab){
-  document.querySelectorAll('.secretariat-tab').forEach(item=>{
-    const selected=item===tab;
-    item.classList.toggle('is-active',selected);
-    item.setAttribute('aria-selected',String(selected));
-  });
-  document.querySelectorAll('.secretariat-subpanel').forEach(panel=>{
-    panel.hidden=panel.id!==tab.getAttribute('aria-controls');
-  });
-}
-function initializeSecretaryForms(){
-  if(!$('#letter-issued-on').value)$('#letter-issued-on').value=localDateInput();
-}
-async function loadSecretarySection(tab){
-  if(!tab)return;
-  const panel=tab.getAttribute('aria-controls');
-  if(panel==='members-panel') {
-    await ensureAdminData('members',loadMembers);
-  } else if(panel==='attendance-tools-panel') {
-    await Promise.all([
-      loadMembers(),
-      loadAttendanceEvents()
-    ]);
-  } else if(panel==='letters-panel') {
-    await ensureAdminData('letters',loadLetters);
-  }
-}
-document.querySelectorAll('.secretariat-tab').forEach(tab=>tab.addEventListener('click',()=>{
-  showSecretaryTab(tab);
-  $('#dashboard-title').textContent='Sekretaris · '+tab.textContent.trim();
-  void loadSecretarySection(tab);
-}));
-async function loadMembers(){
-  loadedAdminData.delete('members');
-  memberList.setAttribute('aria-busy','true');
-  memberList.closest('.secretariat-table-wrap')?.setAttribute('aria-busy','true');
-  $('#member-count').textContent='Memuat…';
-  memberList.innerHTML='<tr><td colspan="5"><div class="table-loading"><span class="table-spinner" aria-hidden="true"></span><span>Memuat data anggota…</span></div></td></tr>';
-  try{
-    members=await api('secretariat_members?select=*&order=cohort.desc,full_name.asc');
-    updateMemberFilterOptions();
-    updateMemberCount();
-    renderMembers();
-    loadedAdminData.add('members');
-    if(currentAttendanceEvent)await loadAttendanceRoster(currentAttendanceEvent.id);
-  }catch(error){
-    $('#member-count').textContent='Gagal dimuat';
-    memberList.innerHTML='<tr><td colspan="5"><div class="table-load-error"><span>'+escapeHTML(error.message)+'</span><button type="button" data-retry-members>Coba lagi</button></div></td></tr>';
-  }finally{
-    memberList.removeAttribute('aria-busy');
-    memberList.closest('.secretariat-table-wrap')?.removeAttribute('aria-busy');
-  }
-}
-function updateMemberFilterOptions(){
-  const fill=(selector,values,allLabel)=>{
-    const node=$(selector);
-    const current=node.value||'all';
-    node.innerHTML='<option value="all">'+allLabel+'</option>'+values.map(value=>'<option value="'+escapeHTML(value)+'">'+escapeHTML(value)+'</option>').join('');
-    if(values.includes(current))node.value=current;
-  };
-  const cohorts=[...new Set(members.map(member=>String(member.cohort||'').trim()).filter(Boolean))]
-    .sort((a,b)=>Number(b)-Number(a)||a.localeCompare(b,'id'));
-  const programs=[...new Set(members.map(member=>String(member.study_program||'').trim()).filter(Boolean))]
-    .sort((a,b)=>a.localeCompare(b,'id'));
-  fill('#member-cohort-filter',cohorts,'Semua');
-  fill('#member-program-filter',programs,'Semua prodi');
-}
-function memberStudyStatusLabel(status){
-  return ({mahasiswa:'Masih mahasiswa',lulus:'Lulus',belum_ditentukan:'Belum diisi'})[status]||'Belum diisi';
-}
-function normalizeMemberStudyStatus(value){
-  const normalized=String(value||'').trim().toLowerCase().replace(/[_-]+/g,' ');
-  if(['lulus','sudah lulus','alumni','lulusan'].includes(normalized))return 'lulus';
-  if(['mahasiswa','masih mahasiswa','belum lulus','aktif kuliah'].includes(normalized))return 'mahasiswa';
-  return 'belum_ditentukan';
-}
-function updateMemberCount(){
-  $('#member-count').textContent=members.length+' anggota';
-}
-function renderMembers(){
-  const query=$('#member-search').value.trim().toLowerCase();
-  const cohort=$('#member-cohort-filter').value;
-  const program=$('#member-program-filter').value;
-  const status=$('#member-study-status-filter').value;
-  const rows=members.filter(member=>{
-    const cohortMatches=cohort==='all'||String(member.cohort)===cohort;
-    const programMatches=program==='all'||String(member.study_program||'')===program;
-    const studyStatus=member.study_status||'belum_ditentukan';
-    const statusMatches=status==='all'||studyStatus===status;
-    const queryMatches=!query||[member.nia,member.full_name,member.cohort,member.faculty,member.study_program].some(value=>String(value||'').toLowerCase().includes(query));
-    return cohortMatches&&programMatches&&statusMatches&&queryMatches;
-  });
-  $('#member-visible-count').textContent=rows.length+' data';
-  if(!rows.length){memberList.innerHTML='<tr><td colspan="5" class="records-empty">Belum ada anggota yang cocok.</td></tr>';return;}
-  memberList.innerHTML=rows.map(member=>{
-    const status=member.study_status||'belum_ditentukan';
-    const statusClass=status==='mahasiswa'?'published':status==='lulus'?'study-graduate':'study-unknown';
-    return '<tr><td><strong>'+escapeHTML(member.full_name)+'</strong><small>'+escapeHTML(member.nia)+'</small></td><td>'+escapeHTML(member.cohort)+'</td><td>'+escapeHTML(member.study_program||'—')+'</td><td><span class="record-status '+statusClass+'">'+escapeHTML(memberStudyStatusLabel(status))+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(member.id)+'">Edit</button></div></td></tr>';
-  }).join('');
-}
-function resetMemberForm(){
-  memberForm.reset();$('#member-record-id').value='';$('#member-active').checked=true;$('#member-nia').readOnly=false;
-  $('#member-editor-title').textContent='Tambah anggota';
-  $('#save-member').innerHTML='Simpan anggota <span aria-hidden="true">↗</span>';
-  showMessage('#member-message','');
-}
-$('#member-form-reset').addEventListener('click',resetMemberForm);
-$('#members-refresh').addEventListener('click',loadMembers);
-$('#member-search').addEventListener('input',renderMembers);
-$('#member-cohort-filter').addEventListener('change',renderMembers);
-$('#member-program-filter').addEventListener('change',renderMembers);
-$('#member-study-status-filter').addEventListener('change',renderMembers);
-$('#member-export').addEventListener('click',()=>downloadCSV('cssmora-anggota.csv',[
-  ['NIA','Nama','Angkatan','Fakultas','Program Studi','Status Studi'],
-  ...members.map(member=>[member.nia,member.full_name,member.cohort,member.faculty,member.study_program,memberStudyStatusLabel(member.study_status||'belum_ditentukan')])
-]));
-memberList.addEventListener('click',event=>{
-  const retry=event.target.closest('[data-retry-members]');
-  if(retry){void ensureAdminData('members',loadMembers);return;}
-  const button=event.target.closest('[data-member-action="edit"]');
-  if(!button)return;
-  const member=memberById(button.dataset.id);if(!member)return;
-  $('#member-record-id').value=member.id;
-  $('#member-nia').value=member.nia;$('#member-nia').readOnly=true;
-  $('#member-name').value=member.full_name;$('#member-cohort').value=member.cohort;
-  $('#member-faculty').value=member.faculty||'';$('#member-program').value=member.study_program||'';
-  $('#member-study-status').value=member.study_status||'belum_ditentukan';
-  $('#member-active').checked=member.is_active;
-  $('#member-editor-title').textContent='Edit anggota';
-  $('#save-member').innerHTML='Simpan perubahan <span aria-hidden="true">↗</span>';
-  $('#member-name').focus();
-});
-memberForm.addEventListener('submit',async event=>{
-  event.preventDefault();
-  const id=$('#member-record-id').value;
-  const payload={nia:$('#member-nia').value.trim(),full_name:$('#member-name').value.trim(),cohort:Number($('#member-cohort').value),faculty:$('#member-faculty').value.trim()||null,study_program:$('#member-program').value.trim()||null,study_status:$('#member-study-status').value||'belum_ditentukan',is_active:$('#member-active').checked,updated_at:new Date().toISOString()};
-  $('#save-member').disabled=true;showMessage('#member-message','Menyimpan data anggota…');
-  try{
-    if(id)await api('secretariat_members?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:payload});
-    else await api('secretariat_members',{method:'POST',body:payload});
-    resetMemberForm();await loadMembers();showMessage('#member-message',id?'Perubahan anggota disimpan.':'Anggota berhasil ditambahkan.','success');
-  }catch(error){showMessage('#member-message',error.message,'error');}
-  finally{$('#save-member').disabled=false;$('#member-nia').readOnly=false;}
-});
-$('#member-csv').addEventListener('change',async event=>{
-  const file=event.target.files?.[0];if(!file)return;
-  try{
-    const matrix=parseCSV(await file.text());if(matrix.length<2)throw new Error('CSV belum berisi baris data.');
-    const headers=matrix[0].map(normHeader);
-    const find=keys=>headers.findIndex(header=>keys.some(key=>header===key||header.includes(key)));
-    const columns={nia:find(['nia','nomor induk']),name:find(['nama lengkap','nama']),cohort:find(['angkatan','tahun masuk']),faculty:find(['fakultas']),program:find(['jurusan','program studi','prodi']),studyStatus:find(['status studi','status kuliah','status pendidikan','status'])};
-    if(columns.nia<0||columns.name<0||columns.cohort<0)throw new Error('Kolom wajib belum ditemukan. Gunakan NIA, Nama, dan Angkatan.');
-    const imported=matrix.slice(1).map(row=>{
-      const member={
-        nia:(row[columns.nia]||'').trim(),
-        full_name:(row[columns.name]||'').trim(),
-        cohort:Number(row[columns.cohort]),
-        faculty:columns.faculty<0?null:(row[columns.faculty]||'').trim()||null,
-        study_program:columns.program<0?null:(row[columns.program]||'').trim()||null,
-        updated_at:new Date().toISOString()
-      };
-      const statusValue=columns.studyStatus<0?'':String(row[columns.studyStatus]||'').trim();
-      if(statusValue)member.study_status=normalizeMemberStudyStatus(statusValue);
-      return member;
-    }).filter(member=>member.nia&&member.full_name&&Number.isInteger(member.cohort));
-    if(!imported.length)throw new Error('Tidak ada baris anggota yang valid.');
-    await api('secretariat_members?on_conflict=nia',{method:'POST',body:imported,extraHeaders:{Prefer:'resolution=merge-duplicates,return=minimal'}});
-    showMessage('#member-list-message',imported.length+' data anggota berhasil diimpor.','success');await loadMembers();
-  }catch(error){showMessage('#member-list-message','Impor gagal: '+error.message,'error');}
-  finally{event.target.value='';}
-});
-
-async function loadAttendanceEvents(){
-  attendanceEventList.innerHTML='<p class="records-empty">Memuat agenda…</p>';
-  try{
-    const rows=await api('secretariat_attendance_events?select=*,agenda(id,title,starts_at,ends_at,status)&order=event_date.desc,created_at.desc');
-    attendanceEvents=(rows||[]).map(row=>({...row,agenda:Array.isArray(row.agenda)?row.agenda[0]||null:row.agenda||null}));
-    renderAttendanceEvents();
-    loadedAdminData.add('attendanceEvents');
-    if(currentAttendanceEvent)currentAttendanceEvent=attendanceEvents.find(row=>row.id===currentAttendanceEvent.id)||null;
-  }catch(error){
-    loadedAdminData.delete('attendanceEvents');
-    attendanceEventList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';
-  }
-}
-function attendanceEventIsPublished(event){return event?.agenda?.status==='published';}
-function attendanceWibNowInputValue(){
-  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
-}
-function attendanceWibInputToIso(value){
-  const normalized=value.length===16?value+':00':value;
-  const date=new Date(normalized+'+07:00');
-  return Number.isFinite(date.getTime())?date.toISOString():null;
-}
-function attendanceDeadlineLabel(value){
-  if(!value)return '';
-  return new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value))+' WIB';
-}
-function renderAttendanceEvents(){
-  const search=($('#attendance-event-filter').value||'').trim().toLocaleLowerCase('id-ID');
-  const visible=attendanceEvents.filter(event=>!search||[event.title,event.agenda?.title,event.event_date,event.location].some(value=>String(value||'').toLocaleLowerCase('id-ID').includes(search)));
-  if(!attendanceEvents.length){attendanceEventList.innerHTML='<p class="records-empty">Belum ada agenda terbit untuk absensi.</p>';return;}
-  if(!visible.length){attendanceEventList.innerHTML='<p class="records-empty">Agenda yang cocok tidak ditemukan.</p>';return;}
-  attendanceEventList.innerHTML=visible.map(event=>{
-    const published=attendanceEventIsPublished(event);
-    const source=published?'AGENDA TERBIT':event.agenda_id?'AGENDA TIDAK TERBIT':'TANPA AGENDA';
-    const sourceClass=published?'':' is-muted';
-    const title=event.agenda?.title||event.title;
-    const status=event.status==='open'?'ABSENSI DIBUKA':'DITUTUP';
-    const deadline=event.auto_close_at?'<span class="attendance-auto-close-label">Tutup otomatis '+escapeHTML(attendanceDeadlineLabel(event.auto_close_at))+'</span>':'';
-    const copy=published?'<button type="button" data-copy-event="'+escapeHTML(event.id)+'">Salin tautan</button>':'';
-    const toggle=published?'<button type="button" data-toggle-event="'+escapeHTML(event.id)+'">'+(event.status==='open'?'Tutup absensi':'Buka absensi')+'</button>':'';
-    const remove=!published?'<button type="button" data-delete-event="'+escapeHTML(event.id)+'">Hapus data</button>':'';
-    return '<article class="attendance-event-card" data-agenda-state="'+(published?'published':'unpublished')+'"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(event.id)+'"><span><strong>'+escapeHTML(title)+'</strong><small class="attendance-event-meta-line">'+escapeHTML(event.event_date)+' · '+escapeHTML(event.session_name||'Umum')+(event.location?' · '+escapeHTML(event.location):'')+' <span class="attendance-event-badge'+sourceClass+'">'+source+'</span>'+deadline+'</small></span><span class="record-status '+(event.status==='open'&&published?'published':'')+'">'+status+'</span></button><div class="attendance-event-actions">'+copy+toggle+remove+'</div></article>';
-  }).join('');
-}
-$('#attendance-event-filter').addEventListener('input',renderAttendanceEvents);
-let attendanceRecapRows=[];
-let attendanceOpenEventId=null;
-async function refreshAttendanceData(){
-  const selectedId=currentAttendanceEvent?.id;
-  await Promise.all([loadMembers(),loadAttendanceEvents(),$('#attendance-recap-card').hidden?Promise.resolve():loadAttendanceRecap()]);
+    announcementStatus.textContent='Jarkoman siap ditinjau. Silakan sesuaikan sebelum dibagikan.…4760 tokens truncated…d').hidden?Promise.resolve():loadAttendanceRecap()]);
   if(selectedId){
     if(attendanceEvents.some(row=>row.id===selectedId)){
       if(!attendanceRosterDirty)await loadAttendanceRoster(selectedId);
