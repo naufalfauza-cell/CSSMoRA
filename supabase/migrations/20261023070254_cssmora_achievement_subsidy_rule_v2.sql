@@ -1,6 +1,5 @@
 -- Version the subsidy policy so existing submissions keep the rule used when they were filed.
-create or replace function public.cssmora_achievement_subsidy_rate_for_rule(
-  p_participation_type text,
+create or replace function public.cssmora_achievement_team_rate_for_rule(
   p_fee_amount bigint,
   p_rule_version smallint
 )
@@ -9,23 +8,21 @@ language sql
 immutable
 set search_path = ''
 as $function$
-  select (
-    case p_rule_version
-      when 1 then case
-        when p_fee_amount <= 20000 then 1.000
-        when p_fee_amount <= 50000 then 0.750
-        when p_fee_amount <= 80000 then 0.500
-        else 0.250
-      end
-      when 2 then case
-        when p_fee_amount <= 15000 then 1.000
-        when p_fee_amount <= 50000 then 0.750
-        when p_fee_amount <= 80000 then 0.500
-        else 0.250
-      end
-      else 0.000
+  select case p_rule_version
+    when 1 then case
+      when p_fee_amount <= 20000 then 1.000
+      when p_fee_amount <= 50000 then 0.750
+      when p_fee_amount <= 80000 then 0.500
+      else 0.250
     end
-  ) * case when p_participation_type = 'individu' then 0.500 else 1.000 end;
+    when 2 then case
+      when p_fee_amount <= 15000 then 1.000
+      when p_fee_amount <= 50000 then 0.750
+      when p_fee_amount <= 80000 then 0.500
+      else 0.250
+    end
+    else 0.000
+  end;
 $function$;
 
 create or replace function public.cssmora_achievement_subsidy_amount_for_rule(
@@ -40,12 +37,12 @@ set search_path = ''
 as $function$
   select case p_rule_version
     when 1 then round(
-      round(p_fee_amount * public.cssmora_achievement_subsidy_rate_for_rule('tim', p_fee_amount, 1::smallint))
+      round(p_fee_amount * public.cssmora_achievement_team_rate_for_rule(p_fee_amount, 1::smallint))
         * case when p_participation_type = 'individu' then 0.500 else 1.000 end
     )::bigint
     when 2 then round(
       least(
-        round(p_fee_amount * public.cssmora_achievement_subsidy_rate_for_rule('tim', p_fee_amount, 2::smallint)),
+        round(p_fee_amount * public.cssmora_achievement_team_rate_for_rule(p_fee_amount, 2::smallint)),
         40000
       ) * case when p_participation_type = 'individu' then 0.500 else 1.000 end
     )::bigint
@@ -53,8 +50,30 @@ as $function$
   end;
 $function$;
 
-revoke all on function public.cssmora_achievement_subsidy_rate_for_rule(text, bigint, smallint) from public, anon, authenticated;
-revoke all on function public.cssmora_achievement_subsidy_amount_for_rule(text, bigint, smallint) from public, anon, authenticated;
+create or replace function public.cssmora_achievement_subsidy_rate_for_rule(
+  p_participation_type text,
+  p_fee_amount bigint,
+  p_rule_version smallint
+)
+returns numeric
+language sql
+immutable
+set search_path = ''
+as $function$
+  select case
+    when p_rule_version = 1 then
+      public.cssmora_achievement_team_rate_for_rule(p_fee_amount, 1::smallint)
+        * case when p_participation_type = 'individu' then 0.500 else 1.000 end
+    when p_rule_version = 2 and p_fee_amount = 0 then
+      public.cssmora_achievement_team_rate_for_rule(p_fee_amount, 2::smallint)
+        * case when p_participation_type = 'individu' then 0.500 else 1.000 end
+    when p_rule_version = 2 then
+      public.cssmora_achievement_subsidy_amount_for_rule(
+        p_participation_type, p_fee_amount, 2::smallint
+      )::numeric / p_fee_amount
+    else 0.000
+  end;
+$function$;
 
 alter table public.cssmora_achievement_applications
   add column subsidy_rule_version smallint not null default 1,
