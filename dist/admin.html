@@ -146,6 +146,15 @@
               <form id="program-form">
                 <input id="program-record-id" name="recordId" type="hidden">
                 <label for="program-name">Nama proker</label><input id="program-name" name="name" maxlength="100" placeholder="Contoh: CSS Sport" required>
+                <label for="program-division">Divisi</label>
+                <select id="program-division" name="division" required>
+                  <option value="">Pilih divisi…</option>
+                  <option value="BPH">BPH</option>
+                  <option value="PSDM">PSDM</option>
+                  <option value="P3M">P3M</option>
+                  <option value="ADVO">Advokasi</option>
+                  <option value="MEDINFO">Medinfo</option>
+                </select>
                 <label for="program-photo">Foto kegiatan</label><input id="program-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required>
                 <p class="field-hint">Format JPG, PNG, atau WebP. Maksimal 8 MB.</p>
                 <div class="program-photo-preview" id="program-photo-preview" hidden><img id="program-photo-preview-image" alt="Pratinjau foto proker"><span id="program-photo-preview-label"></span></div>

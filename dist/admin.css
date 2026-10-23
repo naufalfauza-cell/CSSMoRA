@@ -148,6 +148,11 @@
 .agenda-next-step>strong{font-size:.82rem;line-height:1.45}
 .agenda-next-step>button{padding:9px 12px;border:0;border-radius:999px;background:var(--green);color:#fff;font-size:.73rem;font-weight:800;cursor:pointer}
 .agenda-next-step>button b{margin-left:7px}
+
+/* Show each saved program's originating division without widening the library rows. */
+.program-record-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.program-record-meta .program-division{width:max-content;padding:3px 8px;border-radius:999px;background:#eef4ea;color:#48634c;font-size:.66rem;font-weight:800;line-height:1.2}
+.program-record-meta .record-status{font-size:.62rem}
 #agenda-program:disabled{background:#f0f1ec;color:#818981}
 @media(max-width:900px){.program-library-grid{grid-template-columns:1fr}}
 @media(max-width:600px){
@@ -1636,6 +1641,11 @@
 .admin-page .record-actions{gap:5px}
 .admin-page .record-actions button,.admin-page .program-record-actions button{min-height:28px;padding:5px 9px;border:1px solid #e6edf5;border-radius:7px;background:#fff;color:#244d3f;font:600 10px 'Plus Jakarta Sans',sans-serif}
 .admin-page .record-actions button:hover,.admin-page .program-record-actions button:hover{border-color:#c4d7c7;background:#f6faf6}
+.admin-page .program-record-actions .program-delete-button{display:grid;place-items:center;width:28px;min-width:28px;height:28px;padding:5px;border-color:#f0ddda;background:#fff8f6;color:#a23e38}
+.admin-page .program-record-actions .program-delete-button:hover{border-color:#e7b8b2;background:#fff0ed;color:#8c3028}
+.admin-page .program-record-actions .program-delete-button:focus-visible{outline:2px solid #a23e38;outline-offset:2px}
+.admin-page .program-record-actions .program-delete-button:disabled{cursor:wait;opacity:.55}
+.admin-page .program-delete-button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .admin-page .record-actions button.delete{color:#a23e38}
 .admin-page .records-empty{padding:24px 12px;border:1px dashed #d8e1eb;border-radius:9px;background:#f8fafc;color:#687e97;font-size:12px}
 .admin-page .form-message{min-height:0;margin:4px 0 0;font-size:11px;line-height:1.45}
