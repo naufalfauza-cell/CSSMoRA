@@ -2,21 +2,21 @@
 
 /* One visual vocabulary across the public portal and the management workspace. */
 :root{
-  --ui-ink:#193d30;--ui-muted:#62786c;--ui-green:#176343;
-  --ui-mint:#e9f3e9;--ui-lime:#ddecaa;--ui-paper:#fffefb;
-  --ui-line:#dfe8df;--ui-shadow:0 8px 28px #173b2b09;
+  --ui-ink:#23332b;--ui-muted:#66746d;--ui-green:#2b4f3e;
+  --ui-mint:#efefed;--ui-lime:#c3d3c9;--ui-paper:#fffefb;
+  --ui-line:#e4e4e3;--ui-shadow:0 8px 28px #22302909;
   --font:'Plus Jakarta Sans',sans-serif;--display:'Outfit',sans-serif;
 }
 body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page){
   color:var(--ui-ink);font-family:var(--font);font-weight:400;
-  background:#f5f7f2;
+  background:#f5f5f4;
 }
 body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(h1,h2,h3,h4){
   font-family:var(--display);font-weight:600;letter-spacing:-.035em;
 }
 body :is(button,input,select,textarea){font-family:var(--font)}
-body :is(button,a,input,select,textarea):focus-visible{outline:3px solid #5b926b;outline-offset:3px}
-body :is(input,textarea)::placeholder{color:#7b8980;opacity:1}
+body :is(button,a,input,select,textarea):focus-visible{outline:3px solid #668777;outline-offset:3px}
+body :is(input,textarea)::placeholder{color:#7e8682;opacity:1}
 body :is(button,a){-webkit-tap-highlight-color:transparent}
 body :is(button,a,input,select,textarea){scroll-margin-top:88px}
 body :is(button:disabled,input:disabled,select:disabled){cursor:not-allowed}
@@ -24,18 +24,18 @@ body :is(button:disabled,input:disabled,select:disabled){cursor:not-allowed}
 /* Shared navigation: light, quiet, and easy to scan. */
 body:is(.catalog-page,.agenda-page,.checkin-page,.admin-page)>.site-header,
 .achievement-page .achievement-header{
-  background:#f9fbf7f2;border-bottom:1px solid #e4ebe2;box-shadow:none;
+  background:#f9f9f9f2;border-bottom:1px solid #e7e7e6;box-shadow:none;
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
 }
 body .portal-nav{gap:8px}
 body .portal-nav a{border:0;border-radius:999px;font-weight:600;box-shadow:none}
-body .portal-nav a[aria-current=page]{background:var(--ui-mint);color:#1f6243;box-shadow:none}
+body .portal-nav a[aria-current=page]{background:var(--ui-mint);color:#2e5341;box-shadow:none}
 body .portal-nav .portal-nav-admin{background:var(--ui-ink);color:#fff;border:0}
 body .brand-copy strong{font-family:var(--display);font-weight:600;letter-spacing:-.025em}
 body .page-breadcrumb{font-size:11px;color:var(--ui-muted)}
 body .page-breadcrumb a{color:var(--ui-green)}
 body :is(.catalog-eyebrow,.agenda-eyebrow,.agenda-section-kicker,.achievement-eyebrow,.admin-kicker,.auth-kicker){
-  font-size:10px;font-weight:700;letter-spacing:.13em;color:#53745f;
+  font-size:10px;font-weight:700;letter-spacing:.13em;color:#5a6d64;
 }
 
 /* Catalog: the poster is the surface, not another rectangle inside a rectangle. */
@@ -43,34 +43,34 @@ body :is(.catalog-eyebrow,.agenda-eyebrow,.agenda-section-kicker,.achievement-ey
 .catalog-page .catalog-subtitle{font-size:13px;color:var(--ui-muted)}
 .catalog-page .catalog-controls{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
 .catalog-page .quick-filters{gap:7px;margin-bottom:16px}
-.catalog-page .quick-filter{padding:9px 15px;border:1px solid #dfe7dc;background:transparent;color:#486652;box-shadow:none;font-size:12px;font-weight:600}
-.catalog-page .quick-filter.active{background:var(--ui-ink);border-color:var(--ui-ink);color:#fff;box-shadow:0 3px 0 #102d2215}
-.catalog-page .quick-filter:hover{background:#e8f0e3;color:#1e5038;transform:translateY(-2px)}
-.catalog-page .quick-filter.active:hover{background:#265b40;color:#fff}
+.catalog-page .quick-filter{padding:9px 15px;border:1px solid #e2e2e1;background:transparent;color:#4e6057;box-shadow:none;font-size:12px;font-weight:600}
+.catalog-page .quick-filter.active{background:var(--ui-ink);border-color:var(--ui-ink);color:#fff;box-shadow:0 3px 0 #19241f15}
+.catalog-page .quick-filter:hover{background:#eaebe8;color:#284638;transform:translateY(-2px)}
+.catalog-page .quick-filter.active:hover{background:#315041;color:#fff}
 .catalog-page :is(.search-box,.select-wrap){min-height:44px;border:1px solid var(--ui-line);border-radius:14px;background:var(--ui-paper);box-shadow:none}
 .catalog-page .search-box input{font-size:12px;font-weight:400}
 .catalog-page .select-wrap select{font-size:12px;font-weight:500}
 .catalog-page .competition-grid{gap:28px 20px}
 .catalog-page .competition-card{padding:0 0 10px;border:0;border-radius:0;background:transparent;box-shadow:none;text-align:left}
 .catalog-page .competition-card:hover{transform:translateY(-4px);box-shadow:none}
-.catalog-page .card-poster{border-radius:24px 24px 24px 8px;overflow:hidden;background:#e6ede1;box-shadow:0 8px 20px #153e2910}
+.catalog-page .card-poster{border-radius:24px 24px 24px 8px;overflow:hidden;background:#e8e8e6;box-shadow:0 8px 20px #22312a10}
 .catalog-page .poster-image{transition:transform .35s ease}
 .catalog-page .competition-card:hover .poster-image{transform:scale(1.025)}
 .catalog-page :is(.card-meta,.card-title-row,.competition-card>p,.card-bottom){margin-left:3px;margin-right:3px}
-.catalog-page .card-meta{margin-top:16px;font-size:9px;letter-spacing:.06em;color:#607363}
+.catalog-page .card-meta{margin-top:16px;font-size:9px;letter-spacing:.06em;color:#646f6a}
 .catalog-page .card-title-row h3{font-size:19px;font-weight:600;line-height:1.25;color:var(--ui-ink)}
-.catalog-page .card-title-row>span{display:grid;place-items:center;width:29px;height:29px;border-radius:50%;background:var(--ui-lime);color:#254d2f;flex:none}
+.catalog-page .card-title-row>span{display:grid;place-items:center;width:29px;height:29px;border-radius:50%;background:var(--ui-lime);color:#2d4539;flex:none}
 .catalog-page .competition-card>p{font-size:12px;color:var(--ui-muted);margin-bottom:10px}
-.catalog-page .card-bottom{border-top:1px solid #dce5d9;padding-top:10px;font-size:10px}
-.catalog-page .card-bottom strong{color:#2c6845;font-weight:600;font-size:11px}
-.catalog-page .status-badge{border:0;border-radius:999px;background:#fbfff4ee;color:#265b3d;padding:7px 10px;box-shadow:0 2px 10px #183f2714;backdrop-filter:blur(8px);font-weight:600}
-.catalog-page .status-badge.is-closed{background:#31463ce8;color:#fff}
+.catalog-page .card-bottom{border-top:1px solid #e0e0de;padding-top:10px;font-size:10px}
+.catalog-page .card-bottom strong{color:#385c4b;font-weight:600;font-size:11px}
+.catalog-page .status-badge{border:0;border-radius:999px;background:#fafaf9ee;color:#315041;padding:7px 10px;box-shadow:0 2px 10px #24332c14;backdrop-filter:blur(8px);font-weight:600}
+.catalog-page .status-badge.is-closed{background:#35423ce8;color:#fff}
 .catalog-page .detail-page-grid{overflow:visible;gap:28px;border:0;border-radius:0;background:transparent;box-shadow:none;align-items:start}
 .catalog-page .detail-poster{overflow:hidden;border-radius:24px 24px 24px 8px;box-shadow:var(--ui-shadow)}
 .catalog-page .detail-info{padding:14px 10px 24px}
 .catalog-page .detail-info h1{font-family:var(--display);font-size:clamp(28px,3vw,40px);font-weight:600;line-height:1.12}
-.catalog-page .detail-organizer{padding:0 0 0 12px;border-radius:0;background:transparent;border-left:3px solid #98b86a}
-.catalog-page .detail-description{font-size:13px;color:#536d5d;line-height:1.8}
+.catalog-page .detail-organizer{padding:0 0 0 12px;border-radius:0;background:transparent;border-left:3px solid #7aa892}
+.catalog-page .detail-description{font-size:13px;color:#586860;line-height:1.8}
 .catalog-page .register-button{border-radius:999px;background:var(--ui-green);font-weight:600}
 
 /* Agenda cards are photo-led; an incomplete row retains four desktop columns. */
@@ -78,67 +78,67 @@ body :is(.catalog-eyebrow,.agenda-eyebrow,.agenda-section-kicker,.achievement-ey
 .agenda-page .agenda-intro h1{font-size:clamp(36px,4.6vw,54px);font-weight:600;line-height:1.08}
 .agenda-page .agenda-subtitle{font-size:13px;color:var(--ui-muted)}
 .agenda-page .agenda-today-card{border:0;background:transparent;box-shadow:none;padding:8px 0;gap:10px}
-.agenda-page .agenda-today-icon{border-radius:50%;width:42px;height:42px;background:var(--ui-lime);color:#34543a}
+.agenda-page .agenda-today-icon{border-radius:50%;width:42px;height:42px;background:var(--ui-lime);color:#3a4e44}
 .agenda-page .agenda-section-head h2{font-family:var(--display);font-size:30px;font-weight:500;letter-spacing:-.035em}
 .agenda-page .month-switcher{border:1px solid var(--ui-line);border-radius:999px;background:var(--ui-paper);box-shadow:none}
-.agenda-page .month-switcher button{border-radius:50%;background:#edf3e8}
+.agenda-page .month-switcher button{border-radius:50%;background:#eeeeed}
 .agenda-page .agenda-event-card{border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible}
 .agenda-page .agenda-event-card:hover{box-shadow:none;transform:translateY(-3px)}
-.agenda-page .agenda-card-photo{border-radius:24px 24px 24px 8px;overflow:hidden;box-shadow:0 6px 20px #16382010}
+.agenda-page .agenda-card-photo{border-radius:24px 24px 24px 8px;overflow:hidden;box-shadow:0 6px 20px #202e2710}
 .agenda-page .agenda-card-photo img{transition:transform .4s ease}
 .agenda-page .agenda-event-card:hover .agenda-card-photo img{transform:scale(1.04)}
-.agenda-page .agenda-photo-tag{left:12px;bottom:12px;border:0;background:#fbfff0ed;color:#254b35;font-size:9px;font-weight:600;box-shadow:none}
+.agenda-page .agenda-photo-tag{left:12px;bottom:12px;border:0;background:#f8f8f7ed;color:#2d4338;font-size:9px;font-weight:600;box-shadow:none}
 .agenda-page .agenda-card-body{padding:16px 3px 6px;gap:0}
 .agenda-page .agenda-card-top{margin-bottom:10px;gap:9px}
-.agenda-page .agenda-date-line{font-size:11px;font-weight:500;color:#627465;line-height:1.5}
+.agenda-page .agenda-date-line{font-size:11px;font-weight:500;color:#66706b;line-height:1.5}
 .agenda-page .agenda-card-body h3{font-family:var(--display);font-size:20px;font-weight:600;line-height:1.22}
-.agenda-page .agenda-program-name{font-size:10px;letter-spacing:.04em;font-weight:500;color:#748374;margin-top:6px}
-.agenda-page .agenda-event-meta{margin-top:14px;padding-top:10px;border-top:1px solid #dfe7da;color:#4e6a57}
-.agenda-page .countdown-day{background:var(--ui-lime);color:#304c25;font-weight:600}
-.agenda-page .countdown-time{background:transparent;padding-left:3px;color:#647361;font-weight:500}
-.agenda-page .countdown-live{background:#dbeedc;color:#23613c}
+.agenda-page .agenda-program-name{font-size:10px;letter-spacing:.04em;font-weight:500;color:#77807c;margin-top:6px}
+.agenda-page .agenda-event-meta{margin-top:14px;padding-top:10px;border-top:1px solid #e1e2df;color:#54645c}
+.agenda-page .countdown-day{background:var(--ui-lime);color:#2d4439;font-weight:600}
+.agenda-page .countdown-time{background:transparent;padding-left:3px;color:#656f6a;font-weight:500}
+.agenda-page .countdown-live{background:#e6e6e3;color:#2f5543}
 .agenda-page .calendar-card{border:1px solid var(--ui-line);border-radius:22px;padding:20px;background:var(--ui-paper);box-shadow:none}
 .agenda-page .calendar-grid{gap:0;border-top:1px solid var(--ui-line);border-left:1px solid var(--ui-line);border-radius:14px;overflow:hidden}
 .agenda-page .calendar-day{border:0;border-right:1px solid var(--ui-line);border-bottom:1px solid var(--ui-line);border-radius:0;background:transparent;box-shadow:none;transition:background .18s}
-.agenda-page .calendar-day:hover{transform:none;background:#eef5e7}
-.agenda-page .calendar-day-outside{background:#f4f6ef}
-.agenda-page .calendar-day.is-selected{background:#e1eed2;color:var(--ui-ink);box-shadow:inset 0 0 0 2px #669257}
-.agenda-page .calendar-day.is-today{background:#f0f5e9}
-.agenda-page .calendar-day.is-today .calendar-day-number{background:#285c3f;color:#fff;border-radius:50%}
-.agenda-page .calendar-event-chip{background:#e6f0df;color:#2f6040;border-radius:5px;font-weight:500}
+.agenda-page .calendar-day:hover{transform:none;background:#efefed}
+.agenda-page .calendar-day-outside{background:#f3f3f2}
+.agenda-page .calendar-day.is-selected{background:#e2e3dd;color:var(--ui-ink);box-shadow:inset 0 0 0 2px #638675}
+.agenda-page .calendar-day.is-today{background:#f0f0ee}
+.agenda-page .calendar-day.is-today .calendar-day-number{background:#325243;color:#fff;border-radius:50%}
+.agenda-page .calendar-event-chip{background:#e9e9e6;color:#395648;border-radius:5px;font-weight:500}
 
 /* Login and attendance: a small identity mark replaces heavy decoration. */
-body.admin-page .auth-card,.checkin-page .checkin-card{position:relative;border:1px solid #e3eadd;border-radius:28px 28px 28px 10px;background:var(--ui-paper);box-shadow:0 18px 55px #193a2710}
+body.admin-page .auth-card,.checkin-page .checkin-card{position:relative;border:1px solid #e4e5e2;border-radius:28px 28px 28px 10px;background:var(--ui-paper);box-shadow:0 18px 55px #22312a10}
 body.admin-page .auth-card{padding:28px;max-width:390px}
 body.admin-page .auth-card h1,.checkin-page .checkin-card h1{font-family:var(--display);font-size:30px;font-weight:600;line-height:1.1;letter-spacing:-.035em}
 body.admin-page .auth-help{font-size:12px;line-height:1.7;color:var(--ui-muted)}
-.flow-emblem{display:grid;place-items:center;width:44px;height:44px;margin-bottom:18px;background:#e8efd5;color:#315b39;border-radius:15px 15px 15px 5px;transform:rotate(-5deg)}
+.flow-emblem{display:grid;place-items:center;width:44px;height:44px;margin-bottom:18px;background:#e4e4e0;color:#395346;border-radius:15px 15px 15px 5px;transform:rotate(-5deg)}
 .flow-emblem svg{width:22px;height:22px;transform:rotate(5deg);stroke-width:1.7}
-body.admin-page .auth-card input,.checkin-page .checkin-card :is(input,select){min-height:42px;border:1px solid #dbe5d9;border-radius:12px;background:#fbfcf8;font-size:12px}
-body.admin-page .auth-card input:focus,.checkin-page .checkin-card :is(input,select):focus{background:#fff;border-color:#64916a;box-shadow:0 0 0 3px #5c93681a}
-body.admin-page .auth-card .admin-button,.checkin-page .admin-button{border-radius:999px;background:var(--ui-green);box-shadow:0 3px 0 #15452c20;min-height:42px;font-size:12px;font-weight:600}
+body.admin-page .auth-card input,.checkin-page .checkin-card :is(input,select){min-height:42px;border:1px solid #e0e0de;border-radius:12px;background:#fafafa;font-size:12px}
+body.admin-page .auth-card input:focus,.checkin-page .checkin-card :is(input,select):focus{background:#fff;border-color:#6d887b;box-shadow:0 0 0 3px #6788781a}
+body.admin-page .auth-card .admin-button,.checkin-page .admin-button{border-radius:999px;background:var(--ui-green);box-shadow:0 3px 0 #25352d20;min-height:42px;font-size:12px;font-weight:600}
 .checkin-page .checkin-card{width:min(100%,480px)}
-.checkin-page .checkin-card .form-message:not(:empty){padding:13px 15px;border-radius:14px;background:#edf3e7;color:#4a6753;line-height:1.7;font-size:12px}
+.checkin-page .checkin-card .form-message:not(:empty){padding:13px 15px;border-radius:14px;background:#eeeeec;color:#506159;line-height:1.7;font-size:12px}
 .checkin-page .checkin-card .form-message[data-kind=error]{background:#fff0e9;color:#9b4231}
-.checkin-page .checkin-card .form-message[data-kind=success]{background:#e4f2e4;color:#25613b}
-.checkin-page .checkin-card input[type=file]{border-style:dashed;background:#f0f5e9}
+.checkin-page .checkin-card .form-message[data-kind=success]{background:#ececea;color:#315544}
+.checkin-page .checkin-card input[type=file]{border-style:dashed;background:#f0f0ee}
 
 /* Public funding form: two purposeful sections, no stacked box-within-box. */
 .achievement-page .achievement-header{position:sticky;top:0;z-index:20}
 .achievement-page .achievement-intro h1{font-family:var(--display);font-size:clamp(34px,4vw,46px);font-weight:600;line-height:1.07}
-.achievement-page .achievement-intro h1 em{color:#3d7950;font-style:normal}
+.achievement-page .achievement-intro h1 em{color:#496d5c;font-style:normal}
 .achievement-page .achievement-intro p{font-size:12px;color:var(--ui-muted)}
 .achievement-page .achievement-card{border:0;border-radius:0;background:transparent;box-shadow:none;padding:0;min-width:0}
 .achievement-page .achievement-section-heading{padding-bottom:16px;border-bottom:1px solid var(--ui-line)}
 .achievement-page .achievement-section-heading h2{font-family:var(--display);font-size:22px;font-weight:500}
-.achievement-page .achievement-section-heading>span{border-radius:50%;background:var(--ui-lime);color:#355532;width:32px;height:32px;font-size:11px}
-.achievement-page .achievement-card :is(input:not([type=checkbox]):not([type=radio]),select){height:42px;border-radius:12px;background:var(--ui-paper);border-color:#dce6d8;font-size:12px;font-weight:400}
+.achievement-page .achievement-section-heading>span{border-radius:50%;background:var(--ui-lime);color:#394e44;width:32px;height:32px;font-size:11px}
+.achievement-page .achievement-card :is(input:not([type=checkbox]):not([type=radio]),select){height:42px;border-radius:12px;background:var(--ui-paper);border-color:#e0e0de;font-size:12px;font-weight:400}
 .achievement-page .participation-option{border-radius:15px;background:var(--ui-paper);font-weight:500;transition:background .18s,border-color .18s}
-.achievement-page .participation-option:has(input:checked){background:#eaf2df;border-color:#7e9e6e;box-shadow:none}
-.achievement-page .subsidy-result{border:0;border-radius:18px;background:#e6efd8;color:#234a31}
+.achievement-page .participation-option:has(input:checked){background:#eaeae7;border-color:#789486;box-shadow:none}
+.achievement-page .subsidy-result{border:0;border-radius:18px;background:#e5e6e1;color:#2b4237}
 .achievement-page .subsidy-result strong{font-family:var(--display);font-weight:600}
 .achievement-page .return-agreement{background:transparent;border:0;border-top:1px solid var(--ui-line);border-radius:0;padding:16px 0;line-height:1.65}
-.achievement-page .achievement-submit{border-radius:999px;background:var(--ui-green);box-shadow:0 4px 0 #194c2f17;font-size:12px;font-weight:600}
+.achievement-page .achievement-submit{border-radius:999px;background:var(--ui-green);box-shadow:0 4px 0 #293c3317;font-size:12px;font-weight:600}
 @media(min-width:960px){
  .achievement-page .achievement-main{width:min(100% - 64px,1100px)}
  .achievement-page .achievement-form{grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:22px 52px;align-items:start}
@@ -148,40 +148,40 @@ body.admin-page .auth-card .admin-button,.checkin-page .admin-button{border-radi
 }
 
 /* Management: keep the established density, but remove competing frames. */
-body.admin-page .admin-content-area{background:#f6f8f3}
-body.admin-page .admin-topbar{background:#fffefb;border-bottom:1px solid #e5ebdf;box-shadow:none}
+body.admin-page .admin-content-area{background:#f6f6f5}
+body.admin-page .admin-topbar{background:#fffefb;border-bottom:1px solid #e6e6e4;box-shadow:none}
 body.admin-page .admin-topbar-leading h2{font-family:var(--display);font-size:23px;font-weight:600;letter-spacing:-.03em}
-body.admin-page .admin-sidebar,body.admin-page .admin-sidebar::before{background:#204c3b}
+body.admin-page .admin-sidebar,body.admin-page .admin-sidebar::before{background:#294336}
 body.admin-page .admin-sidebar .admin-tab{border:0;border-radius:14px;margin-block:3px;transition:background .18s,transform .18s}
 body.admin-page .admin-sidebar .admin-tab:hover{background:#ffffff0d;transform:translateX(2px)}
-body.admin-page .admin-sidebar .admin-tab.is-active{background:#dfeab9;color:#234532;box-shadow:none}
-body.admin-page .admin-sidebar .admin-tab.is-active :is(strong,small,.module-state){color:#234532}
-body.admin-page .admin-sidebar .admin-tab.is-active .module-icon{color:#234d33;background:#ffffff66}
-body.admin-page .admin-sidebar .module-icon{border-radius:11px;background:#ffffff0b;color:#d7e8ba}
+body.admin-page .admin-sidebar .admin-tab.is-active{background:#cbd8d0;color:#2a3e34;box-shadow:none}
+body.admin-page .admin-sidebar .admin-tab.is-active :is(strong,small,.module-state){color:#2a3e34}
+body.admin-page .admin-sidebar .admin-tab.is-active .module-icon{color:#2b4538;background:#ffffff66}
+body.admin-page .admin-sidebar .module-icon{border-radius:11px;background:#ffffff0b;color:#cad8cf}
 body.admin-page .admin-sidebar .module-copy strong{font-family:var(--display);font-size:13px;font-weight:500;letter-spacing:0}
 body.admin-page .admin-sidebar .module-copy small{font-size:9px;line-height:1.5}
 body.admin-page .admin-sidebar .drive-shortcut{border:0;background:#ffffff08;border-radius:14px}
 body.admin-page :is(.editor-card,.records-card,.member-table-card,.member-editor-card,.access-form-card,.access-list-card,.attendance-editor-card,.attendance-events-card,.letter-editor-card,.letter-register-card){
-  border:1px solid #e3e9df;border-radius:18px;background:var(--ui-paper);box-shadow:none;
+  border:1px solid #e5e5e3;border-radius:18px;background:var(--ui-paper);box-shadow:none;
 }
 body.admin-page :is(.editor-heading h3,.member-table-heading h3,.secretariat-intro h3,.program-library-heading h3,.access-heading h3,.module-placeholder-card h3){font-family:var(--display);font-size:18px;font-weight:500;letter-spacing:-.025em;color:var(--ui-ink)}
-body.admin-page :is(.record-row,.program-record,.attendance-event-card,.letter-record,.achievement-application-card){border:0;border-bottom:1px solid #e4ebdf;border-radius:0;background:transparent;box-shadow:none;padding-block:15px}
+body.admin-page :is(.record-row,.program-record,.attendance-event-card,.letter-record,.achievement-application-card){border:0;border-bottom:1px solid #e6e6e4;border-radius:0;background:transparent;box-shadow:none;padding-block:15px}
 body.admin-page :is(.record-row,.attendance-event-card,.letter-record):last-child{border-bottom:0}
-body.admin-page :is(.record-row,.attendance-event-card):hover{background:#f1f6eb;box-shadow:none}
+body.admin-page :is(.record-row,.attendance-event-card):hover{background:#f1f1f0;box-shadow:none}
 body.admin-page :is(.record-row h4,.achievement-application-head h4){font-family:var(--display);font-weight:500;letter-spacing:-.01em}
 body.admin-page :is(.secretariat-table,.member-data-table,.access-table,.achievement-approved-table){border-collapse:separate;border-spacing:0;font-size:12px}
-body.admin-page :is(.secretariat-table,.member-data-table,.access-table,.achievement-approved-table) th{background:#f1f5e9;color:#5e735e;font-weight:600;border-bottom:1px solid #e1e9db}
-body.admin-page :is(.secretariat-table,.member-data-table,.access-table,.achievement-approved-table) td{background:transparent;border-bottom:1px solid #e8ede3}
-body.admin-page :is(.secretariat-table,.member-data-table,.access-table,.achievement-approved-table) tbody tr:hover{background:#f1f6eb}
-body.admin-page :is(.editor-card,.access-form,.member-editor-card,.letter-archive-form) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){border-color:#dce5d9;border-radius:11px;background:#fcfdf9;box-shadow:none;font-weight:400}
-body.admin-page :is(.editor-card,.access-form,.member-editor-card) :is(input,select,textarea):focus{border-color:#6d956b;box-shadow:0 0 0 3px #75966318;background:#fff}
+body.admin-page :is(.secretariat-table,.member-data-table,.access-table,.achievement-approved-table) th{background:#f0f0ee;color:#626f69;font-weight:600;border-bottom:1px solid #e3e3e1}
+body.admin-page :is(.secretariat-table,.member-data-table,.access-table,.achievement-approved-table) td{background:transparent;border-bottom:1px solid #e9e9e7}
+body.admin-page :is(.secretariat-table,.member-data-table,.access-table,.achievement-approved-table) tbody tr:hover{background:#f1f1f0}
+body.admin-page :is(.editor-card,.access-form,.member-editor-card,.letter-archive-form) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){border-color:#e0e0de;border-radius:11px;background:#fbfbfb;box-shadow:none;font-weight:400}
+body.admin-page :is(.editor-card,.access-form,.member-editor-card) :is(input,select,textarea):focus{border-color:#738d80;box-shadow:0 0 0 3px #6d8c7d18;background:#fff}
 body.admin-page :is(.agenda-admin-tab,.achievement-filter,.secretariat-tab){border-radius:999px;box-shadow:none}
-body.admin-page :is(.agenda-admin-tab,.achievement-filter,.secretariat-tab).is-active{background:#e4eed6;color:#2d5638;border-color:transparent;box-shadow:none}
+body.admin-page :is(.agenda-admin-tab,.achievement-filter,.secretariat-tab).is-active{background:#e3e4e0;color:#354e42;border-color:transparent;box-shadow:none}
 body.admin-page :is(.record-status,.access-status){border-radius:999px;font-weight:600}
-body.admin-page .agenda-announcement-tools{background:#f1f6e9;border:0;border-radius:16px}
-body.admin-page .module-placeholder-card{border:1px dashed #cbd9c3;border-radius:22px;background:#f2f6eb;box-shadow:none}
+body.admin-page .agenda-announcement-tools{background:#f0f1ee;border:0;border-radius:16px}
+body.admin-page .module-placeholder-card{border:1px dashed #c9d3cd;border-radius:22px;background:#f1f1f0;box-shadow:none}
 body.admin-page .attendance-summary{gap:8px;border:0;background:transparent;box-shadow:none}
-body.admin-page .attendance-summary>span{border:0;border-radius:12px;background:#edf3e5}
+body.admin-page .attendance-summary>span{border:0;border-radius:12px;background:#ededeb}
 body.admin-page .achievement-admin-heading h3{font-family:var(--display);font-size:23px;font-weight:500}
 body.admin-page .achievement-approved-table-wrap{border:1px solid var(--ui-line);border-radius:16px;overflow:auto;background:var(--ui-paper)}
 body.admin-page :is(.admin-button,.attendance-save){border-radius:999px;font-weight:600}
@@ -223,20 +223,20 @@ body.admin-page :is(.admin-button,.attendance-save){border-radius:999px;font-wei
 /* Copy actions: compact pill buttons instead of browser-default rectangles. */
 body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement){
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  min-height:30px;padding:0 12px;border:1px solid #dce9cd;border-radius:999px;
-  background:linear-gradient(145deg,#f1f6e8,#e7efd9);color:#28583d;
-  box-shadow:inset 0 -1px 0 #d5e3ca,0 2px 6px #244d3f0b;
+  min-height:30px;padding:0 12px;border:1px solid #d6e0da;border-radius:999px;
+  background:linear-gradient(145deg,#f0f0ee,#e5e6e2);color:#324e40;
+  box-shadow:inset 0 -1px 0 #d1dcd5,0 2px 6px #2c45390b;
   font:600 10px/1 var(--display);letter-spacing:-.01em;white-space:nowrap;cursor:pointer;
   transition:transform .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease;
 }
 body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement)::before{
   content:"";width:9px;height:10px;flex:none;border:1.4px solid currentColor;border-radius:2.5px;
-  box-shadow:2.5px -2.5px 0 -1px #edf3e4,2.5px -2.5px 0 0 currentColor;
+  box-shadow:2.5px -2.5px 0 -1px #ecedea,2.5px -2.5px 0 0 currentColor;
 }
 body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement):hover:not(:disabled){
-  transform:translateY(-1px);border-color:#c7d9b2;
-  background:linear-gradient(145deg,#f4f8e9,#ddecaa);
-  box-shadow:inset 0 -1px 0 #d1dfb8,0 5px 12px #244d3f12;
+  transform:translateY(-1px);border-color:#bdcec3;
+  background:linear-gradient(145deg,#f1f2ef,#c3d3c9);
+  box-shadow:inset 0 -1px 0 #c4d3ca,0 5px 12px #2c453912;
 }
 body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement):active:not(:disabled){transform:scale(.97)}
 body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-announcement):disabled{opacity:.5;box-shadow:none}
@@ -249,28 +249,28 @@ body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-annou
 .catalog-page .catalog-controls{margin-bottom:10px}
 .catalog-page .toolbar{gap:9px;margin-bottom:10px}
 .catalog-page .competition-grid{grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:14px}
-.catalog-page .competition-card{display:flex;min-width:0;min-height:100%;flex-direction:column;padding:9px;border:1px solid #e0e8dd;border-radius:20px;background:#fffefa;box-shadow:0 5px 16px #21442d08;text-align:left;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-.catalog-page .competition-card:hover{transform:translateY(-3px);border-color:#c9d9c5;box-shadow:0 12px 25px #21442d12}
-.catalog-page .competition-card:focus-visible{outline:3px solid #75a87f;outline-offset:3px}
-.catalog-page .card-poster{display:grid;height:clamp(165px,15vw,215px);place-items:center;aspect-ratio:auto;border-radius:15px 15px 15px 7px;background:#f0f3ed;box-shadow:none}
-.catalog-page .poster-image{width:100%;height:100%;object-fit:contain;padding:3px;background:#f0f3ed}
+.catalog-page .competition-card{display:flex;min-width:0;min-height:100%;flex-direction:column;padding:9px;border:1px solid #e3e3e2;border-radius:20px;background:#fffefa;box-shadow:0 5px 16px #293c3308;text-align:left;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.catalog-page .competition-card:hover{transform:translateY(-3px);border-color:#cbd3ce;box-shadow:0 12px 25px #293c3312}
+.catalog-page .competition-card:focus-visible{outline:3px solid #7f9e8f;outline-offset:3px}
+.catalog-page .card-poster{display:grid;height:clamp(165px,15vw,215px);place-items:center;aspect-ratio:auto;border-radius:15px 15px 15px 7px;background:#f0f1ef;box-shadow:none}
+.catalog-page .poster-image{width:100%;height:100%;object-fit:contain;padding:3px;background:#f0f1ef}
 .catalog-page .poster-design{width:100%;height:100%;border-radius:15px 15px 15px 7px}
-.catalog-page .status-badge{top:9px;left:9px;padding:6px 9px;background:#fffffff2;color:#265b3d;font:600 10px var(--font);box-shadow:0 2px 9px #183f2714}
-.catalog-page .status-badge::before{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:#3f995a;content:"";vertical-align:1px}
-.catalog-page .status-badge.is-closed{background:#31463ced;color:#fff}
-.catalog-page .status-badge.is-closed::before{background:#d0d9d1}
-.catalog-page .card-meta{justify-content:flex-start;min-height:16px;margin:11px 3px 0;color:#65806a;font:600 9px var(--font);letter-spacing:.04em;text-transform:none}
+.catalog-page .status-badge{top:9px;left:9px;padding:6px 9px;background:#fffffff2;color:#315041;font:600 10px var(--font);box-shadow:0 2px 9px #24332c14}
+.catalog-page .status-badge::before{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:#51876d;content:"";vertical-align:1px}
+.catalog-page .status-badge.is-closed{background:#35423ced;color:#fff}
+.catalog-page .status-badge.is-closed::before{background:#d2d7d4}
+.catalog-page .card-meta{justify-content:flex-start;min-height:16px;margin:11px 3px 0;color:#6a7b73;font:600 9px var(--font);letter-spacing:.04em;text-transform:none}
 .catalog-page .card-title-row{flex:1;align-items:flex-start;margin:6px 3px 0}
 .catalog-page .card-title-row h3{font-size:17px;line-height:1.25;overflow-wrap:anywhere}
-.catalog-page .card-title-row>span{width:25px;height:25px;background:#eaf1e7;font-size:14px}
-.catalog-page .competition-card>p{margin:5px 3px 10px;color:#708074;font-size:10px;line-height:1.4}
-.catalog-page .competition-card-facts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:auto;padding-top:9px;border-top:1px solid #e6ebe2}
+.catalog-page .card-title-row>span{width:25px;height:25px;background:#ededeb;font-size:14px}
+.catalog-page .competition-card>p{margin:5px 3px 10px;color:#737d78;font-size:10px;line-height:1.4}
+.catalog-page .competition-card-facts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:auto;padding-top:9px;border-top:1px solid #e7e7e6}
 .catalog-page .competition-card-facts>span{display:grid;min-width:0;gap:3px}
 .catalog-page .competition-card-facts small{color:#849087;font-size:8px;line-height:1.3}
-.catalog-page .competition-card-facts strong{overflow:hidden;color:#315f43;font-size:10px;font-weight:600;line-height:1.35;text-overflow:ellipsis}
+.catalog-page .competition-card-facts strong{overflow:hidden;color:#3a5648;font-size:10px;font-weight:600;line-height:1.35;text-overflow:ellipsis}
 .catalog-page .competition-card-facts>span:last-child strong{overflow-wrap:anywhere}
-.catalog-page .results-line{margin:12px 0;color:#6e7d71;font:500 11px var(--font);letter-spacing:0}
-.catalog-page .detail-poster{background:#f0f3ed}
+.catalog-page .results-line{margin:12px 0;color:#717a76;font:500 11px var(--font);letter-spacing:0}
+.catalog-page .detail-poster{background:#f0f1ef}
 .catalog-page .detail-poster .poster-image{object-fit:contain}
 @media(max-width:1200px){.catalog-page .competition-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.catalog-page .card-poster{height:clamp(165px,20vw,215px)}}
 @media(max-width:850px){.catalog-page .competition-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.catalog-page .card-poster{height:clamp(155px,34vw,210px)}}
