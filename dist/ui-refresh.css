@@ -291,3 +291,9 @@ body.admin-page :is(button[data-copy-letter],button[data-copy-event],#copy-annou
  .catalog-page .competition-card-facts small{font-size:7px}
  .catalog-page .competition-card-facts strong{font-size:9px}
 }
+
+/* Official identities on the login card. */
+body.admin-page .auth-brand-logos{display:flex;align-items:center;gap:14px;min-height:44px;margin-bottom:18px}
+body.admin-page .auth-cssmora-logo{display:block;width:44px;height:44px;object-fit:contain;flex:none}
+body.admin-page .auth-logo-divider{width:1px;height:30px;background:var(--ui-line);flex:none}
+body.admin-page .auth-partner-logo{display:block;width:110px;height:44px;object-fit:cover;object-position:center 60%;flex:none}
