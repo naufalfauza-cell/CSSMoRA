@@ -56,7 +56,7 @@
     const {userId,isLeadership,isSecretariatAdmin}=admin.context();
     list.innerHTML=requests.map(item=>{
       const canSign=(isLeadership||isSecretariatAdmin) && item.signer_id===userId && item.status==='pending';
-      const canCancel=['draft','pending'].includes(item.status) && (item.created_by===userId || isLeadership);
+      const canCancel=['draft','pending'].includes(item.status) && item.created_by===userId;
       const canRetry=item.status==='draft' && item.created_by===userId;
       const email=signers.find(signer=>signer.id===item.signer_id)?.email || 'Akun penandatangan';
       return `<article class="letter-sign-item" data-request-id="${esc(item.id)}">
