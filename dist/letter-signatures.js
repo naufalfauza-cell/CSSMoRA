@@ -80,6 +80,7 @@
   }
   async function load(currentLetters) {
     letters=currentLetters;
+    if(requestForm)requestForm.hidden=!admin.context().isSecretariatAdmin;
     const previous=$('#letter-sign-letter').value;
     $('#letter-sign-letter').replaceChildren(new Option('Pilih surat',''),...letters.filter(letter=>letter.archive_status!=='void').map(letter=>new Option(`${letter.letter_number} · ${letter.subject}`,letter.id)));
     if (letters.some(letter=>letter.id===previous)) $('#letter-sign-letter').value=previous;
@@ -99,7 +100,6 @@
     catch(error){message('#letter-sign-message',error.message,'error');}
   });
   const requestForm=$('#letter-sign-request-form');
-  if(requestForm)requestForm.hidden=!admin.context().isSecretariatAdmin;
   requestForm?.addEventListener('submit',async event=>{
     event.preventDefault();
     const form=event.currentTarget, button=form.querySelector('[type=submit]');
