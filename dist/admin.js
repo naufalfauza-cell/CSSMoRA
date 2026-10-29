@@ -258,8 +258,9 @@ async function loadRecords(){
   loadedAdminData.delete('competitions');
   recordList.innerHTML='<p class="records-empty">Memuat data…</p>';
   try{
-    competitions=await api('competitions?select=*&order=deadline.desc');
+    competitions=await api('competitions?select=*&order=createdAt.desc,deadline.desc');
     renderRecords();
+    recordList.scrollTop=0;
     loadedAdminData.add('competitions');
   }catch(error){
     recordList.innerHTML=`<p class="records-empty">${escapeHTML(error.message)}</p>`;
@@ -1125,9 +1126,10 @@ $('#member-csv').addEventListener('change',async event=>{
 async function loadAttendanceEvents(){
   attendanceEventList.innerHTML='<p class="records-empty">Memuat agenda…</p>';
   try{
-    const rows=await api('secretariat_attendance_events?select=*,agenda(id,title,starts_at,ends_at,status)&order=event_date.desc,created_at.desc');
+    const rows=await api('secretariat_attendance_events?select=*,agenda(id,title,starts_at,ends_at,status)&order=created_at.desc,event_date.desc');
     attendanceEvents=(rows||[]).map(row=>({...row,agenda:Array.isArray(row.agenda)?row.agenda[0]||null:row.agenda||null}));
     renderAttendanceEvents();
+    attendanceEventList.scrollTop=0;
     loadedAdminData.add('attendanceEvents');
     if(currentAttendanceEvent)currentAttendanceEvent=attendanceEvents.find(row=>row.id===currentAttendanceEvent.id)||null;
   }catch(error){
@@ -1441,11 +1443,12 @@ async function loadLetters(){
   loadedAdminData.delete('letters');
   const list=$('#letter-record-list');list.innerHTML='<p class="records-empty">Memuat surat…</p>';
   try{
-    const letters=await api('secretariat_letters?select=*&order=issued_on.desc,sequence_number.desc');
+    const letters=await api('secretariat_letters?select=*&order=created_at.desc,issued_on.desc,sequence_number.desc');
     loadedAdminData.add('letters');
     $('#letter-count').textContent=letters.length+' surat';
     if(!letters.length)list.innerHTML='<p class="records-empty">Belum ada surat yang diberi nomor.</p>';
     else list.innerHTML=letters.map(letter=>'<article class="letter-record"><div class="letter-record-heading"><strong>'+escapeHTML(letter.letter_number)+'</strong><button type="button" data-copy-letter="'+escapeHTML(letter.letter_number)+'">Salin nomor</button><span class="record-status '+(letter.archive_status==='archived'?'published':'')+'">'+(letter.archive_status==='archived'?'SUDAH ARSIP':letter.archive_status==='void'?'DIBATALKAN':'BELUM ARSIP')+'</span></div><p>'+escapeHTML(letter.subject)+'</p><small>'+escapeHTML(letter.issued_on)+' · '+escapeHTML(letter.department_code)+' · '+escapeHTML(letter.recipient||'Tujuan belum diisi')+'</small><form class="letter-archive-form" data-letter-id="'+escapeHTML(letter.id)+'"><input name="archiveUrl" type="url" value="'+escapeHTML(letter.archive_url||'')+'" placeholder="Tautan arsip Drive"><select name="archiveStatus" aria-label="Status arsip surat"><option value="pending" '+(letter.archive_status==='pending'?'selected':'')+'>Belum diarsipkan</option><option value="archived" '+(letter.archive_status==='archived'?'selected':'')+'>Sudah diarsipkan</option><option value="void" '+(letter.archive_status==='void'?'selected':'')+'>Dibatalkan</option></select><button type="submit">Simpan arsip</button></form></article>').join('');
+    list.scrollTop=0;
     void window.CSSMoRALetterSignatures?.load(letters);
   }catch(error){list.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
 }
@@ -1547,6 +1550,7 @@ async function loadAchievementDashboard(){
     const members=ids.length?await api('cssmora_achievement_application_members?select=application_id,member_name,cohort,role&application_id=in.('+ids.join(',')+')&order=cohort.desc,member_name.asc'):[];
     achievementApplications=applications;achievementMembers=members;
     renderAchievementApplications();
+    achievementList.scrollTop=0;
   }catch(error){
     if(!hasRows)achievementList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';
     else showMessage('#achievement-action-message','Data belum berhasil diperbarui: '+error.message,'error');
