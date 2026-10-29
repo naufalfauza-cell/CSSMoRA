@@ -173,3 +173,33 @@ with check (bucket_id='cssmora-agenda-programs' and public.cssmora_schedule_mana
 drop policy if exists cssmora_agenda_photo_delete on storage.objects;
 create policy cssmora_agenda_photo_delete on storage.objects for delete to authenticated
 using (bucket_id='cssmora-agenda-programs' and public.cssmora_schedule_manager());
+
+
+-- Preserve leadership's read-only visibility of source and signed PDFs.
+drop policy if exists "Secretary or assigned signer reads original PDF" on storage.objects;
+create policy "Secretary or assigned signer reads original PDF"
+on storage.objects for select to authenticated using (
+  bucket_id='cssmora-letter-pdfs'
+  and exists (
+    select 1 from public.cssmora_letter_signature_requests r
+    where objects.name=r.id::text||'/original.pdf'
+      and (
+        public.is_secretariat_viewer()
+        or (r.signer_id=(select auth.uid()) and public.cssmora_is_letter_signer())
+      )
+  )
+);
+
+drop policy if exists "Secretary or assigned signer reads signed PDF" on storage.objects;
+create policy "Secretary or assigned signer reads signed PDF"
+on storage.objects for select to authenticated using (
+  bucket_id='cssmora-letter-pdfs'
+  and exists (
+    select 1 from public.cssmora_letter_signature_requests r
+    where objects.name=r.id::text||'/signed.pdf'
+      and (
+        public.is_secretariat_viewer()
+        or (r.signer_id=(select auth.uid()) and public.cssmora_is_letter_signer())
+      )
+  )
+);
