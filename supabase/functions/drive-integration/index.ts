@@ -184,7 +184,7 @@ async function decryptToken(value: string) {
 
 async function currentConnection() {
   const rows = (await serviceRequest(
-    "cssmora_drive_connections?select=account_email,drive_root_folder_id,drive_uploads_folder_id,drive_backups_folder_id,refresh_token_ciphertext&singleton=eq.true&limit=1",
+    "cssmora_drive_connections?select=account_email,drive_root_folder_id,drive_uploads_folder_id,drive_backups_folder_id,backup_spreadsheet_id,refresh_token_ciphertext&singleton=eq.true&limit=1",
   )).data;
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
@@ -227,7 +227,7 @@ async function googleJson(accessToken: string, url: string, options: { method?: 
       data = null;
     }
   }
-  if (!response.ok) throw new AppError(response.status, "Permintaan ke Google Drive gagal.");
+  if (!response.ok) throw new AppError(response.status, "Permintaan ke Google API gagal.");
   return { data, response };
 }
 
@@ -245,6 +245,179 @@ async function createDriveFolder(accessToken: string, name: string, parentId?: s
   const id = String(result.data?.id || "");
   if (!id) throw new AppError(502, "Folder privat Google Drive tidak berhasil dibuat.");
   return id;
+}
+
+
+function sheetRangeTitle(title: string) {
+  return "'" + title.replace(/'/g, "''") + "'";
+}
+
+function sheetCellParts(value: any, maxCellChars = 40000): any[] {
+  let cell: any;
+  if (value === null || value === undefined) cell = "";
+  else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") cell = value;
+  else cell = JSON.stringify(value) ?? "";
+  if (typeof cell !== "string" || cell.length <= maxCellChars) return [cell];
+  const parts: string[] = [];
+  for (let offset = 0; offset < cell.length; offset += maxCellChars) {
+    parts.push(cell.slice(offset, offset + maxCellChars));
+  }
+  return parts;
+}
+
+function rowsForBackupSheet(rows: any[]): any[][] {
+  const records = rows.filter((row) => row && typeof row === "object" && !Array.isArray(row));
+  if (!records.length) return [["Status", "Keterangan"], ["snapshot", "Tidak ada data pada saat backup."]];
+  const columns = Array.from(new Set(records.flatMap((row) => Object.keys(row))));
+  const values = records.map((row) => columns.map((column) => sheetCellParts(row[column])));
+  const chunkCounts = columns.map((_, columnIndex) =>
+    Math.max(1, ...values.map((row) => row[columnIndex].length))
+  );
+  const headers = columns.flatMap((column, columnIndex) => {
+    const count = chunkCounts[columnIndex];
+    return count === 1
+      ? [column]
+      : Array.from({ length: count }, (_, partIndex) => column + " (" + (partIndex + 1) + "/" + count + ")");
+  });
+  const body = values.map((row) =>
+    row.flatMap((parts, columnIndex) => {
+      const expanded = parts.slice(0, chunkCounts[columnIndex]);
+      while (expanded.length < chunkCounts[columnIndex]) expanded.push("");
+      return expanded;
+    })
+  );
+  return [headers, ...body];
+}
+
+async function backupSpreadsheet(accessToken: string, connection: any, tables: Record<string, unknown>) {
+  const tableNames = Object.keys(tables).sort();
+  if (!tableNames.length) throw new AppError(500, "Tabel backup Google Sheets kosong.");
+  const apiBase = "https://sheets.googleapis.com/v4/spreadsheets";
+  const fields = new URLSearchParams({
+    fields: "spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title)",
+  }).toString();
+  let spreadsheetId = String(connection?.backup_spreadsheet_id || "");
+  let spreadsheetInfo: any = null;
+
+  if (spreadsheetId) {
+    try {
+      spreadsheetInfo = (await googleJson(
+        accessToken,
+        apiBase + "/" + encodeURIComponent(spreadsheetId) + "?" + fields,
+      )).data;
+    } catch (error) {
+      if (!(error instanceof AppError) || error.status !== 404) throw error;
+      await serviceRequest("cssmora_drive_connections?singleton=eq.true", {
+        method: "PATCH",
+        body: { backup_spreadsheet_id: null, updated_at: new Date().toISOString() },
+      });
+      connection.backup_spreadsheet_id = null;
+      spreadsheetId = "";
+    }
+  }
+
+  if (!spreadsheetId) {
+    const createUrl = new URL(apiBase);
+    createUrl.searchParams.set("fields", "spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title)");
+    spreadsheetInfo = (await googleJson(accessToken, createUrl.toString(), {
+      method: "POST",
+      body: {
+        properties: { title: "CSSMoRA Data Backup" },
+        sheets: tableNames.map((title) => ({ properties: { title } })),
+      },
+    })).data;
+    spreadsheetId = String(spreadsheetInfo?.spreadsheetId || "");
+    if (!spreadsheetId) throw new AppError(502, "Spreadsheet backup tidak berhasil dibuat.");
+    await serviceRequest("cssmora_drive_connections?singleton=eq.true", {
+      method: "PATCH",
+      body: { backup_spreadsheet_id: spreadsheetId, updated_at: new Date().toISOString() },
+    });
+    connection.backup_spreadsheet_id = spreadsheetId;
+  }
+
+  const sheetRows = Array.isArray(spreadsheetInfo?.sheets) ? spreadsheetInfo.sheets : [];
+  const existingTitles = new Set(sheetRows.map((sheet: any) => String(sheet?.properties?.title || "")));
+  const missingTitles = tableNames.filter((title) => !existingTitles.has(title));
+  if (missingTitles.length) {
+    await googleJson(
+      accessToken,
+      apiBase + "/" + encodeURIComponent(spreadsheetId) + ":batchUpdate",
+      {
+        method: "POST",
+        body: {
+          requests: missingTitles.map((title) => ({ addSheet: { properties: { title } } })),
+        },
+      },
+    );
+    spreadsheetInfo = (await googleJson(
+      accessToken,
+      apiBase + "/" + encodeURIComponent(spreadsheetId) + "?" + fields,
+    )).data;
+  }
+
+  const backupFolderId = String(connection?.drive_backups_folder_id || "");
+  if (backupFolderId) {
+    const driveFileUrl = "https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(spreadsheetId);
+    const metadata = (await googleJson(accessToken, driveFileUrl + "?fields=parents")).data;
+    const parents = Array.isArray(metadata?.parents) ? metadata.parents.map(String) : [];
+    if (!parents.includes(backupFolderId)) {
+      const updateUrl = new URL(driveFileUrl);
+      updateUrl.searchParams.set("addParents", backupFolderId);
+      updateUrl.searchParams.set("fields", "id,parents");
+      if (parents.length) updateUrl.searchParams.set("removeParents", parents.join(","));
+      await googleJson(accessToken, updateUrl.toString(), { method: "PATCH", body: {} });
+    }
+  }
+
+  const ranges = tableNames.map((title) => sheetRangeTitle(title) + "!A:ZZZ");
+  await googleJson(
+    accessToken,
+    apiBase + "/" + encodeURIComponent(spreadsheetId) + "/values:batchClear",
+    { method: "POST", body: { ranges } },
+  );
+
+  const updates: Array<{ range: string; values: any[][] }> = [];
+  let recordCount = 0;
+  for (const title of tableNames) {
+    const rows = Array.isArray(tables[title]) ? tables[title] as any[] : [];
+    recordCount += rows.length;
+    const matrix = rowsForBackupSheet(rows);
+    for (let offset = 0; offset < matrix.length; offset += 10) {
+      updates.push({
+        range: sheetRangeTitle(title) + "!A" + (offset + 1),
+        values: matrix.slice(offset, offset + 10),
+      });
+    }
+  }
+
+  let batch: Array<{ range: string; values: any[][] }> = [];
+  let batchBytes = 0;
+  const flush = async () => {
+    if (!batch.length) return;
+    await googleJson(
+      accessToken,
+      apiBase + "/" + encodeURIComponent(spreadsheetId) + "/values:batchUpdate",
+      {
+        method: "POST",
+        body: { valueInputOption: "RAW", data: batch },
+      },
+    );
+    batch = [];
+    batchBytes = 0;
+  };
+  const encoder = new TextEncoder();
+  for (const update of updates) {
+    const updateBytes = encoder.encode(JSON.stringify(update)).byteLength;
+    if (batch.length && batchBytes + updateBytes > 900000) await flush();
+    batch.push(update);
+    batchBytes += updateBytes;
+  }
+  await flush();
+
+  const spreadsheetUrl = String(
+    spreadsheetInfo?.spreadsheetUrl || "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(spreadsheetId) + "/edit",
+  );
+  return { spreadsheetId, spreadsheetUrl, tableCount: tableNames.length, recordCount };
 }
 
 async function startOAuth(request: Request) {
@@ -397,7 +570,7 @@ async function integrationStatus() {
     countQueue("pending"),
     countQueue("processing"),
     countQueue("failed"),
-    serviceRequest("cssmora_drive_backup_runs?select=status,started_at,finished_at,encrypted_size_bytes&order=started_at.desc&limit=1"),
+    serviceRequest("cssmora_drive_backup_runs?select=status,started_at,finished_at,encrypted_size_bytes,sheet_status,sheet_updated_at,sheet_error_message&order=started_at.desc&limit=1"),
   ]);
   const latestBackup = Array.isArray(backupRows.data) && backupRows.data.length ? backupRows.data[0] : null;
   return {
@@ -405,6 +578,9 @@ async function integrationStatus() {
     accountEmail: connection?.account_email || null,
     folderUrl: connection?.drive_root_folder_id
       ? "https://drive.google.com/drive/folders/" + encodeURIComponent(connection.drive_root_folder_id)
+      : null,
+    spreadsheetUrl: connection?.backup_spreadsheet_id
+      ? "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(connection.backup_spreadsheet_id) + "/edit"
       : null,
     pendingFiles: pending + processing,
     failedFiles: failed,
@@ -648,23 +824,27 @@ async function runBackup() {
   const created = await serviceRequest("cssmora_drive_backup_runs", {
     method: "POST",
     headers: { Prefer: "return=representation" },
-    body: { status: "running", started_at: startedAt },
+    body: { status: "running", sheet_status: "pending", started_at: startedAt },
   });
   const run = Array.isArray(created.data) ? created.data[0] : created.data;
   const runId = String(run?.id || "");
   if (!runId) throw new AppError(500, "Catatan backup tidak berhasil dibuat.");
 
+  let encryptedBytes = 0;
+  let driveFileId = "";
+  let counts: Record<string, number> = {};
+  let snapshot: any = null;
   try {
-    const snapshot = (await serviceRequest("rpc/export_cssmora_drive_backup", { method: "POST", body: {} })).data;
+    snapshot = (await serviceRequest("rpc/export_cssmora_drive_backup", { method: "POST", body: {} })).data;
     if (!snapshot || snapshot.format !== "cssmora-data-backup-v1" || typeof snapshot.tables !== "object") {
       throw new AppError(500, "Data backup tidak memiliki format yang dikenali.");
     }
     const jsonBytes = new TextEncoder().encode(JSON.stringify(snapshot));
     const encrypted = await encryptBackup(jsonBytes);
-    const counts: Record<string, number> = {};
+    encryptedBytes = encrypted.byteLength;
     for (const [table, rows] of Object.entries(snapshot.tables)) counts[table] = Array.isArray(rows) ? rows.length : 0;
     const fileName = "CSSMoRA-backup-" + new Date().toISOString().replace(/[:.]/g, "-") + ".json.gz.enc";
-    const driveFileId = await uploadDriveFile(accessToken, {
+    driveFileId = await uploadDriveFile(accessToken, {
       parentId: connection.drive_backups_folder_id,
       name: fileName,
       mimeType: "application/octet-stream",
@@ -677,23 +857,67 @@ async function runBackup() {
         status: "succeeded",
         finished_at: new Date().toISOString(),
         drive_file_id: driveFileId,
-        encrypted_size_bytes: encrypted.byteLength,
+        encrypted_size_bytes: encryptedBytes,
         record_counts: counts,
         error_message: null,
+        sheet_status: "pending",
+        sheet_error_message: null,
       },
     });
-    return { backupId: runId, encryptedBytes: encrypted.byteLength, recordCounts: counts };
   } catch (error) {
     await serviceRequest("cssmora_drive_backup_runs?id=eq." + encodeURIComponent(runId), {
       method: "PATCH",
       body: {
         status: "failed",
         finished_at: new Date().toISOString(),
+        sheet_status: "not_started",
+        sheet_error_message: null,
         error_message: error instanceof AppError ? "Backup gagal (HTTP " + error.status + ")." : "Backup gagal diproses.",
       },
     }).catch(() => null);
-    throw new AppError(502, "Backup belum berhasil. Periksa konfigurasi dan status koneksi Drive.");
+    throw new AppError(502, "Backup terenkripsi di Drive belum berhasil. Periksa konfigurasi dan status koneksi Drive.");
   }
+
+  let sheetBackupStatus = "failed";
+  let spreadsheetUrl = connection.backup_spreadsheet_id
+    ? "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(connection.backup_spreadsheet_id) + "/edit"
+    : null;
+  let sheetErrorMessage = "Google Sheets gagal diperbarui.";
+  try {
+    const sheets = await backupSpreadsheet(accessToken, connection, snapshot.tables);
+    spreadsheetUrl = sheets.spreadsheetUrl;
+    sheetBackupStatus = "succeeded";
+    sheetErrorMessage = "";
+    await serviceRequest("cssmora_drive_backup_runs?id=eq." + encodeURIComponent(runId), {
+      method: "PATCH",
+      body: {
+        sheet_status: "succeeded",
+        sheet_updated_at: new Date().toISOString(),
+        sheet_error_message: null,
+      },
+    });
+  } catch (error) {
+    sheetErrorMessage = error instanceof AppError
+      ? "Google Sheets gagal diperbarui (HTTP " + error.status + ")."
+      : "Google Sheets gagal diperbarui.";
+    await serviceRequest("cssmora_drive_backup_runs?id=eq." + encodeURIComponent(runId), {
+      method: "PATCH",
+      body: {
+        sheet_status: "failed",
+        sheet_updated_at: new Date().toISOString(),
+        sheet_error_message: sheetErrorMessage,
+      },
+    }).catch(() => null);
+  }
+
+  return {
+    backupId: runId,
+    encryptedBytes,
+    recordCounts: counts,
+    sheetBackupStatus,
+    spreadsheetUrl,
+    sheetError: sheetBackupStatus === "failed" ? sheetErrorMessage : null,
+  };
 }
 
 async function verifyJobToken(candidate: string) {

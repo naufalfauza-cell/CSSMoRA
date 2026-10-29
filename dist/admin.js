@@ -1612,6 +1612,7 @@ async function loadDriveIntegrationStatus() {
     const count = $('#drive-file-count');
     const backup = $('#drive-last-backup');
     const openFolder = $('#drive-open-folder');
+    const openSheet = $('#drive-open-sheet');
     const connect = $('#drive-connect');
     const sync = $('#drive-sync-now');
     const backupButton = $('#drive-backup-now');
@@ -1628,10 +1629,16 @@ async function loadDriveIntegrationStatus() {
       backup.textContent = last
         ? driveDateLabel(last.finished_at || last.started_at) + ' · ' + (last.status === 'succeeded' ? 'berhasil' : last.status === 'failed' ? 'gagal' : 'diproses')
         : 'Belum ada backup';
+      if (last?.sheet_status === 'succeeded') backup.textContent += ' · Sheets diperbarui';
+      else if (last?.sheet_status === 'failed') backup.textContent += ' · Sheets gagal';
     }
     if (openFolder) {
       openFolder.hidden = !data.connected || !data.folderUrl;
       if (data.folderUrl) openFolder.href = 'https://accounts.google.com/AccountChooser?hd=cssmora.org&continue=' + encodeURIComponent(data.folderUrl);
+    }
+    if (openSheet) {
+      openSheet.hidden = !data.connected || !data.spreadsheetUrl;
+      if (data.spreadsheetUrl) openSheet.href = 'https://accounts.google.com/AccountChooser?hd=cssmora.org&continue=' + encodeURIComponent(data.spreadsheetUrl);
     }
     if (connect) connect.disabled = false;
     if (sync) sync.disabled = !data.connected;
@@ -1661,6 +1668,8 @@ async function runDriveAction(action, button) {
     const result = await driveRequest(action);
     await loadDriveIntegrationStatus();
     if (result.skipped) showMessage('#drive-message', result.skipped, 'error');
+    else if (action === 'backup' && result.sheetBackupStatus === 'succeeded') showMessage('#drive-message', 'Backup terenkripsi di Drive dan salinan tabel Google Sheets berhasil diperbarui.', 'success');
+    else if (action === 'backup' && result.sheetBackupStatus === 'failed') showMessage('#drive-message', 'Backup terenkripsi aman di Drive, tetapi salinan Google Sheets gagal diperbarui. Coba ulangi backup.', 'error');
     else if (action === 'backup') showMessage('#drive-message', 'Backup terenkripsi berhasil disimpan di Drive.', 'success');
     else showMessage('#drive-message', 'Sinkronisasi selesai. Berhasil: ' + Number(result.succeeded || 0) + ', gagal: ' + Number(result.failed || 0) + '.', result.failed ? 'error' : 'success');
   } catch (error) {
