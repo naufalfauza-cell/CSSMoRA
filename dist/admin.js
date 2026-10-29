@@ -199,6 +199,7 @@ async function checkAdmin() {
   if(isLeadership||isSecretariatAdmin)allowed.add('tab-secretariat');
   if(canManageRoles)allowed.add('tab-access');
   document.querySelectorAll('.admin-tab').forEach(tab=>{tab.hidden=!allowed.has(tab.id);});
+  $('#secretariat-panel')?.classList.toggle('secretariat-readonly',isLeadership&&!isSecretariatAdmin);
 
   document.querySelectorAll('.achievement-admin-tab').forEach(tab=>{
     tab.hidden=tab.dataset.prestasiSection==='competitions'?!isCompetitionAdmin:
