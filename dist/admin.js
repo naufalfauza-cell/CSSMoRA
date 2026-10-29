@@ -149,7 +149,7 @@ async function loadAdminPanel(panelId) {
     return;
   }
   if(panelId==='access-panel'&&canManageRoles) {
-    await loadRoleAssignments();
+    await Promise.all([loadRoleAssignments(), loadDriveIntegrationStatus()]);
   }
 }
 
@@ -219,6 +219,7 @@ async function checkAdmin() {
     ||Array.from(document.querySelectorAll('.admin-tab')).find(tab=>tab.id===preferred&&!tab.hidden)
     ||Array.from(document.querySelectorAll('.admin-tab')).find(tab=>!tab.hidden);
   if(target)target.click();
+  void loadDriveIntegrationStatus();
 }
 async function signIn(email,password) {
   const result=await authRequest('token?grant_type=password',{email,password});
@@ -1578,6 +1579,114 @@ async function loadRoleAssignments(){
     roleList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';
   }finally{roleList.removeAttribute('aria-busy');}
 }
+async function driveRequest(action) {
+  if (!session?.access_token) throw new Error('Login pengurus diperlukan.');
+  const response = await authenticatedFetch(config.url + '/functions/v1/drive-integration', {
+    method: 'POST',
+    headers: { ...baseHeaders(), Authorization: 'Bearer ' + session.access_token },
+    body: JSON.stringify({ action }),
+    timeoutMs: action === 'backup' || action === 'sync' ? 120000 : 15000
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Permintaan Google Drive gagal.');
+  return data;
+}
+function updateDriveShortcut(folderUrl) {
+  const link = $('#drive-shortcut');
+  if (!link) return;
+  const target = folderUrl || 'https://drive.google.com/drive/my-drive';
+  link.href = 'https://accounts.google.com/AccountChooser?hd=cssmora.org&continue=' + encodeURIComponent(target);
+}
+function driveDateLabel(value) {
+  if (!value) return 'Belum ada backup';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Belum ada backup';
+  return date.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' }) + ' WIB';
+}
+async function loadDriveIntegrationStatus() {
+  const status = $('#drive-status');
+  if (!status) return null;
+  try {
+    const data = await driveRequest('status');
+    const account = $('#drive-account');
+    const count = $('#drive-file-count');
+    const backup = $('#drive-last-backup');
+    const openFolder = $('#drive-open-folder');
+    const connect = $('#drive-connect');
+    const sync = $('#drive-sync-now');
+    const backupButton = $('#drive-backup-now');
+    updateDriveShortcut(data.folderUrl);
+    status.textContent = data.connected
+      ? 'Drive tersambung. File disalin ke folder privat aplikasi.'
+      : 'Drive belum tersambung. Hubungkan akun unair@cssmora.org untuk mengaktifkan sinkronisasi.';
+    if (account) account.textContent = data.accountEmail || 'Belum tersambung';
+    if (count) count.textContent = data.connected
+      ? Number(data.pendingFiles || 0) + ' menunggu · ' + Number(data.failedFiles || 0) + ' gagal'
+      : 'Belum aktif';
+    if (backup) {
+      const last = data.lastBackup;
+      backup.textContent = last
+        ? driveDateLabel(last.finished_at || last.started_at) + ' · ' + (last.status === 'succeeded' ? 'berhasil' : last.status === 'failed' ? 'gagal' : 'diproses')
+        : 'Belum ada backup';
+    }
+    if (openFolder) {
+      openFolder.hidden = !data.connected || !data.folderUrl;
+      if (data.folderUrl) openFolder.href = 'https://accounts.google.com/AccountChooser?hd=cssmora.org&continue=' + encodeURIComponent(data.folderUrl);
+    }
+    if (connect) connect.disabled = false;
+    if (sync) sync.disabled = !data.connected;
+    if (backupButton) backupButton.disabled = !data.connected;
+
+    const callbackUrl = new URL(window.location.href);
+    const callbackState = callbackUrl.searchParams.get('drive');
+    if (callbackState) {
+      showMessage('#drive-message', callbackState === 'connected'
+        ? 'Google Drive berhasil dihubungkan.'
+        : 'Google Drive belum berhasil dihubungkan. Periksa akun dan konfigurasi OAuth.', callbackState === 'connected' ? 'success' : 'error');
+      callbackUrl.searchParams.delete('drive');
+      history.replaceState({}, document.title, callbackUrl.pathname + callbackUrl.search + callbackUrl.hash);
+    }
+    return data;
+  } catch (error) {
+    status.textContent = 'Status Google Drive belum dapat dimuat.';
+    showMessage('#drive-message', error.message, 'error');
+    return null;
+  }
+}
+async function runDriveAction(action, button) {
+  if (!button) return;
+  button.disabled = true;
+  showMessage('#drive-message', action === 'backup' ? 'Membuat backup terenkripsi…' : 'Menyinkronkan file…');
+  try {
+    const result = await driveRequest(action);
+    await loadDriveIntegrationStatus();
+    if (result.skipped) showMessage('#drive-message', result.skipped, 'error');
+    else if (action === 'backup') showMessage('#drive-message', 'Backup terenkripsi berhasil disimpan di Drive.', 'success');
+    else showMessage('#drive-message', 'Sinkronisasi selesai. Berhasil: ' + Number(result.succeeded || 0) + ', gagal: ' + Number(result.failed || 0) + '.', result.failed ? 'error' : 'success');
+  } catch (error) {
+    showMessage('#drive-message', error.message, 'error');
+  } finally {
+    button.disabled = false;
+    await loadDriveIntegrationStatus();
+  }
+}
+$('#drive-refresh')?.addEventListener('click', () => { void loadDriveIntegrationStatus(); });
+$('#drive-connect')?.addEventListener('click', async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  showMessage('#drive-message', 'Membuka persetujuan Google…');
+  try {
+    const result = await driveRequest('connect');
+    if (!result.authorizationUrl) throw new Error('Tautan persetujuan Google tidak tersedia.');
+    window.location.assign(result.authorizationUrl);
+  } catch (error) {
+    showMessage('#drive-message', error.message, 'error');
+    button.disabled = false;
+  }
+});
+$('#drive-sync-now')?.addEventListener('click', event => { void runDriveAction('sync', event.currentTarget); });
+$('#drive-backup-now')?.addEventListener('click', event => { void runDriveAction('backup', event.currentTarget); });
+
 roleForm.addEventListener('submit',async event=>{
   event.preventDefault();
   const button=$('#save-role');
