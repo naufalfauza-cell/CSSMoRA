@@ -117,7 +117,7 @@ window.CSSMoRAAdmin={
   api,
   showMessage,
   request: authenticatedFetch,
-  context:()=>({isLeadership,isSecretariatAdmin,isCompetitionAdmin,userId:session?.user?.id,canManageProgramCycles:isCompetitionAdmin})
+  context:()=>({isLeadership,isSecretariatAdmin,canViewSecretariat:isLeadership||isSecretariatAdmin,isCompetitionAdmin,userId:session?.user?.id,canManageProgramCycles:isLeadership||assignedRoles.includes('bph_departemen')})
 };
 
 async function ensureAdminData(key, loader) {
@@ -179,11 +179,11 @@ async function checkAdmin() {
   const roleSet=new Set((rows||[]).map(row=>row.role));
   isLeadership=roleSet.has('ketua')||roleSet.has('wakil');
   canManageRoles=isLeadership;
-  isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen');
-  isSecretariatAdmin=isLeadership||roleSet.has('sekretaris');
-  achievementRoles=isLeadership?['ketua','bendahara']:(roleSet.has('bendahara')?['bendahara']:[]);
+  isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen')||roleSet.has('sekretaris')||roleSet.has('bendahara');
+  isSecretariatAdmin=roleSet.has('sekretaris');
+  achievementRoles=isLeadership?['ketua']:(roleSet.has('bendahara')?['bendahara']:[]);
   canReviewAchievementApplications=isLeadership||roleSet.has('bendahara');
-  canVerifyAchievementRecords=isLeadership||roleSet.has('bph_departemen');
+  canVerifyAchievementRecords=isLeadership||roleSet.has('bph_departemen')||roleSet.has('sekretaris')||roleSet.has('bendahara');
   if(!roleSet.size)throw Object.assign(new Error('Akun ini belum diberi akses pengelolaan CSSMoRA. Hubungi Ketua CSSMoRA.'),{status:403});
 
   $('#signed-in-as').textContent=user.email;
@@ -194,7 +194,7 @@ async function checkAdmin() {
   if(isCompetitionAdmin)allowed.add('tab-agenda');
   if(isLeadership||roleSet.has('bendahara'))allowed.add('tab-finance');
   if(isCompetitionAdmin||canReviewAchievementApplications||canVerifyAchievementRecords)allowed.add('tab-achievements');
-  if(isSecretariatAdmin)allowed.add('tab-secretariat');
+  if(isLeadership||isSecretariatAdmin)allowed.add('tab-secretariat');
   if(canManageRoles)allowed.add('tab-access');
   document.querySelectorAll('.admin-tab').forEach(tab=>{tab.hidden=!allowed.has(tab.id);});
 
