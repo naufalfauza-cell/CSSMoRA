@@ -23,13 +23,23 @@ test('signature save immediately places the freshly uploaded mark and allows lar
 });
 
 test('every new signing request fetches the newest saved mark and refreshes the signature pad', () => {
-  assert.match(html, /letter-signatures\.js\?v=20261029-v3/);
+  assert.match(html, /letter-signatures\.js\?v=20261029-v4/);
   assert.doesNotMatch(signatureJs, /markLoaded/);
   assert.match(signatureJs, /async function storage\(bucket, path, \{method='GET',body,upsert=false,fresh=false\}=\{\}\)/);
   assert.match(signatureJs, /if\(fresh\)url\.searchParams\.set\('_refresh'/);
   assert.match(signatureJs, /cache:fresh\?'no-store':undefined/);
   assert.match(signatureJs, /loadMark\('signature',\{fresh:true\}\),loadMark\('stamp',\{fresh:true\}\)/);
   assert.match(signatureJs, /showSavedSignatureInPad\(\);\s*await renderPage\(\)/);
+});
+
+
+test('signature pad edits and clearing immediately update the PDF preview without saving the asset', () => {
+  assert.match(signatureJs, /async function previewSignatureDraft\(\)/);
+  assert.match(signatureJs, /signaturePreviewTimer=setTimeout\(\(\)=>void previewSignatureDraft\(\)/);
+  assert.match(signatureJs, /padDirty\) void previewSignatureDraft\(\)/);
+  assert.match(signatureJs, /positions\.signature=null;renderMarks\(\)/);
+  assert.match(signatureJs, /Pratinjau diperbarui/);
+  assert.match(signatureJs, /await upload\(assetBucket,assetPath\('signature'\),blob,true\)/);
 });
 
 test('raw signature drawing and asset controls remain inside the designated signer dialog', () => {

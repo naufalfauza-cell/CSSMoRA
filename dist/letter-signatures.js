@@ -207,16 +207,20 @@
     if (kind==='signature') signature=next; else stamp=next;
     renderMarks();
   }
-  async function useLocalMark(kind,blob) {
-    const previous=kind==='signature'?signature:stamp;
-    if (previous?.url) URL.revokeObjectURL(previous.url);
+  async function useLocalMark(kind,blob,isCurrent) {
     const url=URL.createObjectURL(blob), image=new Image();
     image.src=url;
     await image.decode();
-    const next={bytes:new Uint8Array(await blob.arrayBuffer()),url,image};
+    if (isCurrent && !isCurrent()) {URL.revokeObjectURL(url);return false;}
+    const bytes=new Uint8Array(await blob.arrayBuffer());
+    if (isCurrent && !isCurrent()) {URL.revokeObjectURL(url);return false;}
+    const next={bytes,url,image};
     objectUrls.push(url);
+    const previous=kind==='signature'?signature:stamp;
     if(kind==='signature')signature=next;else stamp=next;
+    if (previous?.url) URL.revokeObjectURL(previous.url);
     renderMarks();
+    return true;
   }
   function showSavedSignatureInPad() {
     const canvas=$('#letter-sign-pad'),context=canvas.getContext('2d');
@@ -329,7 +333,7 @@
   window.addEventListener('resize',()=>{if ($('#letter-sign-dialog').open && pdfDocument) showPage();});
 
   const pad=$('#letter-sign-pad'),context=pad.getContext('2d');
-  let drawing=false, padDirty=false;
+  let drawing=false, padDirty=false, signatureDraftVersion=0, signaturePreviewTimer;
   function padPoint(event) {
     const box=pad.getBoundingClientRect();
     return {x:(event.clientX-box.left)*pad.width/box.width,y:(event.clientY-box.top)*pad.height/box.height};
@@ -343,10 +347,34 @@
   pad.addEventListener('pointermove',event=>{
     if (!drawing) return;
     const point=padPoint(event);context.lineTo(point.x,point.y);context.stroke();
+    clearTimeout(signaturePreviewTimer);
+    signaturePreviewTimer=setTimeout(()=>void previewSignatureDraft().catch(error=>message('#letter-sign-dialog-message',error.message,'error')),140);
   });
-  for (const type of ['pointerup','pointercancel']) pad.addEventListener(type,()=>{drawing=false;});
-  $('#letter-sign-clear').addEventListener('click',()=>{context.clearRect(0,0,pad.width,pad.height);padDirty=false;});
   const canvasBlob=(canvas)=>new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+  async function previewSignatureDraft() {
+    const version=++signatureDraftVersion;
+    const blob=await canvasBlob(pad);
+    if (!blob || version!==signatureDraftVersion || !padDirty) return;
+    const previous=positions.signature?{...positions.signature}:null;
+    const applied=await useLocalMark('signature',blob,()=>version===signatureDraftVersion);
+    if (!applied || version!==signatureDraftVersion || !pdfDocument) return;
+    if (previous && previous.page===currentPage) {
+      positions.signature=previous;
+      resize('signature');
+    } else place('signature');
+    message('#letter-sign-dialog-message','Pratinjau diperbarui. Klik “Simpan tanda tangan” untuk menyimpan perubahan.');
+  }
+  for (const type of ['pointerup','pointercancel']) pad.addEventListener(type,()=>{
+    drawing=false;clearTimeout(signaturePreviewTimer);
+    if (padDirty) void previewSignatureDraft().catch(error=>message('#letter-sign-dialog-message',error.message,'error'));
+  });
+  $('#letter-sign-clear').addEventListener('click',()=>{
+    ++signatureDraftVersion;clearTimeout(signaturePreviewTimer);
+    context.clearRect(0,0,pad.width,pad.height);padDirty=false;
+    if (signature?.url) URL.revokeObjectURL(signature.url);
+    signature=null;positions.signature=null;renderMarks();
+    message('#letter-sign-dialog-message','Pratinjau tanda tangan dihapus. Tanda tangan tersimpan di akun Anda tetap aman.');
+  });
   async function normalizeImage(file,maxWidth,maxHeight) {
     if (!file || !['image/png','image/jpeg'].includes(file.type) || file.size>MAX_IMAGE) throw new Error('Pilih PNG atau JPG maksimal 2 MB.');
     const bitmap=await createImageBitmap(file);
@@ -363,7 +391,7 @@
       const blob=await normalizeImage(file,pad.width,pad.height), bitmap=await createImageBitmap(blob);
       context.clearRect(0,0,pad.width,pad.height);
       context.drawImage(bitmap,(pad.width-bitmap.width)/2,(pad.height-bitmap.height)/2);bitmap.close();padDirty=true;
-      message('#letter-sign-dialog-message','Gambar siap. Klik “Simpan tanda tangan”.');
+      await previewSignatureDraft();
     } catch(error){message('#letter-sign-dialog-message',error.message,'error');}
   });
   $('#letter-sign-save').addEventListener('click',async event=>{
@@ -372,6 +400,7 @@
       if (!padDirty) throw new Error('Gambar atau unggah tanda tangan dahulu.');
       const blob=await canvasBlob(pad);
       if (!blob || blob.size>MAX_IMAGE) throw new Error('Tanda tangan melebihi 2 MB.');
+      ++signatureDraftVersion;clearTimeout(signaturePreviewTimer);
       await useLocalMark('signature',blob);
       if(pdfDocument)place('signature');
       $('#letter-sign-confirm').disabled=true;
@@ -437,6 +466,7 @@
     finally {button.disabled=false;}
   });
   function closeViewer() {
+    ++signatureDraftVersion;clearTimeout(signaturePreviewTimer);
     ++renderVersion;
     renderTask?.cancel();renderTask=null;
     pdfDocument?.destroy();pdfDocument=null;originalBytes=null;currentRequest=null;

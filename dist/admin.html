@@ -28,7 +28,7 @@
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
   <script src="./admin.js?v=20261023-performance-v1" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
-  <script src="./letter-signatures.js?v=20261029-v3" defer></script>
+  <script src="./letter-signatures.js?v=20261029-v4" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
   <script src="./workflows.js?v=20261023-performance-v1" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
@@ -425,7 +425,7 @@
                 <canvas id="letter-sign-pad" width="600" height="180" aria-label="Area menggambar tanda tangan"></canvas>
                 <div class="letter-sign-inline"><button type="button" id="letter-sign-clear">Bersihkan</button><label class="letter-sign-file">Unggah gambar<input id="letter-sign-image-file" type="file" accept="image/png,image/jpeg" hidden></label><button type="button" id="letter-sign-save">Simpan tanda tangan</button></div>
                 <button type="button" id="letter-sign-place">Tempatkan pada halaman ini</button>
-                <label for="letter-sign-size">Ukuran tanda tangan</label><input id="letter-sign-size" type="range" min="12" max="70" value="38"><span class="field-hint">Tanda tangan otomatis muncul setelah disimpan. Seret untuk mengatur posisinya.</span>
+                <label for="letter-sign-size">Ukuran tanda tangan</label><input id="letter-sign-size" type="range" min="12" max="70" value="38"><span class="field-hint">Coretan langsung terlihat di pratinjau. Klik Simpan tanda tangan agar perubahan tersimpan untuk pengajuan berikutnya.</span>
                 <h4>Stempel <small>opsional</small></h4>
                 <div class="letter-sign-inline"><label class="letter-sign-file">Unggah stempel<input id="letter-stamp-file" type="file" accept="image/png,image/jpeg" hidden></label><button id="letter-stamp-place" type="button">Tempatkan</button><button id="letter-stamp-remove" type="button">Hapus posisi</button></div>
                 <label for="letter-stamp-size">Ukuran stempel</label><input id="letter-stamp-size" type="range" min="10" max="35" value="19">
