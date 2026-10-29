@@ -10,7 +10,7 @@ let isCompetitionAdmin = false;
 let isSecretariatAdmin = false;
 let achievementRoles = [];
 let canReviewAchievementApplications = false;
-let canVerifyAchievementRecords = false;
+let canVerifyAchievementRecords = false;\nlet canManageProgramCycles = false;
 let isLeadership = false;
 let canManageRoles = false;
 let assignedRoles = [];
@@ -117,7 +117,7 @@ window.CSSMoRAAdmin={
   api,
   showMessage,
   request: authenticatedFetch,
-  context:()=>({isLeadership,isSecretariatAdmin,canViewSecretariat:isLeadership||isSecretariatAdmin,isCompetitionAdmin,userId:session?.user?.id,canManageProgramCycles:isLeadership||assignedRoles.includes('bph_departemen')})
+  context:()=>({isLeadership,isSecretariatAdmin,canViewSecretariat:isLeadership||isSecretariatAdmin,isCompetitionAdmin,userId:session?.user?.id,canManageProgramCycles})
 };
 
 async function ensureAdminData(key, loader) {
@@ -178,7 +178,7 @@ async function checkAdmin() {
   const rows=await api(`cssmora_user_roles?select=role&email=eq.${encodeURIComponent(email)}&is_active=eq.true`);
   const roleSet=new Set((rows||[]).map(row=>row.role));
   isLeadership=roleSet.has('ketua')||roleSet.has('wakil');
-  canManageRoles=isLeadership;
+  canManageRoles=isLeadership;\n  canManageProgramCycles=isLeadership||roleSet.has('bph_departemen');
   isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen')||roleSet.has('sekretaris')||roleSet.has('bendahara');
   isSecretariatAdmin=roleSet.has('sekretaris');
   achievementRoles=isLeadership?['ketua']:(roleSet.has('bendahara')?['bendahara']:[]);
