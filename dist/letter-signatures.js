@@ -13,6 +13,7 @@
   let letters = [], requests = [], signers = [];
   let pdfjs, pdfDocument, originalBytes, currentRequest, currentPage = 1, renderTask, renderVersion = 0;
   let signature, stamp, selectedMark='signature', positions={signature:null,stamp:null};
+  const markLoaded={signature:false,stamp:false};
   const objectUrls = [];
 
   async function storage(bucket, path, {method='GET',body,upsert=false}={}) {
@@ -94,13 +95,6 @@
   $('#letter-sign-refresh').addEventListener('click',async()=>{
     try {await loadRequests();message('#letter-sign-message','Daftar diperbarui.','success');}
     catch(error){message('#letter-sign-message',error.message,'error');}
-  });
-  $('#letter-record-list').addEventListener('click',event=>{
-    const button=event.target.closest('[data-request-letter]');
-    if (!button) return;
-    $('#letter-sign-letter').value=button.dataset.requestLetter;
-    $('#letter-sign-pdf').focus();
-    $('.letter-signatures').scrollIntoView({behavior:'smooth',block:'center'});
   });
   $('#letter-sign-request-form').addEventListener('submit',async event=>{
     event.preventDefault();
@@ -196,6 +190,7 @@
     return window.PDFLib;
   }
   async function loadMark(kind) {
+    if (markLoaded[kind]) return;
     const previous=kind==='signature'?signature:stamp;
     if (previous?.url) URL.revokeObjectURL(previous.url);
     let next=null;
@@ -210,6 +205,19 @@
       if (error.status!==404 && !['not_found','not found'].includes(error.code) && !/object not found/i.test(error.message)) throw error;
     }
     if (kind==='signature') signature=next; else stamp=next;
+    markLoaded[kind]=true;
+    renderMarks();
+  }
+  async function useLocalMark(kind,blob) {
+    const previous=kind==='signature'?signature:stamp;
+    if (previous?.url) URL.revokeObjectURL(previous.url);
+    const url=URL.createObjectURL(blob), image=new Image();
+    image.src=url;
+    await image.decode();
+    const next={bytes:new Uint8Array(await blob.arrayBuffer()),url,image};
+    objectUrls.push(url);
+    if(kind==='signature')signature=next;else stamp=next;
+    markLoaded[kind]=true;
     renderMarks();
   }
   async function openViewer(item) {
@@ -359,8 +367,12 @@
       if (!padDirty) throw new Error('Gambar atau unggah tanda tangan dahulu.');
       const blob=await canvasBlob(pad);
       if (!blob || blob.size>MAX_IMAGE) throw new Error('Tanda tangan melebihi 2 MB.');
-      await upload(assetBucket,assetPath('signature'),blob,true);
-      await loadMark('signature');
+      await useLocalMark('signature',blob);
+      if(pdfDocument)place('signature');
+      $('#letter-sign-confirm').disabled=true;
+      try {await upload(assetBucket,assetPath('signature'),blob,true);}
+      catch(error){signature=null;positions.signature=null;markLoaded.signature=false;renderMarks();throw error;}
+      finally {$('#letter-sign-confirm').disabled=false;}
       message('#letter-sign-dialog-message','Tanda tangan tersimpan hanya untuk akun Anda.','success');
     } catch(error){message('#letter-sign-dialog-message',error.message,'error');}
     finally {button.disabled=false;}
@@ -369,8 +381,9 @@
     const file=event.target.files[0];event.target.value='';if (!file) return;
     try {
       const blob=await normalizeImage(file,700,700);
+      await useLocalMark('stamp',blob);
+      if(pdfDocument)place('stamp');
       await upload(assetBucket,assetPath('stamp'),blob,true);
-      await loadMark('stamp');
       message('#letter-sign-dialog-message','Stempel tersimpan. Klik “Tempatkan” jika diperlukan.','success');
     } catch(error){message('#letter-sign-dialog-message',error.message,'error');}
   });
@@ -427,7 +440,7 @@
   }
   function reset() {
     if ($('#letter-sign-dialog').open) $('#letter-sign-dialog').close();
-    closeViewer();letters=[];requests=[];signers=[];signature=null;stamp=null;
+    closeViewer();letters=[];requests=[];signers=[];signature=null;stamp=null;markLoaded.signature=false;markLoaded.stamp=false;
     for (const url of objectUrls) URL.revokeObjectURL(url);
     objectUrls.length=0;
   }
