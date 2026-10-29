@@ -2179,3 +2179,14 @@
 .admin-page .attendance-open-actions .admin-button{width:auto;min-height:34px;margin:0;padding:8px 12px;border-radius:9px;font-size:10px}
 .admin-page .attendance-open-dialog .form-message{min-height:0;font-size:10px}
 @media(max-width:600px){.admin-page .attendance-recap-trigger{padding:9px}.admin-page .attendance-open-dialog form{padding:16px}}
+
+
+/* Leadership can inspect Secretariat records while mutating controls remain Secretary-only. */
+#secretariat-panel.secretariat-readonly #member-form,
+#secretariat-panel.secretariat-readonly #attendance-open-form,
+#secretariat-panel.secretariat-readonly #letter-form,
+#secretariat-panel.secretariat-readonly .letter-archive-form,
+#secretariat-panel.secretariat-readonly [data-member-action],
+#secretariat-panel.secretariat-readonly [data-copy-event],
+#secretariat-panel.secretariat-readonly [data-toggle-event],
+#secretariat-panel.secretariat-readonly [data-delete-event] { display: none !important; }

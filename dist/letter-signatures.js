@@ -53,10 +53,10 @@
   function renderQueue() {
     const list=$('#letter-sign-requests');
     if (!requests.length) {list.innerHTML='<p class="records-empty">Belum ada pengajuan tanda tangan.</p>';return;}
-    const {userId,isLeadership}=admin.context();
+    const {userId,isLeadership,isSecretariatAdmin}=admin.context();
     list.innerHTML=requests.map(item=>{
-      const canSign=isLeadership && item.signer_id===userId && item.status==='pending';
-      const canCancel=['draft','pending'].includes(item.status) && (item.created_by===userId || isLeadership);
+      const canSign=(isLeadership||isSecretariatAdmin) && item.signer_id===userId && item.status==='pending';
+      const canCancel=['draft','pending'].includes(item.status) && item.created_by===userId;
       const canRetry=item.status==='draft' && item.created_by===userId;
       const email=signers.find(signer=>signer.id===item.signer_id)?.email || 'Akun penandatangan';
       return `<article class="letter-sign-item" data-request-id="${esc(item.id)}">
@@ -84,7 +84,7 @@
     if (letters.some(letter=>letter.id===previous)) $('#letter-sign-letter').value=previous;
     try {
       signers=await admin.api('rpc/cssmora_letter_signers',{method:'POST',body:{}})||[];
-      $('#letter-sign-signer').replaceChildren(new Option('Pilih Ketua / Wakil',''),...signers.map(signer=>new Option(signer.email,signer.id)));
+      $('#letter-sign-signer').replaceChildren(new Option('Pilih penandatangan',''),...signers.map(signer=>new Option(signer.email,signer.id)));
       await loadRequests();
       message('#letter-sign-message','');
     } catch(error) {
@@ -97,7 +97,9 @@
     try {await loadRequests();message('#letter-sign-message','Daftar diperbarui.','success');}
     catch(error){message('#letter-sign-message',error.message,'error');}
   });
-  $('#letter-sign-request-form').addEventListener('submit',async event=>{
+  const requestForm=$('#letter-sign-request-form');
+  if(requestForm)requestForm.hidden=!admin.context().isSecretariatAdmin;
+  requestForm?.addEventListener('submit',async event=>{
     event.preventDefault();
     const form=event.currentTarget, button=form.querySelector('[type=submit]');
     button.disabled=true;
@@ -229,8 +231,8 @@
     padDirty=false;
   }
   async function openViewer(item) {
-    const {isLeadership,userId}=admin.context();
-    if (!isLeadership || item.signer_id!==userId || item.status!=='pending') return;
+    const {isLeadership,isSecretariatAdmin,userId}=admin.context();
+    if ((!isLeadership&&!isSecretariatAdmin) || item.signer_id!==userId || item.status!=='pending') return;
     closeViewer();
     currentRequest=item;currentPage=1;positions={signature:null,stamp:null};selectedMark='signature';
     $('#letter-sign-consent').checked=false;
