@@ -231,8 +231,8 @@
     padDirty=false;
   }
   async function openViewer(item) {
-    const {isLeadership,userId}=admin.context();
-    if (!isLeadership || item.signer_id!==userId || item.status!=='pending') return;
+    const {isLeadership,isSecretariatAdmin,userId}=admin.context();
+    if ((!isLeadership&&!isSecretariatAdmin) || item.signer_id!==userId || item.status!=='pending') return;
     closeViewer();
     currentRequest=item;currentPage=1;positions={signature:null,stamp:null};selectedMark='signature';
     $('#letter-sign-consent').checked=false;
