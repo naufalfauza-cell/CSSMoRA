@@ -32,7 +32,7 @@
       const rows=await api('cssmora_achievement_records?select=*&order=created_at.desc');
       const ids=rows.map(row=>row.id);
       const people=ids.length?await api(`cssmora_achievement_record_members?select=record_id,member_id,member_name,cohort&record_id=in.(${ids.map(encodeURIComponent).join(',')})&order=cohort.desc,member_name.asc`):[];
-      records=rows;participants=people;renderAchievementRecords();
+      records=rows;participants=people;renderAchievementRecords();list.scrollTop=0;
     }catch(error){list.innerHTML=`<p class="records-empty">${escape(error.message)}</p>`;}
     finally{list.removeAttribute('aria-busy');}
   }
