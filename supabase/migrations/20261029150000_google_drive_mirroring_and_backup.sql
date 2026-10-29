@@ -204,53 +204,39 @@ grant execute on function public.claim_cssmora_drive_sync_jobs(integer) to servi
 
 create or replace function public.export_cssmora_drive_backup()
 returns jsonb
-language plpgsql
+language sql
 security definer
 set search_path = ''
 as $function$
-declare
-  v_table text;
-  v_rows jsonb;
-  v_tables jsonb := '{}'::jsonb;
-begin
-  foreach v_table in array array[
-    'agenda',
-    'agenda_programs',
-    'competition_admins',
-    'competitions',
-    'cssmora_achievement_application_members',
-    'cssmora_achievement_applications',
-    'cssmora_achievement_record_members',
-    'cssmora_achievement_records',
-    'cssmora_achievement_reviewers',
-    'cssmora_finance_budgets',
-    'cssmora_finance_transactions',
-    'cssmora_letter_signature_requests',
-    'cssmora_program_cycle_history',
-    'cssmora_program_cycles',
-    'cssmora_program_details',
-    'cssmora_program_milestones',
-    'cssmora_user_roles',
-    'secretariat_admins',
-    'secretariat_attendance_events',
-    'secretariat_attendance_records',
-    'secretariat_letter_counters',
-    'secretariat_letters',
-    'secretariat_members'
-  ] loop
-    execute pg_catalog.format(
-      'select coalesce(jsonb_agg(pg_catalog.to_jsonb(t)), ''[]''::jsonb) from public.%I as t',
-      v_table
-    ) into v_rows;
-    v_tables := pg_catalog.jsonb_set(v_tables, array[v_table], coalesce(v_rows, '[]'::jsonb), true);
-  end loop;
-
-  return pg_catalog.jsonb_build_object(
+  select pg_catalog.jsonb_build_object(
     'format', 'cssmora-data-backup-v1',
     'generated_at', pg_catalog.clock_timestamp(),
-    'tables', v_tables
+    'tables', pg_catalog.jsonb_build_object(
+      'agenda', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.agenda as t), '[]'::jsonb),
+      'agenda_programs', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.agenda_programs as t), '[]'::jsonb),
+      'competition_admins', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.competition_admins as t), '[]'::jsonb),
+      'competitions', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.competitions as t), '[]'::jsonb),
+      'cssmora_achievement_application_members', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_achievement_application_members as t), '[]'::jsonb),
+      'cssmora_achievement_applications', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_achievement_applications as t), '[]'::jsonb),
+      'cssmora_achievement_record_members', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_achievement_record_members as t), '[]'::jsonb),
+      'cssmora_achievement_records', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_achievement_records as t), '[]'::jsonb),
+      'cssmora_achievement_reviewers', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_achievement_reviewers as t), '[]'::jsonb),
+      'cssmora_finance_budgets', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_finance_budgets as t), '[]'::jsonb),
+      'cssmora_finance_transactions', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_finance_transactions as t), '[]'::jsonb),
+      'cssmora_letter_signature_requests', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_letter_signature_requests as t), '[]'::jsonb),
+      'cssmora_program_cycle_history', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_program_cycle_history as t), '[]'::jsonb),
+      'cssmora_program_cycles', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_program_cycles as t), '[]'::jsonb),
+      'cssmora_program_details', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_program_details as t), '[]'::jsonb),
+      'cssmora_program_milestones', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_program_milestones as t), '[]'::jsonb),
+      'cssmora_user_roles', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.cssmora_user_roles as t), '[]'::jsonb),
+      'secretariat_admins', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.secretariat_admins as t), '[]'::jsonb),
+      'secretariat_attendance_events', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.secretariat_attendance_events as t), '[]'::jsonb),
+      'secretariat_attendance_records', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.secretariat_attendance_records as t), '[]'::jsonb),
+      'secretariat_letter_counters', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.secretariat_letter_counters as t), '[]'::jsonb),
+      'secretariat_letters', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.secretariat_letters as t), '[]'::jsonb),
+      'secretariat_members', coalesce((select pg_catalog.jsonb_agg(pg_catalog.to_jsonb(t)) from public.secretariat_members as t), '[]'::jsonb)
+    )
   );
-end;
 $function$;
 
 revoke all on function public.export_cssmora_drive_backup() from public, anon, authenticated;
