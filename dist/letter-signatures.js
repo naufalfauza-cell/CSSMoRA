@@ -13,13 +13,14 @@
   let letters = [], requests = [], signers = [];
   let pdfjs, pdfDocument, originalBytes, currentRequest, currentPage = 1, renderTask, renderVersion = 0;
   let signature, stamp, selectedMark='signature', positions={signature:null,stamp:null};
-  const markLoaded={signature:false,stamp:false};
   const objectUrls = [];
 
-  async function storage(bucket, path, {method='GET',body,upsert=false}={}) {
-    const url = `${config.url}/storage/v1/object/${encodeURIComponent(bucket)}/${path.split('/').map(encodeURIComponent).join('/')}`;
+  async function storage(bucket, path, {method='GET',body,upsert=false,fresh=false}={}) {
+    const url = new URL(`/storage/v1/object/${encodeURIComponent(bucket)}/${path.split('/').map(encodeURIComponent).join('/')}`,config.url);
+    if(fresh)url.searchParams.set('_refresh',`${Date.now()}-${Math.random().toString(36).slice(2)}`);
     const response=await admin.request(url,{
-      method, headers:{apikey:config.publishableKey,...(body?{'Content-Type':body.type||'application/octet-stream','x-upsert':String(upsert)}:{})}, body
+      method,cache:fresh?'no-store':undefined,
+      headers:{apikey:config.publishableKey,...(body?{'Content-Type':body.type||'application/octet-stream','x-upsert':String(upsert)}:{})},body
     });
     if (!response.ok) {
       const result=await response.json().catch(()=>({}));
@@ -33,8 +34,8 @@
   async function upload(bucket,path,blob,upsert=false) {
     await storage(bucket,path,{method:'POST',body:blob,upsert});
   }
-  async function download(bucket,path) {
-    return (await storage(bucket,path)).blob();
+  async function download(bucket,path,{fresh=false}={}) {
+    return (await storage(bucket,path,{fresh})).blob();
   }
   async function validatePdf(file) {
     if (!file || file.size < 5 || file.size > MAX_PDF || (file.type && file.type !== 'application/pdf'))
@@ -189,13 +190,12 @@
     });
     return window.PDFLib;
   }
-  async function loadMark(kind) {
-    if (markLoaded[kind]) return;
+  async function loadMark(kind,{fresh=false}={}) {
     const previous=kind==='signature'?signature:stamp;
     if (previous?.url) URL.revokeObjectURL(previous.url);
     let next=null;
     try {
-      const blob=await download(assetBucket,assetPath(kind));
+      const blob=await download(assetBucket,assetPath(kind),{fresh});
       const url=URL.createObjectURL(blob), image=new Image();
       image.src=url;
       await image.decode();
@@ -205,7 +205,6 @@
       if (error.status!==404 && !['not_found','not found'].includes(error.code) && !/object not found/i.test(error.message)) throw error;
     }
     if (kind==='signature') signature=next; else stamp=next;
-    markLoaded[kind]=true;
     renderMarks();
   }
   async function useLocalMark(kind,blob) {
@@ -217,8 +216,13 @@
     const next={bytes:new Uint8Array(await blob.arrayBuffer()),url,image};
     objectUrls.push(url);
     if(kind==='signature')signature=next;else stamp=next;
-    markLoaded[kind]=true;
     renderMarks();
+  }
+  function showSavedSignatureInPad() {
+    const canvas=$('#letter-sign-pad'),context=canvas.getContext('2d');
+    context.clearRect(0,0,canvas.width,canvas.height);
+    if(signature)context.drawImage(signature.image,0,0,canvas.width,canvas.height);
+    padDirty=false;
   }
   async function openViewer(item) {
     const {isLeadership,userId}=admin.context();
@@ -233,7 +237,8 @@
       originalBytes=new Uint8Array(await (await download(pdfBucket,requestPath(item.id,'original'))).arrayBuffer());
       const library=await getPdfjs();
       pdfDocument=await library.getDocument({data:new Uint8Array(originalBytes),isEvalSupported:false}).promise;
-      await Promise.all([loadMark('signature'),loadMark('stamp')]);
+      await Promise.all([loadMark('signature',{fresh:true}),loadMark('stamp',{fresh:true})]);
+      showSavedSignatureInPad();
       await renderPage();
       message('#letter-sign-dialog-message',signature?'Tempatkan tanda tangan pada halaman.':'Gambar atau unggah tanda tangan, lalu simpan.');
     } catch(error){message('#letter-sign-dialog-message',error.message,'error');}
@@ -371,7 +376,7 @@
       if(pdfDocument)place('signature');
       $('#letter-sign-confirm').disabled=true;
       try {await upload(assetBucket,assetPath('signature'),blob,true);}
-      catch(error){signature=null;positions.signature=null;markLoaded.signature=false;renderMarks();throw error;}
+      catch(error){signature=null;positions.signature=null;renderMarks();throw error;}
       finally {$('#letter-sign-confirm').disabled=false;}
       message('#letter-sign-dialog-message','Tanda tangan tersimpan hanya untuk akun Anda.','success');
     } catch(error){message('#letter-sign-dialog-message',error.message,'error');}
@@ -440,7 +445,7 @@
   }
   function reset() {
     if ($('#letter-sign-dialog').open) $('#letter-sign-dialog').close();
-    closeViewer();letters=[];requests=[];signers=[];signature=null;stamp=null;markLoaded.signature=false;markLoaded.stamp=false;
+    closeViewer();letters=[];requests=[];signers=[];signature=null;stamp=null;
     for (const url of objectUrls) URL.revokeObjectURL(url);
     objectUrls.length=0;
   }
