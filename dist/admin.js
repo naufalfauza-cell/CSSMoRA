@@ -1529,7 +1529,8 @@ function renderAchievementApplications(){
     const blocked=app.status==='pending_ketua'&&app.treasurer_email?.toLowerCase()===session?.user?.email?.toLowerCase()&&!isChairSelfReviewException;
     return `<article class="achievement-application-card" data-application-id="${escapeHTML(app.id)}"><header class="achievement-application-head"><div><span class="achievement-request-number">${escapeHTML(achievementRequestNumber(app))}</span><h4>${escapeHTML(app.competition_name)}</h4><small>${escapeHTML(app.competition_type)} · ${app.participation_type==='tim'?'Tim':'Individu'} · ${escapeHTML(new Date(app.created_at).toLocaleString('id-ID'))}</small></div><span class="record-status achievement-status ${escapeHTML(app.status)}">${achievementStatusLabels[app.status]||escapeHTML(app.status)}</span></header>${achievementDetailMarkup(app,team,{canReview,role})}${blocked?'<p class="admin-muted achievement-review-blocked">Persetujuan Bendahara dan Ketua harus dilakukan oleh dua akun berbeda.</p>':''}</article>`;
   }).join('');
-  achievementList.innerHTML=table+cards;
+  const newestApproved=Date.parse(approved[0]?.created_at||0),newestWaiting=Date.parse(waiting[0]?.created_at||0);
+  achievementList.innerHTML=newestWaiting>newestApproved?cards+table:table+cards;
 }
 async function loadAchievementDashboard(){
   const refresh=$('#achievement-refresh');
