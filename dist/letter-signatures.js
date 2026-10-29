@@ -97,7 +97,7 @@
     try {await loadRequests();message('#letter-sign-message','Daftar diperbarui.','success');}
     catch(error){message('#letter-sign-message',error.message,'error');}
   });
-  $('#letter-sign-request-form').addEventListener('submit',async event=>{
+  const requestForm=$('#letter-sign-request-form');\n  if(requestForm)requestForm.hidden=!admin.context().isSecretariatAdmin;\n  requestForm?.addEventListener('submit',async event=>{
     event.preventDefault();
     const form=event.currentTarget, button=form.querySelector('[type=submit]');
     button.disabled=true;
