@@ -7,7 +7,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   function placementToPdf(viewport, rectangle) {
     const { x, y, w, h } = rectangle;
-    if (![x,y,w,h].every(Number.isFinite) || x < 0 || y < 0 || w <= 0 || h <= 0 || x+w > 1.000001 || y+h > 1.000001) {
+    if (![x,y,w,h].every(Number.isFinite) || x < 0 || y < 0 || w <= 0 || h <= 0 || y+h > 1.000001) {
       throw new Error('Posisi tanda tangan berada di luar halaman.');
     }
     const left=x*viewport.width, bottom=(y+h)*viewport.height;

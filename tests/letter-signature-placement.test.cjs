@@ -35,6 +35,8 @@ for (const degrees of [0,90,180,270]) {
   });
 }
 test('signature cannot leave the selected PDF page',()=>{
-  assert.throws(()=>placementToPdf(viewport(0),{x:.9,y:.5,w:.2,h:.2}),/luar halaman/);
+  assert.throws(()=>placementToPdf(viewport(0),{x:.3,y:.9,w:.2,h:.2}),/luar halaman/);
   assert.throws(()=>placementToPdf(viewport(0),{x:.3,y:NaN,w:.2,h:.2}),/luar halaman/);
 });
+
+test('signature may extend past the right edge and is clipped by the PDF page',()=>{\n  const page=viewport(0);\n  const actual=placementToPdf(page,{x:1.2,y:.5,w:.2,h:.2});\n  assert.ok(actual.x>page.width);\n  assert.equal(actual.width,.2*page.width);\n});\n
