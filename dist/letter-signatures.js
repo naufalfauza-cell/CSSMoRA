@@ -53,9 +53,9 @@
   function renderQueue() {
     const list=$('#letter-sign-requests');
     if (!requests.length) {list.innerHTML='<p class="records-empty">Belum ada pengajuan tanda tangan.</p>';return;}
-    const {userId,isLeadership}=admin.context();
+    const {userId,isLeadership,isSecretariatAdmin}=admin.context();
     list.innerHTML=requests.map(item=>{
-      const canSign=isLeadership && item.signer_id===userId && item.status==='pending';
+      const canSign=(isLeadership||isSecretariatAdmin) && item.signer_id===userId && item.status==='pending';
       const canCancel=['draft','pending'].includes(item.status) && (item.created_by===userId || isLeadership);
       const canRetry=item.status==='draft' && item.created_by===userId;
       const email=signers.find(signer=>signer.id===item.signer_id)?.email || 'Akun penandatangan';
@@ -84,7 +84,7 @@
     if (letters.some(letter=>letter.id===previous)) $('#letter-sign-letter').value=previous;
     try {
       signers=await admin.api('rpc/cssmora_letter_signers',{method:'POST',body:{}})||[];
-      $('#letter-sign-signer').replaceChildren(new Option('Pilih Ketua / Wakil',''),...signers.map(signer=>new Option(signer.email,signer.id)));
+      $('#letter-sign-signer').replaceChildren(new Option('Pilih penandatangan',''),...signers.map(signer=>new Option(signer.email,signer.id)));
       await loadRequests();
       message('#letter-sign-message','');
     } catch(error) {
