@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./admin.css?v=20261029-google-drive-v1">
-  <link rel="stylesheet" href="./workflows.css?v=20261023-program-lpj-v1">
+  <link rel="stylesheet" href="./workflows.css?v=20261029-proposal-lpj-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
     #session-restoring{display:none;min-height:calc(100vh - 120px);align-items:center;justify-content:center;gap:10px;color:#315d43;font:600 13px/1.5 "Plus Jakarta Sans",sans-serif}
@@ -33,6 +33,7 @@
   <script src="./workflows.js?v=20261023-performance-v1" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
   <script src="./program-workflow.js?v=20261023-program-lpj-v1" defer></script>
+  <script src="./program-documents.js?v=20261029-proposal-lpj-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
 </head>
@@ -123,6 +124,7 @@
           <button class="agenda-admin-tab is-active" id="tab-programs" type="button" role="tab" aria-selected="true" aria-controls="programs-panel">1 · Database proker</button>
           <button class="agenda-admin-tab" id="tab-schedule" type="button" role="tab" aria-selected="false" aria-controls="schedule-panel">2 · Jadwal agenda</button>
           <button class="agenda-admin-tab" id="tab-program-workflow" type="button" role="tab" aria-selected="false" aria-controls="program-workflow-panel">3 · Progres &amp; LPJ</button>
+          <button class="agenda-admin-tab" id="tab-program-documents" type="button" role="tab" aria-selected="false" aria-controls="program-documents-panel">4 · Proposal &amp; LPJ AI</button>
         </nav>
         <section class="agenda-admin-subpanel" id="programs-panel" role="tabpanel" aria-labelledby="tab-programs">
           <div class="editor-heading program-library-heading"><div><span class="admin-kicker">DATABASE PROGRAM KERJA</span><h3>Data proker dan dokumentasi</h3><p class="admin-muted">Simpan siklus, tujuan, sasaran, PIC, anggaran, dan foto. Data dapat diperbarui kapan saja dan tetap tertaut ke agenda sebelumnya.</p></div></div>
@@ -228,6 +230,61 @@
               <section class="program-cycle-recap" id="program-cycle-recap" aria-labelledby="program-cycle-recap-title" hidden><div class="editor-heading"><div><span class="admin-kicker">REKAP AGENDA &amp; ABSENSI</span><h4 id="program-cycle-recap-title">Bahan LPJ otomatis</h4></div><button class="text-button" id="program-cycle-recap-refresh" type="button">Perbarui</button></div><div id="program-cycle-recap-list"><p class="records-empty">Belum ada agenda selesai.</p></div></section>
               <details class="program-cycle-history" id="program-cycle-history" hidden><summary>Riwayat persetujuan</summary><div id="program-cycle-history-list"></div></details>
             </section>
+          </div>
+        </section>
+        <section class="agenda-admin-subpanel" id="program-documents-panel" role="tabpanel" aria-labelledby="tab-program-documents" hidden>
+          <div class="program-workflow-heading"><div><span class="admin-kicker">DOKUMEN PROGRAM KERJA</span><h3>Proposal dan LPJ otomatis</h3><p>Pilih proker, lengkapi bagian wajib, tambahkan RAB atau foto bila diperlukan, lalu buat Google Docs. Angka keuangan yang sudah terealisasi tetap diverifikasi Bendahara dari AkunPro.</p></div><button class="text-button" id="program-documents-refresh" type="button">Muat ulang</button></div>
+          <div class="program-documents-layout">
+            <section class="editor-card program-document-editor" aria-labelledby="program-document-editor-title">
+              <div class="editor-heading"><div><span class="admin-kicker">DRAF DOKUMEN</span><h4 id="program-document-editor-title">Mulai proposal atau LPJ</h4></div><button class="text-button" id="program-document-reset" type="button">Draf baru</button></div>
+              <form id="program-document-form">
+                <input type="hidden" id="program-document-id" name="id">
+                <div class="form-two"><div><label for="program-document-type">Jenis dokumen</label><select id="program-document-type" name="document_type"><option value="proposal">Proposal</option><option value="lpj">LPJ</option></select></div><div><label for="program-document-program">Proker</label><select id="program-document-program" name="program_id" required><option value="">Pilih proker…</option></select></div></div>
+                <div class="form-two"><div><label for="program-document-period">Periode</label><input id="program-document-period" name="period_label" maxlength="24" placeholder="2026/2027" required></div><div><label for="program-document-title">Judul kegiatan</label><input id="program-document-title" name="title" maxlength="180" placeholder="Nama kegiatan" required></div></div>
+                <div class="form-two"><div><label for="program-document-start">Tanggal mulai/periode</label><input id="program-document-start" name="period_start" type="date"></div><div><label for="program-document-end">Tanggal akhir/periode</label><input id="program-document-end" name="period_end" type="date"></div></div>
+                <div class="program-document-fields" data-document-type="proposal">
+                  <label for="proposal-description">Deskripsi singkat proker <span class="required-mark">wajib</span></label><textarea id="proposal-description" name="description" rows="3" maxlength="2000" required placeholder="Apa yang akan dilakukan, untuk siapa, dan kenapa?"></textarea>
+                  <label for="proposal-goals">Tujuan <span class="required-mark">wajib</span></label><textarea id="proposal-goals" name="goals" rows="2" maxlength="1200" required placeholder="Tujuan kegiatan"></textarea>
+                  <div class="form-two"><div><label for="proposal-date">Tanggal kegiatan</label><input id="proposal-date" name="event_date" type="date"></div><div><label for="proposal-time">Waktu</label><input id="proposal-time" name="event_time" maxlength="80" placeholder="08.00–12.00 WIB"></div></div>
+                  <label for="proposal-place">Tempat</label><input id="proposal-place" name="place" maxlength="180" placeholder="Gedung / lokasi kegiatan">
+                  <label for="proposal-target">Sasaran/peserta <span class="required-mark">wajib</span></label><textarea id="proposal-target" name="target" rows="2" maxlength="800" required placeholder="Penerima manfaat atau peserta"></textarea>
+                  <label for="proposal-theme">Tema kegiatan</label><input id="proposal-theme" name="theme" maxlength="180" placeholder="Opsional">
+                  <label for="proposal-rundown">Rundown singkat</label><textarea id="proposal-rundown" name="rundown" rows="3" maxlength="3000" placeholder="Jam — kegiatan — penanggung jawab"></textarea>
+                </div>
+                <div class="program-document-fields" data-document-type="lpj" hidden>
+                  <label for="lpj-summary">Ringkasan pelaksanaan <span class="required-mark">wajib</span></label><textarea id="lpj-summary" name="realization_summary" rows="3" maxlength="5000" placeholder="Apa yang benar-benar terlaksana?" required></textarea>
+                  <label for="lpj-outcomes">Luaran, capaian, dan indikator keberhasilan</label><textarea id="lpj-outcomes" name="outcome_summary" rows="2" maxlength="2000" placeholder="Capaian dan indikator berdasarkan data aktual"></textarea>
+                  <label for="lpj-obstacles">Hambatan pelaksanaan</label><textarea id="lpj-obstacles" name="obstacles" rows="2" maxlength="1200" placeholder="Tuliskan hambatan yang benar-benar terjadi"></textarea>
+                  <div id="lpj-administration-field"><label for="lpj-administration">Administrasi kegiatan</label><textarea id="lpj-administration" name="administration_summary" rows="2" maxlength="1600" placeholder="Surat, daftar hadir, proposal, atau administrasi terkait"></textarea></div>
+                  <label for="lpj-evaluation">Evaluasi</label><textarea id="lpj-evaluation" name="evaluation" rows="2" maxlength="2000" placeholder="Kendala dan hal yang perlu diperbaiki"></textarea>
+                  <label for="lpj-recommendations">Rekomendasi tindak lanjut</label><textarea id="lpj-recommendations" name="recommendations" rows="2" maxlength="1600" placeholder="Saran untuk kegiatan berikutnya"></textarea>
+                  <div class="form-two"><div><label for="lpj-attendance-target">Target peserta</label><input id="lpj-attendance-target" name="attendance_target" type="number" min="0" max="100000"></div><div><label for="lpj-attendance-count">Peserta hadir</label><input id="lpj-attendance-count" name="attendance_count" type="number" min="0" max="100000"></div></div>
+                  <div class="form-two"><div><label for="lpj-actual-date">Tanggal pelaksanaan</label><input id="lpj-actual-date" name="actual_date" type="date"></div><div><label for="lpj-actual-time">Waktu</label><input id="lpj-actual-time" name="actual_time" maxlength="80" placeholder="08.00–12.00 WIB"></div></div>
+                  <label for="lpj-actual-place">Tempat pelaksanaan</label><input id="lpj-actual-place" name="actual_place" maxlength="180">
+                </div>
+                <fieldset class="program-document-options"><legend>Bagian opsional</legend><p>Bagian yang tidak dicentang tidak dimasukkan ke dokumen.</p>
+                  <label data-option-for="proposal"><input type="checkbox" name="committee" checked><span>Kepanitiaan</span></label>
+                  <label data-option-for="proposal"><input type="checkbox" name="rundown_section" checked><span>Rundown</span></label>
+                  <label data-option-for="proposal"><input type="checkbox" name="rab" checked><span>RAB</span></label>
+                  <label data-option-for="lpj"><input type="checkbox" name="committee"><span>Kepanitiaan</span></label>
+                  <label data-option-for="lpj"><input type="checkbox" name="administration"><span>Administrasi kegiatan</span></label>
+                  <label data-option-for="lpj"><input type="checkbox" name="attendance" checked><span>Rekap agenda dan absensi yang tersedia</span></label>
+                  <label data-option-for="lpj"><input type="checkbox" name="finance"><span>Realisasi keuangan dari Bendahara</span></label>
+                  <label data-option-for="lpj"><input type="checkbox" name="documentation" checked><span>Galeri dokumentasi PDD</span></label>
+                </fieldset>
+                <section class="program-document-subform" id="program-document-committee-section"><div class="editor-heading"><div><span class="admin-kicker">PANITIA</span><h5>Anggota kepanitiaan</h5></div><button class="text-button" id="program-document-add-committee" type="button">Tambah nama</button></div><div id="program-document-committee-list"><p class="records-empty">Pilih anggota dari roster aktif.</p></div></section>
+                <section class="program-document-subform" id="program-document-budget-section"><div class="editor-heading"><div><span class="admin-kicker">RENCANA ANGGARAN</span><h5>RAB proposal</h5></div><button class="text-button" id="program-document-add-budget" type="button">Tambah baris</button></div><div id="program-document-budget-list"><p class="records-empty">Belum ada rincian anggaran.</p></div><p class="program-document-total" id="program-document-budget-total">Pemasukan Rp0 · Pengeluaran Rp0 · Selisih Rp0</p><small>Pilih jenis pemasukan atau pengeluaran per baris. RAB ini rencana dan dapat diedit. Realisasi tetap dicatat di AkunPro.</small></section>
+                <section class="program-document-subform" id="program-document-finance-section" hidden><div class="editor-heading"><div><span class="admin-kicker">DIVERIFIKASI BENDAHARA</span><h5>Ringkasan realisasi</h5></div></div><p class="admin-muted">Isi ringkasan setelah mencocokkan AkunPro. Ini bukan buku kas baru.</p><div class="form-two"><div><label for="lpj-income">Pemasukan terealisasi</label><input id="lpj-income" name="income_amount" type="number" min="0" max="1000000000000" step="1"></div><div><label for="lpj-expense">Pengeluaran terealisasi</label><input id="lpj-expense" name="expense_amount" type="number" min="0" max="1000000000000" step="1"></div></div><label for="lpj-akunpro">Tautan AkunPro</label><input id="lpj-akunpro" name="akunpro_url" type="url" placeholder="https://…"><label for="lpj-finance-note">Catatan Bendahara</label><textarea id="lpj-finance-note" name="realization_note" rows="2" maxlength="3000"></textarea><button type="button" class="member-option-button" id="program-document-finance-save" hidden>Simpan verifikasi Bendahara</button><p id="program-document-finance-message" class="form-message" role="status"></p></section>
+                <section class="program-document-subform" id="program-document-photos-section"><div class="editor-heading"><div><span class="admin-kicker">DOKUMENTASI PDD</span><h5>Foto LPJ</h5></div></div><label for="program-document-photos">Unggah beberapa foto sekaligus</label><input id="program-document-photos" type="file" accept="image/jpeg,image/png" multiple><small>Foto disusun otomatis dengan nomor dan caption. Nama orang tidak ditebak oleh AI.</small><div id="program-document-photo-list" class="program-document-photo-list"><p class="records-empty">Belum ada foto diunggah.</p></div></section>
+                <p class="program-document-required-note" id="program-document-required-note"></p>
+                <div class="program-document-actions"><button class="member-option-button" id="program-document-save" type="submit">Simpan draf</button><button class="member-option-button" id="program-document-ai" type="button">Tulis narasi dengan AI</button><button class="member-option-button" id="program-document-google" type="button">Buat Google Docs</button><button class="admin-button" id="program-document-submit" type="button">Ajukan untuk ditinjau <span aria-hidden="true">↗</span></button></div>
+                <details class="program-document-ai-preview" id="program-document-ai-preview" hidden><summary>Pratinjau narasi AI</summary><div id="program-document-ai-preview-content"></div></details>
+                <div id="program-document-review-actions" class="program-cycle-actions" hidden></div>
+                <details class="program-document-review-history" id="program-document-review-history" hidden><summary>Riwayat pemeriksaan</summary><div id="program-document-review-history-content"></div></details>
+                <p class="form-message" id="program-document-message" role="status" aria-live="polite"></p>
+              </form>
+            </section>
+            <section class="records-card program-document-list-card" aria-labelledby="program-document-list-title"><div class="editor-heading"><div><span class="admin-kicker">ARSIP &amp; PERSETUJUAN</span><h4 id="program-document-list-title">Dokumen terbaru</h4></div><span class="record-count" id="program-document-count">—</span></div><div id="program-document-list"><p class="records-empty">Memuat dokumen…</p></div><details class="program-document-template"><summary>Struktur tetap yang dipakai</summary><p><strong>Proposal:</strong> sampul/persetujuan, pendahuluan dan latar belakang, tujuan, rencana kegiatan, sasaran, waktu/tempat, lalu bagian opsional kepanitiaan, rundown, dan RAB.</p><p><strong>LPJ:</strong> sampul, pelaksanaan, luaran/capaian, evaluasi, penutup, lalu bagian opsional absensi, realisasi keuangan, dan galeri dokumentasi.</p></details></section>
           </div>
         </section>
       </section>

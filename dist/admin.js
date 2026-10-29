@@ -15,6 +15,7 @@ let canManageProgramCycles = false;
 let isLeadership = false;
 let canManageRoles = false;
 let assignedRoles = [];
+let currentRoles = [];
 const roleForm = $('#role-form');
 const roleList = $('#role-list');
 let achievementApplications = [];
@@ -118,7 +119,7 @@ window.CSSMoRAAdmin={
   api,
   showMessage,
   request: authenticatedFetch,
-  context:()=>({isLeadership,isSecretariatAdmin,canViewSecretariat:isLeadership||isSecretariatAdmin,isCompetitionAdmin,userId:session?.user?.id,canManageProgramCycles})
+  context:()=>({isLeadership,isSecretariatAdmin,canViewSecretariat:isLeadership||isSecretariatAdmin,isCompetitionAdmin,userId:session?.user?.id,canManageProgramCycles,roles:currentRoles})
 };
 
 async function ensureAdminData(key, loader) {
@@ -178,6 +179,7 @@ async function checkAdmin() {
   const email=user.email.toLowerCase();
   const rows=await api(`cssmora_user_roles?select=role&email=eq.${encodeURIComponent(email)}&is_active=eq.true`);
   const roleSet=new Set((rows||[]).map(row=>row.role));
+  currentRoles=[...roleSet];
   isLeadership=roleSet.has('ketua')||roleSet.has('wakil');
   canManageRoles=isLeadership;
   canManageProgramCycles=isLeadership||roleSet.has('bph_departemen');
@@ -668,6 +670,7 @@ document.querySelectorAll('.agenda-admin-tab').forEach(tab=>tab.addEventListener
   });
   $('#dashboard-title').textContent='Kegiatan · '+tab.textContent.replace(/^\d+\s*·\s*/,'').trim();
   if(tab.id==='tab-program-workflow')void window.CSSMoRAProgramWorkflow?.load();
+  if(tab.id==='tab-program-documents')void window.CSSMoRAProgramDocuments?.load();
 }));
 document.querySelector('[data-open-schedule]').addEventListener('click',()=>$('#tab-schedule').click());
 

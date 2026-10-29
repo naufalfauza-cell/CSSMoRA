@@ -247,6 +247,190 @@ async function createDriveFolder(accessToken: string, name: string, parentId?: s
   return id;
 }
 
+async function findOrCreateProgramDocumentsFolder(accessToken: string, parentId: string) {
+  const query = new URLSearchParams({
+    q: `name='Dokumen Proposal dan LPJ' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: "files(id,name)",
+    pageSize: "10",
+  });
+  const found = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files?" + query.toString());
+  const existing = Array.isArray(found.data?.files) ? found.data.files[0] : null;
+  if (existing?.id) return String(existing.id);
+  return await createDriveFolder(accessToken, "Dokumen Proposal dan LPJ", parentId);
+}
+
+function programDocumentRequests(blocks: any[], previousEndIndex = 2) {
+  const textParts: string[] = [];
+  const styles: any[] = [];
+  const photos: Array<{ index: number; uri: string; markerLength: number }> = [];
+  const pageBreaks: Array<{ index: number; markerLength: number }> = [];
+  const tables: Array<{ index: number; markerLength: number; rows: string[][]; columns: number }> = [];
+  let index = 1;
+  for (const raw of blocks) {
+    const kind = String(raw?.kind || "paragraph");
+    let value = typeof raw?.text === "string" ? raw.text.replace(/\r/g, "") : "";
+    if (kind === "table") {
+      const rows = Array.isArray(raw?.rows) ? raw.rows.slice(0, 100) : [];
+      const normalizedRows = rows.map((row: unknown[]) => Array.isArray(row) ? row.slice(0, 10).map(cell => String(cell ?? "").replace(/[\t\n]+/g, " ").trim()) : []);
+      const columns = Math.max(1, ...normalizedRows.map(row => row.length));
+      const marker = `CSSMORA_TABLE_SLOT_${String(tables.length + 1).padStart(6, "0")}`;
+      if (normalizedRows.length) tables.push({ index, markerLength: marker.length, rows: normalizedRows.map(row => Array.from({ length: columns }, (_, column) => row[column] || "")), columns });
+      value = normalizedRows.length ? marker : "";
+    }
+    if (kind === "photo") {
+      const uri = String(raw?.uri || "");
+      if (!/^https:\/\//i.test(uri)) throw new AppError(400, "Tautan dokumentasi tidak valid.");
+      const photoNumber=String(photos.length+1).padStart(6,"0");
+      const photoMarker=`CSSMORA_IMAGE_SLOT_${photoNumber}`;
+      photos.push({ index, uri, markerLength: photoMarker.length });
+      value = `${photoMarker}\n${value}`;
+    }
+    if (kind === "pagebreak") {
+      const marker = `CSSMORA_PAGE_BREAK_SLOT_${String(pageBreaks.length + 1).padStart(6, "0")}`;
+      pageBreaks.push({ index, markerLength: marker.length });
+      value = marker;
+    }
+    if (value.length > 8000) throw new AppError(413, "Salah satu bagian dokumen terlalu panjang.");
+    const start = index;
+    textParts.push(value + "\n");
+    index += value.length + 1;
+    if (["title", "subtitle", "center", "heading", "signature", "paragraph", "link"].includes(kind)) styles.push({ kind: kind === "link" ? "paragraph" : kind, start, end: index });
+  }
+  const text = textParts.join("");
+  if (!text.trim() || text.length > 80000) throw new AppError(413, "Isi Google Docs kosong atau terlalu panjang.");
+  const requests: any[] = [];
+  if (previousEndIndex > 2) requests.push({ deleteContentRange: { range: { startIndex: 1, endIndex: previousEndIndex - 1 } } });
+  requests.push({ insertText: { location: { index: 1 }, text } });
+  requests.push({ updateDocumentStyle: {
+    documentStyle: {
+      pageSize: { width: { magnitude: 595.28, unit: "PT" }, height: { magnitude: 841.89, unit: "PT" } },
+      marginTop: { magnitude: 62, unit: "PT" }, marginBottom: { magnitude: 62, unit: "PT" },
+      marginLeft: { magnitude: 68, unit: "PT" }, marginRight: { magnitude: 68, unit: "PT" },
+    },
+    fields: "pageSize,marginTop,marginBottom,marginLeft,marginRight",
+  } });
+  requests.push({ updateTextStyle: {
+    range: { startIndex: 1, endIndex: text.length + 1 },
+    textStyle: { weightedFontFamily: { fontFamily: "Times New Roman" }, fontSize: { magnitude: 12, unit: "PT" }, foregroundColor: { color: { rgbColor: { red: 0.08, green: 0.13, blue: 0.1 } } } },
+    fields: "weightedFontFamily,fontSize,foregroundColor",
+  } });
+  for (const style of styles) {
+    if (style.end <= style.start) continue;
+    if (style.kind === "title") {
+      requests.push({ updateParagraphStyle: { range: { startIndex: style.start, endIndex: style.end }, paragraphStyle: { namedStyleType: "TITLE", alignment: "CENTER", spaceAbove: { magnitude: 80, unit: "PT" }, spaceBelow: { magnitude: 10, unit: "PT" } }, fields: "namedStyleType,alignment,spaceAbove,spaceBelow" } });
+      requests.push({ updateTextStyle: { range: { startIndex: style.start, endIndex: style.end - 1 }, textStyle: { bold: true, fontSize: { magnitude: 20, unit: "PT" } }, fields: "bold,fontSize" } });
+    } else if (style.kind === "subtitle") {
+      requests.push({ updateParagraphStyle: { range: { startIndex: style.start, endIndex: style.end }, paragraphStyle: { alignment: "CENTER", spaceBelow: { magnitude: 12, unit: "PT" } }, fields: "alignment,spaceBelow" } });
+      requests.push({ updateTextStyle: { range: { startIndex: style.start, endIndex: style.end - 1 }, textStyle: { bold: true, fontSize: { magnitude: 16, unit: "PT" } }, fields: "bold,fontSize" } });
+    } else if (style.kind === "heading") {
+      requests.push({ updateParagraphStyle: { range: { startIndex: style.start, endIndex: style.end }, paragraphStyle: { namedStyleType: "HEADING_1", spaceAbove: { magnitude: 15, unit: "PT" }, spaceBelow: { magnitude: 5, unit: "PT" }, keepWithNext: true }, fields: "namedStyleType,spaceAbove,spaceBelow,keepWithNext" } });
+      requests.push({ updateTextStyle: { range: { startIndex: style.start, endIndex: style.end - 1 }, textStyle: { bold: true, foregroundColor: { color: { rgbColor: { red: 0.10, green: 0.31, blue: 0.21 } } } }, fields: "bold,foregroundColor" } });
+    } else if (style.kind === "signature" || style.kind === "center") {
+      requests.push({ updateParagraphStyle: { range: { startIndex: style.start, endIndex: style.end }, paragraphStyle: { alignment: "CENTER", lineSpacing: 115 }, fields: "alignment,lineSpacing" } });
+    } else if (style.kind === "paragraph") {
+      requests.push({ updateParagraphStyle: { range: { startIndex: style.start, endIndex: style.end }, paragraphStyle: { lineSpacing: 115, spaceBelow: { magnitude: 7, unit: "PT" } }, fields: "lineSpacing,spaceBelow" } });
+    } else if (style.kind === "tableHeader") {
+      requests.push({ updateTextStyle: { range: { startIndex: style.start, endIndex: style.end }, textStyle: { bold: true, fontSize: { magnitude: 10, unit: "PT" } }, fields: "bold,fontSize" } });
+    } else if (style.kind === "tableBody") {
+      requests.push({ updateTextStyle: { range: { startIndex: style.start, endIndex: style.end }, textStyle: { fontSize: { magnitude: 9, unit: "PT" } }, fields: "fontSize" } });
+    }
+  }
+  const anchors = [
+    ...photos.map(photo => ({ ...photo, kind: "photo" as const })),
+    ...pageBreaks.map(pageBreak => ({ ...pageBreak, kind: "pagebreak" as const })),
+    ...tables.map(table => ({ ...table, kind: "table" as const })),
+  ].sort((a, b) => b.index - a.index);
+  for (const anchor of anchors) {
+    requests.push({ deleteContentRange: { range: { startIndex: anchor.index, endIndex: anchor.index + anchor.markerLength } } });
+    if (anchor.kind === "photo") {
+      requests.push({ insertInlineImage: { location: { index: anchor.index }, uri: anchor.uri, objectSize: { width: { magnitude: 390, unit: "PT" } } } });
+    } else if (anchor.kind === "pagebreak") {
+      requests.push({ insertPageBreak: { location: { index: anchor.index } } });
+    } else {
+      requests.push({ insertTable: { rows: anchor.rows.length, columns: anchor.columns, location: { index: anchor.index } } });
+    }
+  }
+  return { text, requests, tables: tables.map(({ rows, columns }) => ({ rows, columns })) };
+}
+
+function programDocumentTableCellRequests(document: any, tables: Array<{ rows: string[][]; columns: number }>) {
+  const structuralTables = (document?.body?.content || []).filter((item: any) => item?.table);
+  if (structuralTables.length !== tables.length) throw new AppError(502, "Struktur tabel Google Docs belum terbentuk dengan benar.");
+  const requests: any[] = [];
+  for (let tableIndex = tables.length - 1; tableIndex >= 0; tableIndex--) {
+    const source = tables[tableIndex];
+    const tableElement = structuralTables[tableIndex];
+    const tableStart = Number(tableElement.startIndex);
+    requests.push({ updateTableCellStyle: {
+      tableRange: { tableCellLocation: { tableStartLocation: { index: tableStart }, rowIndex: 0, columnIndex: 0 }, rowSpan: 1, columnSpan: source.columns },
+      tableCellStyle: { backgroundColor: { color: { rgbColor: { red: 0.10, green: 0.31, blue: 0.21 } } } },
+      fields: "backgroundColor",
+    } });
+    const cells: Array<{ index: number; text: string; header: boolean }> = [];
+    const rows = tableElement.table.tableRows || [];
+    for (let rowIndex = 0; rowIndex < source.rows.length; rowIndex++) {
+      const structuralRow = rows[rowIndex];
+      for (let columnIndex = 0; columnIndex < source.columns; columnIndex++) {
+        const cell = structuralRow?.tableCells?.[columnIndex];
+        const paragraph = (cell?.content || []).find((element: any) => element?.paragraph);
+        const index = Number(paragraph?.startIndex);
+        const text = source.rows[rowIndex][columnIndex] || "";
+        if (Number.isInteger(index) && index > 0 && text) cells.push({ index, text, header: rowIndex === 0 });
+      }
+    }
+    cells.sort((a, b) => b.index - a.index);
+    for (const cell of cells) {
+      requests.push({ insertText: { location: { index: cell.index }, text: cell.text } });
+      requests.push({ updateTextStyle: {
+        range: { startIndex: cell.index, endIndex: cell.index + cell.text.length },
+        textStyle: {
+          weightedFontFamily: { fontFamily: "Times New Roman" },
+          fontSize: { magnitude: 9, unit: "PT" },
+          ...(cell.header ? { bold: true, foregroundColor: { color: { rgbColor: { red: 1, green: 1, blue: 1 } } } } : {}),
+        },
+        fields: cell.header ? "weightedFontFamily,fontSize,bold,foregroundColor" : "weightedFontFamily,fontSize",
+      } });
+    }
+  }
+  return requests;
+}
+
+async function createProgramGoogleDoc(accessToken: string, connection: any, input: any) {
+  const title = String(input.title || "").trim().slice(0, 180);
+  const blocks = Array.isArray(input.blocks) ? input.blocks.slice(0, 120) : [];
+  if (title.length < 3 || !blocks.length) throw new AppError(400, "Judul dan isi dokumen wajib tersedia.");
+  const folderId = await findOrCreateProgramDocumentsFolder(accessToken, String(connection.drive_root_folder_id || ""));
+  let documentId = String(input.document_id || "").trim();
+  let webViewLink = "";
+  let endIndex = 2;
+  if (documentId) {
+    const existing = await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(documentId)}?fields=id,name,mimeType,webViewLink`);
+    if (existing.data?.mimeType !== "application/vnd.google-apps.document") throw new AppError(404, "Google Docs yang akan diperbarui tidak ditemukan.");
+    const patched = await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(documentId)}?fields=id,name,webViewLink`, { method: "PATCH", body: { name: title } });
+    webViewLink = String(patched.data?.webViewLink || existing.data?.webViewLink || "");
+    const document = await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`);
+    const content = document.data?.body?.content;
+    const last = Array.isArray(content) && content.length ? content[content.length - 1] : null;
+    endIndex = Number(last?.endIndex || 2);
+  } else {
+    const created = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,webViewLink", {
+      method: "POST", body: { name: title, mimeType: "application/vnd.google-apps.document", parents: [folderId] },
+    });
+    documentId = String(created.data?.id || "");
+    webViewLink = String(created.data?.webViewLink || "");
+    if (!documentId) throw new AppError(502, "Google Docs belum dapat dibuat.");
+  }
+  const compiled = programDocumentRequests(blocks, endIndex);
+  await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests: compiled.requests } });
+  if (compiled.tables.length) {
+    const populatedDoc = await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`);
+    const tableRequests = programDocumentTableCellRequests(populatedDoc.data, compiled.tables);
+    if (tableRequests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests: tableRequests } });
+  }
+  if (!webViewLink) webViewLink = "https://docs.google.com/document/d/" + encodeURIComponent(documentId) + "/edit";
+  return { documentId, webViewLink, title };
+}
+
 
 function sheetRangeTitle(title: string) {
   return "'" + title.replace(/'/g, "''") + "'";
@@ -966,6 +1150,34 @@ async function handleRequest(request: Request) {
     if (action === "status") {
       const actor = await requireUser(request);
       return jsonResponse(request, 200, await integrationStatus());
+    }
+    if (action === "create_document") {
+      const actor = await requireUser(request);
+      if (!actor.roles.some(role => ["ketua", "wakil", "sekretaris", "bendahara", "bph_departemen"].includes(role))) {
+        throw new AppError(403, "Pembuatan dokumen hanya tersedia untuk pengurus CSSMoRA.");
+      }
+      const programDocumentId = String(body.program_document_id || "").trim();
+      if (!/^[0-9a-f-]{36}$/i.test(programDocumentId)) throw new AppError(400, "Dokumen program kerja tidak valid.");
+      const documentRows = (await serviceRequest(
+        "cssmora_program_documents?select=id,created_by,status,google_doc_id&id=eq." + encodeURIComponent(programDocumentId),
+      )).data;
+      const programDocument = Array.isArray(documentRows) ? documentRows[0] : null;
+      if (!programDocument) throw new AppError(404, "Dokumen program kerja tidak ditemukan.");
+      const leadership = actor.roles.includes("ketua") || actor.roles.includes("wakil");
+      const authorCanBuild = programDocument.created_by === actor.user.id && ["draft", "revision"].includes(programDocument.status);
+      const treasurerCanBuild = programDocument.status === "treasurer_review" && actor.roles.includes("bendahara");
+      if (!leadership && !authorCanBuild && !treasurerCanBuild) throw new AppError(403, "Akun ini tidak dapat membuat dokumen pada tahap tersebut.");
+      const requestedDocId = String(body.document_id || "").trim();
+      if (requestedDocId && requestedDocId !== String(programDocument.google_doc_id || "")) {
+        throw new AppError(403, "Google Docs tersebut tidak terhubung ke dokumen program kerja ini.");
+      }
+      const connection = await currentConnection();
+      if (!connection?.refresh_token_ciphertext || !connection?.drive_root_folder_id) {
+        throw new AppError(409, "Drive CSSMoRA belum tersambung. Hubungkan akun organisasi terlebih dahulu.");
+      }
+      const accessToken = await driveAccessToken(connection);
+      const document = await createProgramGoogleDoc(accessToken, connection, body);
+      return jsonResponse(request, 200, { ok: true, action, ...document });
     }
     if (action === "sync" || action === "backup") {
       const authorization = await authorizeWorker(request, action);
