@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261029-role-readonly">
+  <link rel="stylesheet" href="./admin.css?v=20261029-google-drive-v1">
   <link rel="stylesheet" href="./workflows.css?v=20261023-program-lpj-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261023-performance-v1" defer></script>
+  <script src="./admin.js?v=20261029-google-drive-v1" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261029-v4" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -99,7 +99,7 @@
         </button>
         </nav>
           <div class="sidebar-nav-label drive-nav-label">ARSIP</div>
-          <a class="drive-shortcut" href="https://accounts.google.com/AccountChooser?hd=cssmora.org&amp;continue=https%3A%2F%2Fdrive.google.com%2Fdrive%2Ffolders%2F1iy4I-aUxExVtJi77LD_YfKRlIexhvfBf" aria-label="Buka tautan ke Drive CSSMoRA dengan akun cssmora.org">
+          <a class="drive-shortcut" id="drive-shortcut" href="https://accounts.google.com/AccountChooser?hd=cssmora.org&amp;continue=https%3A%2F%2Fdrive.google.com%2Fdrive%2Fmy-drive" aria-label="Buka tautan ke Drive CSSMoRA dengan akun cssmora.org">
             <span class="drive-shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#00832d" d="M8.1 3h5.2l7.2 12.4h-5.2z"/><path fill="#0066da" d="M3.5 15.4 8.1 7.5l2.6 4.5-4.6 7.9z"/><path fill="#ffba00" d="M6.1 19.9h9.2l2.6-4.5H8.7z"/></svg></span>
             <span class="drive-shortcut-copy"><strong>Tautan ke Drive</strong><small>Masuk dengan akun @cssmora.org</small></span><span class="drive-shortcut-arrow" aria-hidden="true">↗</span>
           </a>
@@ -516,6 +516,26 @@
             <div class="access-list" id="role-list"><p class="records-empty">Pilih menu ini untuk memuat peran.</p></div>
           </section>
         </div>
+        <section class="records-card drive-integration-card" aria-labelledby="drive-integration-title">
+          <div class="editor-heading">
+            <div><span class="admin-kicker">ARSIP &amp; CADANGAN</span><h3 id="drive-integration-title">Google Drive CSSMoRA</h3></div>
+            <button type="button" class="member-option-button" id="drive-refresh">↻ Muat status</button>
+          </div>
+          <p class="admin-muted" id="drive-status" role="status" aria-live="polite">Memeriksa koneksi Drive…</p>
+          <div class="drive-integration-meta">
+            <p><strong>Akun:</strong> <span id="drive-account">Belum tersambung</span></p>
+            <p><strong>Sinkron file:</strong> <span id="drive-file-count">—</span></p>
+            <p><strong>Backup terakhir:</strong> <span id="drive-last-backup">—</span></p>
+          </div>
+          <div class="drive-integration-actions">
+            <button class="admin-button" type="button" id="drive-connect">Hubungkan Drive CSSMoRA UNAIR</button>
+            <button class="access-toggle" type="button" id="drive-sync-now" disabled>Sinkronkan &amp; ulangi file gagal</button>
+            <button class="access-toggle" type="button" id="drive-backup-now" disabled>Backup data sekarang</button>
+            <a class="text-button" id="drive-open-folder" href="https://drive.google.com/drive/my-drive" hidden>Buka folder Drive</a>
+          </div>
+          <p class="form-message" id="drive-message" role="status" aria-live="polite"></p>
+          <p class="admin-muted">Unggahan baru dan file lama disalin ke folder privat aplikasi. Data Supabase tetap menjadi sumber utama; backup data harian dienkripsi sebelum disimpan di Drive.</p>
+        </section>
       </section>
           </div>
         </div>

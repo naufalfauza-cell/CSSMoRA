@@ -2190,3 +2190,14 @@
 #secretariat-panel.secretariat-readonly [data-copy-event],
 #secretariat-panel.secretariat-readonly [data-toggle-event],
 #secretariat-panel.secretariat-readonly [data-delete-event] { display: none !important; }
+
+.drive-integration-card{display:grid;gap:10px}
+.drive-integration-card .editor-heading{margin-bottom:0}
+.drive-integration-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 16px}
+.drive-integration-meta p{margin:0;color:#526154;font-size:.82rem;overflow-wrap:anywhere}
+.drive-integration-meta strong{color:#263b2e}
+.drive-integration-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.drive-integration-actions .admin-button{width:auto;margin:0;padding:10px 14px;border-radius:10px;font-size:.82rem}
+.drive-integration-actions button:disabled{opacity:.55;cursor:wait}
+.drive-integration-actions .text-button{padding:8px 4px;font-size:.82rem}
+@media(max-width:700px){.drive-integration-meta{grid-template-columns:1fr}.drive-integration-actions>*{width:100%!important;justify-content:center}}

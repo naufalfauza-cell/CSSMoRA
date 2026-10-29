@@ -1,29 +1,20 @@
-# Penyimpanan berkas CSSMoRA
+# Penyimpanan berkas dan Google Drive CSSMoRA
 
-## Kondisi dan batas perubahan ini
+## Sumber data dan penyimpanan
 
-- Supabase tetap menjadi sumber data utama untuk agenda, anggota, absensi, persuratan, proker, dan prestasi.
-- Berkas masih disimpan di bucket Supabase yang sudah dipakai aplikasi. Adapter bersama pada `supabase/functions/_shared/storage-provider.mjs` sekarang membungkus upload, pemeriksaan metadata, tautan unggah bertanda tangan, tautan baca sementara, dan penghapusan untuk Edge Function.
-- Pengajuan absensi, bantuan lomba, dan pelaporan prestasi tetap memakai bucket serta aturan akses yang sudah berlaku. Foto absensi tetap privat dan masa simpannya tetap lima hari.
-- Foto proker dan poster yang diunggah dari panel admin masih memakai endpoint Storage Supabase langsung. Alih provider penuh belum boleh dilakukan sebelum alur panel admin itu dipindahkan ke layanan bersama.
-- Integrasi Google Drive belum aktif. Adapter saat ini hanya menerima provider `supabase`; pemanggilan `google-drive` akan ditolak dengan jelas.
+- Supabase tetap menjadi sumber data utama aplikasi.
+- File asli tetap disimpan di bucket Supabase dan disalin ke folder privat CSSMoRA di Google Drive.
+- Salinan Drive diproses oleh antrean server-side. Unggahan baru dan objek yang sudah ada saat integrasi diaktifkan masuk antrean; file sumber Supabase tidak dihapus.
+- Bucket yang disalin: attendance-proofs, cssmora-achievement-certificates, cssmora-agenda-programs, cssmora-letter-pdfs, cssmora-prestasi-proofs, cssmora-signer-assets, dan posters.
+- Penghapusan dari Supabase ikut mengantrekan penghapusan salinan Drive. Foto absensi tetap mengikuti retensi lima hari.
+- Bukti absensi, bukti pengajuan, PDF surat, serta aset tanda tangan tetap berada di folder Drive privat. Aplikasi tidak membagikan folder itu ke publik.
+- Data backup aplikasi dibuat sekali sehari, dikompres dan dienkripsi dengan AES-256-GCM sebelum diunggah. Berkas backup tidak otomatis dihapus.
 
-## Kontrak berkas ke depan
+## Batasan
 
-Modul bisnis sebaiknya menerima referensi berkas logis, bukan membangun URL provider sendiri:
+- Koneksi belum aktif sampai OAuth Google dikonfigurasi, fungsi Edge Function dideploy, dan migrasi diterapkan. Lihat [langkah aktivasi](google-drive-setup.md).
+- Unggahan lama juga disalin sebagai salinan; aplikasi tetap membaca file dari Supabase, jadi Drive bukan sumber utama.
+- Backup mencakup tabel bisnis yang disebutkan di migrasi. Tabel autentikasi Supabase, password, token OAuth, serta tabel percobaan/rate-limit tidak diekspor.
+- Backup adalah snapshot logis JSON terkompresi dan terenkripsi; backup ini bukan dump skema PostgreSQL atau pemulihan point-in-time.
+- Simpan salinan aman dari nilai GOOGLE_DRIVE_ENCRYPTION_KEY di password manager organisasi. Tanpa kunci yang sama, berkas backup tidak dapat didekripsi.
 
-```js
-{ provider: 'supabase', bucket: 'attendance-proofs', path: 'agenda-id/anggota-id/proof.jpg' }
-```
-
-Saat Google Drive ditambahkan, referensi perlu diperluas dengan ID file Drive dan metadata arsip. URL unduh tidak disimpan sebagai identitas utama karena URL bertanda tangan dapat kedaluwarsa. Catatan bisnis tetap berada di Supabase; Drive hanya menjadi penyimpanan dokumen/media.
-
-## Syarat sebelum mengaktifkan Drive
-
-1. Tambahkan skema lampiran yang menyimpan provider, ID/path objek, tipe MIME, ukuran, privasi, masa retensi, dan relasi ke catatan bisnis. Buat migrasi baru; jangan mengubah migrasi yang sudah diterapkan.
-2. Pindahkan seluruh unggah, baca, dan hapus berkas dari panel admin ke adapter server-side. Rahasia OAuth dan token refresh hanya boleh berada di sisi server.
-3. Pertahankan bucket privat dan tautan baca sementara untuk bukti absensi, bukti pengajuan, serta sertifikat. Berkas publik seperti poster perlu kebijakan publik yang disengaja.
-4. Salin berkas lama tanpa menghapus sumber. Cocokkan jumlah, ukuran, tipe, dan checksum; uji akses per peran; baru ganti referensi aktif.
-5. Terapkan retensi lima hari untuk foto absensi di provider baru dan verifikasi proses penghapusan sebelum membersihkan berkas lama.
-
-Integrasi Drive dan migrasi berkas lama adalah pekerjaan terpisah dan belum dijalankan oleh perubahan ini.
