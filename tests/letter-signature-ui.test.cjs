@@ -22,6 +22,16 @@ test('signature save immediately places the freshly uploaded mark and allows lar
   assert.match(signatureJs, /await upload\(assetBucket,assetPath\('signature'\),blob,true\)/);
 });
 
+test('every new signing request fetches the newest saved mark and refreshes the signature pad', () => {
+  assert.match(html, /letter-signatures\.js\?v=20261029-v3/);
+  assert.doesNotMatch(signatureJs, /markLoaded/);
+  assert.match(signatureJs, /async function storage\(bucket, path, \{method='GET',body,upsert=false,fresh=false\}=\{\}\)/);
+  assert.match(signatureJs, /if\(fresh\)url\.searchParams\.set\('_refresh'/);
+  assert.match(signatureJs, /cache:fresh\?'no-store':undefined/);
+  assert.match(signatureJs, /loadMark\('signature',\{fresh:true\}\),loadMark\('stamp',\{fresh:true\}\)/);
+  assert.match(signatureJs, /showSavedSignatureInPad\(\);\s*await renderPage\(\)/);
+});
+
 test('raw signature drawing and asset controls remain inside the designated signer dialog', () => {
   const dialogStart = html.indexOf('<dialog id="letter-sign-dialog"');
   const dialogEnd = html.indexOf('</dialog>', dialogStart);
