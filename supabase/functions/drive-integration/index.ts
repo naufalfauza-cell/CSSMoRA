@@ -5,7 +5,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
 const DEFAULT_DRIVE_EMAIL = "unair@cssmora.org";
 const DRIVE_SCOPE = "openid email https://www.googleapis.com/auth/drive.file";
-const MAX_SYNC_BATCH = 10;
+const MAX_SYNC_BATCH = 5;
 const MAX_SYNC_ATTEMPTS = 8;
 const BACKUP_PREFIX = new TextEncoder().encode("CSSMORA-DRIVE-BACKUP-V1\n");
 
@@ -251,6 +251,8 @@ async function startOAuth(request: Request) {
   const actor = await requireUser(request);
   requireLeadership(actor.roles);
   const { clientId } = googleClientConfig();
+  const expiredStates = new URLSearchParams({ expires_at: 'lt.' + new Date().toISOString() });
+  await serviceRequest('cssmora_drive_oauth_states?' + expiredStates.toString(), { method: 'DELETE' }).catch(() => null);
   const state = randomHex(32);
   const stateHash = await sha256Hex(state);
   await serviceRequest("cssmora_drive_oauth_states", {
@@ -573,10 +575,16 @@ function safeSyncError(error: unknown) {
   return "Koneksi sinkronisasi Drive gagal.";
 }
 
-async function runSync() {
+async function runSync(retryFailed = false) {
   const connection = await currentConnection();
   if (!connection) return { processed: 0, succeeded: 0, failed: 0, skipped: "Drive belum tersambung." };
   const accessToken = await driveAccessToken(connection);
+  if (retryFailed) {
+    await serviceRequest('cssmora_drive_sync_queue?status=eq.failed', {
+      method: 'PATCH',
+      body: { status: 'pending', attempts: 0, next_attempt_at: new Date().toISOString(), last_error: null, updated_at: new Date().toISOString() },
+    });
+  }
   const claimed = (await serviceRequest("rpc/claim_cssmora_drive_sync_jobs", {
     method: "POST",
     body: { p_limit: MAX_SYNC_BATCH },
@@ -736,8 +744,8 @@ async function handleRequest(request: Request) {
       return jsonResponse(request, 200, await integrationStatus());
     }
     if (action === "sync" || action === "backup") {
-      await authorizeWorker(request, action);
-      const result = action === "sync" ? await runSync() : await runBackup();
+      const authorization = await authorizeWorker(request, action);
+      const result = action === "sync" ? await runSync(authorization.source === "admin") : await runBackup();
       return jsonResponse(request, 200, { ok: true, action, ...result });
     }
     return jsonResponse(request, 400, { error: "Perintah Drive tidak dikenal." });
