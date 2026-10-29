@@ -76,6 +76,7 @@
   async function loadRequests() {
     requests=await admin.api('cssmora_letter_signature_requests?select=*&order=created_at.desc&limit=100');
     renderQueue();
+    $('#letter-sign-requests').scrollTop=0;
   }
   async function load(currentLetters) {
     letters=currentLetters;
