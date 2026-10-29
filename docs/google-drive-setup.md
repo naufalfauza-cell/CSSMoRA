@@ -1,49 +1,44 @@
-# Mengaktifkan Google Drive CSSMoRA
+# Google Drive dan Google Sheets CSSMoRA
 
-Integrasi membuat folder privat CSSMoRA App di Google Drive akun organisasi. File aplikasi disalin dari Supabase ke Drive, sedangkan Supabase tetap menjadi sumber utama. Tabel bisnis dibackup setiap hari pukul 02.00 WIB dalam berkas JSON gzip terenkripsi.
+Integrasi memakai akun organisasi `unair@cssmora.org`. Supabase tetap menjadi sumber utama. Drive menyimpan salinan file aplikasi dan arsip backup terenkripsi; satu spreadsheet privat menjadi salinan data yang dapat dibaca.
 
-## 1. Siapkan proyek Google Cloud
+## 1. Siapkan Google Cloud
 
-1. Gunakan proyek Google Cloud milik organisasi CSSMoRA dan aktifkan Google Drive API.
-2. Atur OAuth consent screen untuk pengguna organisasi CSSMoRA. Buat OAuth client bertipe Web application.
+1. Gunakan proyek organisasi CSSMoRA dan aktifkan Google Drive API serta Google Sheets API.
+2. Atur Audience ke Internal bila tersedia untuk organisasi `cssmora.org`. Buat OAuth client tipe Web application.
 3. Tambahkan Authorized redirect URI berikut secara persis:
 
-   https://xciouilzpxxfqvxsuyqg.supabase.co/functions/v1/drive-integration?action=callback
+   `https://xciouilzpxxfqvxsuyqg.supabase.co/functions/v1/drive-integration?action=callback`
 
-4. Integrasi memakai scope drive.file, email, dan openid. Scope Drive ini membatasi aplikasi ke file yang dibuat atau dipakai aplikasi; aplikasi tidak meminta akses menyeluruh ke Drive.
-5. Akun yang diterima dibatasi ke unair@cssmora.org. Parameter domain Google hanya membantu memilih akun; server tetap memeriksa alamat email yang diverifikasi.
+4. Integrasi meminta scope `drive.file`, email, dan openid. Scope `drive.file` membatasi akses ke file yang dibuat atau dipakai aplikasi.
+5. Server hanya menerima akun `unair@cssmora.org` dengan email terverifikasi.
 
 ## 2. Simpan kredensial di Supabase
 
-Di Supabase Dashboard → Edge Functions → Secrets, tambahkan:
+Di Supabase Dashboard → Edge Functions → Secrets, gunakan nama persis berikut:
 
-- GOOGLE_DRIVE_CLIENT_ID: Client ID OAuth Google.
-- GOOGLE_DRIVE_CLIENT_SECRET: Client secret OAuth Google.
-- GOOGLE_DRIVE_ENCRYPTION_KEY: kunci acak 32 byte dalam Base64. Buat, misalnya, dengan openssl rand -base64 32.
-- GOOGLE_DRIVE_ALLOWED_EMAIL: unair@cssmora.org (opsional; ini nilai bawaan).
-- CSSMORA_APP_URL: https://cssmora.vercel.app/admin.html (opsional; ini nilai bawaan).
+- `GOOGLE_DRIVE_CLIENT_ID`: Client ID OAuth Google.
+- `GOOGLE_DRIVE_CLIENT_SECRET`: Client secret OAuth Google.
+- `GOOGLE_DRIVE_ENCRYPTION_KEY`: kunci acak 32 byte dalam Base64.
+- `GOOGLE_DRIVE_ALLOWED_EMAIL`: opsional, bawaan `unair@cssmora.org`.
+- `CSSMORA_APP_URL`: opsional, bawaan `https://cssmora.vercel.app/admin.html`.
 
-Jangan kirim client secret atau kunci enkripsi lewat chat, commit, frontend, atau log. Simpan kunci enkripsi terpisah di password manager organisasi agar backup lama tetap bisa dibuka.
+Jangan kirim client secret atau kunci enkripsi lewat chat, commit, frontend, atau log. Simpan kunci enkripsi di password manager organisasi agar arsip lama bisa dibuka.
 
-## 3. Deploy dan aktifkan
+## 3. Perilaku sinkronisasi dan backup
 
-1. Deploy supabase/functions/drive-integration/index.ts dengan verify_jwt=false. Fungsi memvalidasi sesi Supabase dan peran pengurus sendiri; callback OAuth dan jadwal juga memiliki pemeriksaan khusus.
-2. Terapkan migrasi Google Drive. Migrasi membuat tabel privat, antrean file, job harian backup, dan token jadwal acak di Supabase Vault.
-3. Masuk ke Panel Admin → Akses pengurus → Google Drive CSSMoRA.
-4. Pilih Hubungkan Drive CSSMoRA UNAIR dan setujui akses sebagai unair@cssmora.org.
-5. Muat status. Folder privat, jumlah antrean, dan waktu backup terakhir akan tampil di panel.
+- File baru dan file yang sudah ada di tujuh bucket Supabase Storage disalin ke Drive. Antrean diproses tiap menit; kegagalan dicoba ulang. Penghapusan di Supabase diteruskan ke salinan Drive. Retensi foto absensi lima hari tetap berlaku.
+- File aplikasi disimpan di folder `CSSMoRA App/Berkas Aplikasi`. Arsip backup tersimpan di `CSSMoRA App/Backup Data`.
+- Setiap hari pukul 02.00 WIB, aplikasi membuat arsip `.json.gz.enc`: snapshot JSON dikompres gzip lalu dienkripsi AES-GCM. Arsip baru ditambahkan setiap hari dan tidak dihapus otomatis.
+- Pada jadwal yang sama, aplikasi memperbarui satu spreadsheet bernama `CSSMoRA Data Backup`, dengan satu tab untuk setiap tabel bisnis yang diekspor. Tombol **Backup data sekarang** memperbarui arsip terenkripsi dan spreadsheet tersebut secara manual.
+- Spreadsheet adalah salinan yang dapat dibaca dan mengikuti izin berbagi akun Drive. Jangan membagikannya ke luar pengurus yang berwenang. Arsip JSON terenkripsi tetap menjadi salinan pemulihan utama; spreadsheet selalu menampilkan snapshot terbaru, bukan riwayat harian.
+- Data backup mencakup agenda, anggota, absensi, persuratan, alur program, lomba/prestasi, dan keuangan. Tabel autentikasi, kredensial, dan pembatasan percobaan tidak disertakan.
+- Pemulihan arsip terenkripsi memerlukan kunci yang sama dan proses impor yang ditinjau. Backup tidak memulihkan database secara otomatis.
 
-Jangan menaruh token Supabase service-role ke browser. Migrasi menggunakan token jadwal acak di Vault, terpisah dari kredensial OAuth.
+## 4. Arsip PDF persuratan
 
-## Perilaku setelah aktif
+PDF di bucket `cssmora-letter-pdfs` otomatis disalin ke Drive. Salinan memiliki pemetaan internal pada aplikasi; kolom **Tautan arsip Drive** pada data surat belum diisi otomatis oleh proses penyalinan file.
 
-- File baru dan file yang sudah ada di tujuh bucket disalin ke Drive. Proses antrean berjalan tiap menit dan mencoba ulang unggahan yang gagal.
-- File berada di folder Berkas Aplikasi; backup terenkripsi berada di Backup Data. Keduanya berada di bawah CSSMoRA App.
-- Penghapusan file dari Supabase diteruskan ke salinan Drive. Foto absensi yang kedaluwarsa karena retensi lima hari juga dihapus dari salinan.
-- Backup berjalan setiap hari pukul 02.00 WIB. Backup baru ditambahkan sebagai file terpisah; tidak ada penghapusan backup otomatis.
-- Backup memuat tabel bisnis operasional yang ditentukan migrasi, termasuk agenda, anggota, absensi, persuratan, alur program, lomba/prestasi, dan keuangan. Tabel autentikasi, kredensial, serta tabel pembatasan percobaan tidak disertakan.
-- File backup memakai format CSSMORA-DRIVE-BACKUP-V1, diikuti nonce AES-GCM dan ciphertext dari JSON gzip. Pemulihan perlu kunci enkripsi yang sama dan proses impor data yang ditinjau; migrasi tidak mengubah atau menghapus data sumber.
+## 5. Aktivasi
 
-## Status penerapan
-
-Kode ini disiapkan untuk ditinjau. Integrasi belum aktif di production sampai perubahan disetujui, Edge Function dideploy, rahasia OAuth dikonfigurasi, dan migrasi diterapkan.
+Di Panel Admin → Akses pengurus → Google Drive CSSMoRA, hubungkan akun `unair@cssmora.org`. Setelah tersambung, file antrean mulai diproses dan job backup berjalan sesuai jadwal.
