@@ -27,14 +27,14 @@
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
   <script src="./admin.js?v=20261023-performance-v1" defer></script>
-  <script src="./letter-signature-placement.js?v=20261029-v1" defer></script>
-  <script src="./letter-signatures.js?v=20261029-v1" defer></script>
+  <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
+  <script src="./letter-signatures.js?v=20261029-v2" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
   <script src="./workflows.js?v=20261023-performance-v1" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
   <script src="./program-workflow.js?v=20261023-program-lpj-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
-  <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v1">
+  <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -361,6 +361,11 @@
         </section>
 
         <section class="secretariat-subpanel" id="letters-panel" role="tabpanel" aria-labelledby="tab-letters" hidden>
+          <nav class="letter-work-tabs" role="tablist" aria-label="Persuratan">
+            <button class="letter-work-tab is-active" id="tab-letter-register" type="button" role="tab" aria-selected="true" aria-controls="letter-register-panel">Nomor Surat</button>
+            <button class="letter-work-tab" id="tab-letter-signatures" type="button" role="tab" aria-selected="false" aria-controls="letter-signature-panel">Pengajuan TTD</button>
+          </nav>
+          <section class="letter-work-panel" id="letter-register-panel" role="tabpanel" aria-labelledby="tab-letter-register">
           <div class="secretariat-intro"><div><span class="admin-kicker">SURAT KELUAR</span><h3>Nomor surat dan arsip</h3><p>Nomor surat berikutnya mengikuti buku agenda.</p></div></div>
           <div class="secretariat-workspace letters-workspace">
             <aside class="secretariat-options-rail" aria-label="Opsi persuratan">
@@ -391,11 +396,13 @@
               </form>
             </section>
           </div>
+          </section>
+          <section class="letter-work-panel" id="letter-signature-panel" role="tabpanel" aria-labelledby="tab-letter-signatures" hidden>
           <section class="letter-signatures" aria-labelledby="letter-signatures-title">
             <div class="letter-signatures-heading"><div><span class="admin-kicker">PERSETUJUAN DOKUMEN</span><h3 id="letter-signatures-title">Tanda tangan surat</h3></div><button type="button" id="letter-sign-refresh" class="member-option-button">Muat ulang</button></div>
             <div class="letter-signatures-layout">
               <form id="letter-sign-request-form" class="letter-sign-request-form">
-                <h4>Ajukan tanda tangan</h4>
+                <h4>Surat untuk ditandatangani</h4>
                 <label for="letter-sign-letter">Nomor surat</label><select id="letter-sign-letter" required><option value="">Pilih surat</option></select>
                 <label for="letter-sign-signer">Penandatangan</label><select id="letter-sign-signer" required><option value="">Pilih Ketua / Wakil</option></select>
                 <label for="letter-sign-pdf">Surat PDF</label><input id="letter-sign-pdf" type="file" accept="application/pdf,.pdf" required>
@@ -404,6 +411,7 @@
               <div class="letter-sign-queue"><h4>Daftar pengajuan</h4><div id="letter-sign-requests" aria-live="polite"><p class="records-empty">Memuat pengajuan…</p></div></div>
             </div>
             <p id="letter-sign-message" class="form-message" role="status" aria-live="polite"></p>
+          </section>
           </section>
           <dialog id="letter-sign-dialog" class="letter-sign-dialog" aria-labelledby="letter-sign-dialog-title">
             <div class="letter-sign-dialog-head"><div><span class="admin-kicker">TINJAU SURAT</span><h3 id="letter-sign-dialog-title">Bubuhkan tanda tangan</h3></div><button id="letter-sign-close" type="button" aria-label="Tutup peninjauan">✕</button></div>
@@ -417,7 +425,7 @@
                 <canvas id="letter-sign-pad" width="600" height="180" aria-label="Area menggambar tanda tangan"></canvas>
                 <div class="letter-sign-inline"><button type="button" id="letter-sign-clear">Bersihkan</button><label class="letter-sign-file">Unggah gambar<input id="letter-sign-image-file" type="file" accept="image/png,image/jpeg" hidden></label><button type="button" id="letter-sign-save">Simpan tanda tangan</button></div>
                 <button type="button" id="letter-sign-place">Tempatkan pada halaman ini</button>
-                <label for="letter-sign-size">Ukuran tanda tangan</label><input id="letter-sign-size" type="range" min="12" max="45" value="25"><span class="field-hint">Seret gambar pada halaman untuk menggeser. Tombol panah juga dapat digunakan.</span>
+                <label for="letter-sign-size">Ukuran tanda tangan</label><input id="letter-sign-size" type="range" min="12" max="70" value="38"><span class="field-hint">Tanda tangan otomatis muncul setelah disimpan. Seret untuk mengatur posisinya.</span>
                 <h4>Stempel <small>opsional</small></h4>
                 <div class="letter-sign-inline"><label class="letter-sign-file">Unggah stempel<input id="letter-stamp-file" type="file" accept="image/png,image/jpeg" hidden></label><button id="letter-stamp-place" type="button">Tempatkan</button><button id="letter-stamp-remove" type="button">Hapus posisi</button></div>
                 <label for="letter-stamp-size">Ukuran stempel</label><input id="letter-stamp-size" type="range" min="10" max="35" value="19">
