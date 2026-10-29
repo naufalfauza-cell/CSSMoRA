@@ -116,7 +116,8 @@ async function api(path,{method='GET',body,extraHeaders={}}={}) {
 window.CSSMoRAAdmin={
   api,
   showMessage,
-  context:()=>({isLeadership,isCompetitionAdmin,canManageProgramCycles:isCompetitionAdmin})
+  request: authenticatedFetch,
+  context:()=>({isLeadership,isSecretariatAdmin,isCompetitionAdmin,userId:session?.user?.id,canManageProgramCycles:isCompetitionAdmin})
 };
 
 async function ensureAdminData(key, loader) {
@@ -243,6 +244,7 @@ authForm.addEventListener('submit',async event=>{
 $('#logout').addEventListener('click',async()=>{
   try{if(session?.access_token)await fetchTimed(`${config.url}/auth/v1/logout`,{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${session.access_token}`}});}catch{}
   saveSession(null);
+  window.CSSMoRALetterSignatures?.reset();
   adminView.hidden=true;
   authView.hidden=false;
   authForm.reset();
@@ -1430,8 +1432,9 @@ async function loadLetters(){
     const letters=await api('secretariat_letters?select=*&order=issued_on.desc,sequence_number.desc');
     loadedAdminData.add('letters');
     $('#letter-count').textContent=letters.length+' surat';
-    if(!letters.length){list.innerHTML='<p class="records-empty">Belum ada surat yang diberi nomor.</p>';return;}
-    list.innerHTML=letters.map(letter=>'<article class="letter-record"><div class="letter-record-heading"><strong>'+escapeHTML(letter.letter_number)+'</strong><button type="button" data-copy-letter="'+escapeHTML(letter.letter_number)+'">Salin nomor</button><span class="record-status '+(letter.archive_status==='archived'?'published':'')+'">'+(letter.archive_status==='archived'?'SUDAH ARSIP':letter.archive_status==='void'?'DIBATALKAN':'BELUM ARSIP')+'</span></div><p>'+escapeHTML(letter.subject)+'</p><small>'+escapeHTML(letter.issued_on)+' · '+escapeHTML(letter.department_code)+' · '+escapeHTML(letter.recipient||'Tujuan belum diisi')+'</small><form class="letter-archive-form" data-letter-id="'+escapeHTML(letter.id)+'"><input name="archiveUrl" type="url" value="'+escapeHTML(letter.archive_url||'')+'" placeholder="Tautan arsip Drive"><select name="archiveStatus" aria-label="Status arsip surat"><option value="pending" '+(letter.archive_status==='pending'?'selected':'')+'>Belum diarsipkan</option><option value="archived" '+(letter.archive_status==='archived'?'selected':'')+'>Sudah diarsipkan</option><option value="void" '+(letter.archive_status==='void'?'selected':'')+'>Dibatalkan</option></select><button type="submit">Simpan arsip</button></form></article>').join('');
+    if(!letters.length)list.innerHTML='<p class="records-empty">Belum ada surat yang diberi nomor.</p>';
+    else list.innerHTML=letters.map(letter=>'<article class="letter-record"><div class="letter-record-heading"><strong>'+escapeHTML(letter.letter_number)+'</strong><button type="button" data-copy-letter="'+escapeHTML(letter.letter_number)+'">Salin nomor</button>'+(letter.archive_status==='void'?'':'<button type="button" data-request-letter="'+escapeHTML(letter.id)+'">Ajukan TTD</button>')+'<span class="record-status '+(letter.archive_status==='archived'?'published':'')+'">'+(letter.archive_status==='archived'?'SUDAH ARSIP':letter.archive_status==='void'?'DIBATALKAN':'BELUM ARSIP')+'</span></div><p>'+escapeHTML(letter.subject)+'</p><small>'+escapeHTML(letter.issued_on)+' · '+escapeHTML(letter.department_code)+' · '+escapeHTML(letter.recipient||'Tujuan belum diisi')+'</small><form class="letter-archive-form" data-letter-id="'+escapeHTML(letter.id)+'"><input name="archiveUrl" type="url" value="'+escapeHTML(letter.archive_url||'')+'" placeholder="Tautan arsip Drive"><select name="archiveStatus" aria-label="Status arsip surat"><option value="pending" '+(letter.archive_status==='pending'?'selected':'')+'>Belum diarsipkan</option><option value="archived" '+(letter.archive_status==='archived'?'selected':'')+'>Sudah diarsipkan</option><option value="void" '+(letter.archive_status==='void'?'selected':'')+'>Dibatalkan</option></select><button type="submit">Simpan arsip</button></form></article>').join('');
+    void window.CSSMoRALetterSignatures?.load(letters);
   }catch(error){list.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
 }
 $('#letters-refresh').addEventListener('click',loadLetters);
