@@ -295,12 +295,12 @@
     const paper=$('#letter-sign-paper');
     position.w=Number($(kind==='signature'?'#letter-sign-size':'#letter-stamp-size').value)/100;
     position.h=Math.min(.5,position.w*paper.clientWidth/paper.clientHeight*asset.image.naturalHeight/asset.image.naturalWidth);
-    position.x=Math.min(position.x,1-position.w);position.y=Math.min(position.y,1-position.h);
+    position.x=Math.min(position.x,1.5-position.w);position.y=Math.min(position.y,1-position.h);
     renderMarks();
   }
   function move(kind,x,y) {
     const p=positions[kind];if (!p) return;
-    p.x=Math.max(0,Math.min(1-p.w,x));p.y=Math.max(0,Math.min(1-p.h,y));renderMarks();
+    p.x=Math.max(0,Math.min(1.5-p.w,x));p.y=Math.max(0,Math.min(1-p.h,y));renderMarks();
   }
   for (const [kind,element] of [['signature',$('#letter-sign-mark')],['stamp',$('#letter-stamp-mark')]]) {
     element.addEventListener('pointerdown',event=>{
