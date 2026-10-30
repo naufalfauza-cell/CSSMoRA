@@ -142,6 +142,19 @@ body.admin-page .agenda-admin-tab{white-space:nowrap}
 .program-document-card .record-status{white-space:nowrap;margin:0}
 .program-document-card-actions{display:flex;flex-wrap:wrap;gap:6px}
 .program-document-card-actions a,.program-document-card-actions button{width:max-content;padding:6px 8px;border:1px solid #dce8da;border-radius:8px;background:#fff;color:#285f42;text-decoration:none;font:700 10px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.program-document-table-wrap{max-width:100%;overflow:auto;border:1px solid #e2e9df;border-radius:9px;background:#fff;overscroll-behavior-inline:contain}
+.program-document-entry-table{width:100%;min-width:760px;border-collapse:separate;border-spacing:0;font-size:.65rem}
+.program-document-entry-table th{position:sticky;top:0;padding:8px 7px;background:#edf4eb;color:#315c40;text-align:left;font-size:.61rem;white-space:nowrap}
+.program-document-entry-table td{padding:5px 6px;border-top:1px solid #edf1eb;vertical-align:middle}
+.program-document-entry-table input,.program-document-entry-table select{width:100%;min-width:74px;min-height:32px;padding:5px 7px;border:1px solid #dce6d9;border-radius:7px;background:#fff;color:var(--ink);font:inherit;font-size:.65rem}
+.program-document-entry-table [data-budget-name],.program-document-entry-table [data-rundown-activity]{min-width:150px}
+.program-document-entry-table [data-rundown-pic]{min-width:125px}
+.program-document-entry-table button{min-height:29px;padding:4px 7px;border:1px solid #e4ebe2;border-radius:7px;background:#fff;color:#8e4035;font:700 10px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.program-document-entry-table button:disabled,.program-document-entry-table input:disabled,.program-document-entry-table select:disabled{opacity:.68;cursor:not-allowed}
+.program-document-budget-table{min-width:980px}
+.program-document-rundown-table{min-width:860px}
+.program-document-line-total{white-space:nowrap;color:#315c40;font-weight:800}
+.program-document-review-doc-link{width:max-content;padding:6px 8px;border:1px solid #dce8da;border-radius:8px;background:#fff;color:#285f42;text-decoration:none;font-size:.69rem;font-weight:800}
 .program-document-template{margin-top:14px;padding-top:11px;border-top:1px solid #e7eee5}
 .program-document-template summary{width:max-content;color:#315c40;font-size:.69rem;font-weight:800;cursor:pointer}
 .program-document-template p{color:var(--muted);font-size:.65rem;line-height:1.5}

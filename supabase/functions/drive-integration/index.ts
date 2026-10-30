@@ -17,6 +17,14 @@ class AppError extends Error {
   }
 }
 
+function clean(value: unknown, max = 5000) {
+  return String(value ?? "").trim().slice(0, max);
+}
+
+function formatMoney(value: unknown) {
+  return `Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Number(value) || 0)}`;
+}
+
 function appUrl() {
   const raw = Deno.env.get("CSSMORA_APP_URL") || "https://cssmora.vercel.app/admin.html";
   const parsed = new URL(raw);
@@ -398,8 +406,17 @@ function programDocumentTableCellRequests(document: any, tables: Array<{ rows: s
 async function createProgramGoogleDoc(accessToken: string, connection: any, input: any) {
   const title = String(input.title || "").trim().slice(0, 180);
   const blocks = Array.isArray(input.blocks) ? input.blocks.slice(0, 120) : [];
-  if (title.length < 3 || !blocks.length) throw new AppError(400, "Judul dan isi dokumen wajib tersedia.");
+  if (title.length < 3 || (!blocks.length && !input.template_data)) throw new AppError(400, "Judul dan isi dokumen wajib tersedia.");
   const folderId = await findOrCreateProgramDocumentsFolder(accessToken, String(connection.drive_root_folder_id || ""));
+  if (input.template_data) {
+    const template = await importProgramTemplate(accessToken, folderId, String(input.template_data.document_type || "proposal"), title, String(input.document_id || ""));
+    await renderProgramDocumentTemplate(accessToken, template.documentId, input.template_data);
+    const documentRoles = Array.isArray(input.share_roles)
+      ? input.share_roles.map((role: unknown) => String(role)).filter((role: string) => ["sekretaris", "bendahara", "ketua"].includes(role))
+      : ["sekretaris", "ketua"];
+    await shareProgramDocument(accessToken, template.documentId, [String(input.actor_email || "")], documentRoles.length ? documentRoles : ["sekretaris", "ketua"]);
+    return { documentId: template.documentId, webViewLink: template.webViewLink, title };
+  }
   let documentId = String(input.document_id || "").trim();
   let webViewLink = "";
   let endIndex = 2;
@@ -428,7 +445,748 @@ async function createProgramGoogleDoc(accessToken: string, connection: any, inpu
     if (tableRequests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests: tableRequests } });
   }
   if (!webViewLink) webViewLink = "https://docs.google.com/document/d/" + encodeURIComponent(documentId) + "/edit";
+  const documentRoles = Array.isArray(input.share_roles)
+    ? input.share_roles.map((role: unknown) => String(role)).filter((role: string) => ["sekretaris", "bendahara", "ketua"].includes(role))
+    : ["sekretaris", "ketua"];
+  await shareProgramDocument(accessToken, documentId, [String(input.actor_email || "")], documentRoles.length ? documentRoles : ["sekretaris", "ketua"]);
   return { documentId, webViewLink, title };
+}
+
+async function activeRoleEmails(roles: string[]) {
+  if (!roles.length) return [];
+  const query = new URLSearchParams({ select: "email", role: "in.(" + roles.join(",") + ")", is_active: "eq.true" });
+  const rows = (await serviceRequest("cssmora_user_roles?" + query.toString())).data;
+  return [...new Set((Array.isArray(rows) ? rows : []).map((row: any) => String(row.email || "").trim().toLowerCase()).filter(Boolean))];
+}
+
+async function shareDriveFile(accessToken: string, fileId: string, emails: string[]) {
+  const uniqueEmails = [...new Set(emails.map(email => email.trim().toLowerCase()).filter(Boolean))];
+  if (!fileId || !uniqueEmails.length) return;
+  const query = new URLSearchParams({ fields: "permissions(id,emailAddress,role,type)", pageSize: "100" });
+  const response = await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?${query}`);
+  const existing = new Set((response.data?.permissions || []).map((item: any) => String(item.emailAddress || "").toLowerCase()));
+  for (const email of uniqueEmails) {
+    if (existing.has(email)) continue;
+    await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?sendNotificationEmail=false&fields=id`, {
+      method: "POST", body: { type: "user", role: "reader", emailAddress: email },
+    });
+  }
+}
+
+async function shareProgramDocument(accessToken: string, documentId: string, extraEmails: string[] = [], roles: string[] = ["sekretaris"]) {
+  const roleEmails = await activeRoleEmails(roles);
+  await shareDriveFile(accessToken, documentId, [...extraEmails, ...roleEmails]);
+}
+
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const GOOGLE_DOC_MIME = "application/vnd.google-apps.document";
+
+async function importProgramTemplate(accessToken: string, folderId: string, documentType: string, title: string, existingDocumentId = "") {
+  const templateName = documentType === "lpj" ? "cssmora-lpj.docx.b64" : "cssmora-proposal.docx.b64";
+  let bytes: Uint8Array;
+  try {
+    let encoded = "";
+    try {
+      encoded = await Deno.readTextFile(`./templates/${templateName}`);
+    } catch {
+      const templateUrl = `https://raw.githubusercontent.com/naufalfauza-cell/CSSMoRA/main/supabase/functions/drive-integration/templates/${templateName}`;
+      const response = await fetch(templateUrl, { signal: AbortSignal.timeout(25_000) });
+      if (!response.ok) throw new AppError(502, "Template resmi belum dapat dimuat dari penyimpanan aplikasi.");
+      encoded = await response.text();
+    }
+    bytes = fromBase64(encoded.trim());
+  } catch {
+    throw new AppError(500, "Aset template proposal/LPJ belum ikut terpasang pada Edge Function.");
+  }
+  if (bytes.length < 1000 || bytes.length > 15 * 1024 * 1024) throw new AppError(413, "Ukuran template resmi di luar batas yang didukung.");
+  if (existingDocumentId) {
+    const existing = await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(existingDocumentId)}?fields=id,mimeType,webViewLink`);
+    if (existing.data?.mimeType !== GOOGLE_DOC_MIME) throw new AppError(404, "Google Docs yang akan diperbarui tidak ditemukan.");
+  }
+
+  const filePath = existingDocumentId
+    ? `files/${encodeURIComponent(existingDocumentId)}`
+    : "files";
+  const query = new URLSearchParams({ uploadType: "resumable", fields: "id,name,mimeType,webViewLink" });
+  const metadata: Record<string, unknown> = { name: title };
+  if (!existingDocumentId) {
+    metadata.mimeType = GOOGLE_DOC_MIME;
+    metadata.parents = [folderId];
+  }
+  const initialize = await fetch(`https://www.googleapis.com/upload/drive/v3/${filePath}?${query}`, {
+    method: existingDocumentId ? "PATCH" : "POST",
+    headers: {
+      Authorization: "Bearer " + accessToken,
+      "Content-Type": "application/json; charset=UTF-8",
+      "X-Upload-Content-Type": DOCX_MIME,
+      "X-Upload-Content-Length": String(bytes.length),
+    },
+    body: JSON.stringify(metadata),
+  });
+  const sessionUrl = initialize.headers.get("Location");
+  if (!initialize.ok || !sessionUrl) throw new AppError(initialize.status || 502, "Sesi impor template resmi ke Google Docs gagal dimulai.");
+  const upload = await fetch(sessionUrl, {
+    method: "PUT",
+    headers: { Authorization: "Bearer " + accessToken, "Content-Type": DOCX_MIME },
+    body: bytes,
+    signal: AbortSignal.timeout(55_000),
+  });
+  const raw = await upload.text();
+  let file: any = null;
+  if (raw) try { file = JSON.parse(raw); } catch { file = null; }
+  if (!upload.ok || !file?.id) throw new AppError(upload.status || 502, "Template resmi belum berhasil diimpor sebagai Google Docs.");
+  if (file.mimeType && file.mimeType !== GOOGLE_DOC_MIME) throw new AppError(502, "Google Drive tidak mengonversi template resmi menjadi Google Docs.");
+  return { documentId: String(file.id), webViewLink: String(file.webViewLink || `https://docs.google.com/document/d/${encodeURIComponent(String(file.id))}/edit`) };
+}
+
+function templateDocumentBody(document: any) {
+  return document?.body || document?.tabs?.[0]?.body || {};
+}
+
+function templateParagraphText(paragraph: any) {
+  return (paragraph?.elements || []).map((element: any) => String(element?.textRun?.content || "")).join("").replace(/\n+$/g, "").replace(/\u00a0/g, " ").trim();
+}
+
+function templateTextKey(value: unknown) {
+  return String(value || "").replace(/\u00a0/g, " ").replace(/[\t\r\n]+/g, " ").replace(/\s+/g, " ").trim().toLocaleLowerCase("id-ID").replace(/^[a-h][.)]\s*/, "");
+}
+
+function templateParagraphRange(paragraph: any) {
+  const elements = (paragraph?.elements || []).filter((element: any) => element?.textRun && Number.isInteger(Number(element.startIndex)) && Number.isInteger(Number(element.endIndex)));
+  if (!elements.length) return null;
+  const first = elements[0];
+  const last = elements[elements.length - 1];
+  let endIndex = Number(last.endIndex);
+  if (String(last.textRun?.content || "").endsWith("\n")) endIndex--;
+  const startIndex = Number(first.startIndex);
+  return endIndex >= startIndex ? { startIndex, endIndex } : null;
+}
+
+function templateCellRange(cell: any) {
+  const elements: any[] = [];
+  for (const item of cell?.content || []) {
+    if (item?.paragraph) elements.push(...(item.paragraph.elements || []).filter((element: any) => element?.textRun && Number.isInteger(Number(element.startIndex)) && Number.isInteger(Number(element.endIndex))));
+  }
+  if (!elements.length) return null;
+  const first = elements[0];
+  const last = elements[elements.length - 1];
+  let endIndex = Number(last.endIndex);
+  if (String(last.textRun?.content || "").endsWith("\n")) endIndex--;
+  const startIndex = Number(first.startIndex);
+  return endIndex >= startIndex ? { startIndex, endIndex } : null;
+}
+
+function templateTopParagraphs(document: any) {
+  return (templateDocumentBody(document).content || []).filter((item: any) => item?.paragraph);
+}
+
+function templateTables(document: any) {
+  const tables: any[] = [];
+  const visit = (content: any[]) => {
+    for (const item of content || []) {
+      if (item?.table) {
+        tables.push(item);
+        for (const row of item.table.tableRows || []) {
+          for (const cell of row.tableCells || []) visit(cell.content || []);
+        }
+      }
+    }
+  };
+  visit(templateDocumentBody(document).content || []);
+  return tables;
+}
+
+function templateTableCellText(cell: any) {
+  return (cell?.content || []).filter((item: any) => item?.paragraph).map((item: any) => templateParagraphText(item.paragraph)).filter(Boolean).join(" ");
+}
+
+function templateTableRows(table: any) {
+  return table?.table?.tableRows || [];
+}
+
+function templateTableHeaderIndex(table: any, headers: string[]) {
+  const expected = headers.map(templateTextKey);
+  const rows = templateTableRows(table);
+  for (let index = 0; index < Math.min(rows.length, 3); index++) {
+    const actual = (rows[index]?.tableCells || []).map(templateTableCellText).map(templateTextKey);
+    if (expected.every((value, cellIndex) => actual[cellIndex] === value)) return index;
+  }
+  return -1;
+}
+
+function findProgramTable(document: any, headers: string[]) {
+  return templateTables(document).find((element: any) => templateTableHeaderIndex(element, headers) >= 0) || null;
+}
+
+function templateEditForParagraph(paragraph: any, text: string) {
+  const range = templateParagraphRange(paragraph);
+  return range ? { ...range, text: String(text || "") } : null;
+}
+
+function templateEditForCell(cell: any, text: string) {
+  const range = templateCellRange(cell);
+  return range ? { ...range, text: String(text || "") } : null;
+}
+
+async function applyTemplateEdits(accessToken: string, documentId: string, edits: Array<{ startIndex: number; endIndex: number; text: string }>) {
+  const requests: any[] = [];
+  for (const edit of [...edits].sort((a, b) => b.startIndex - a.startIndex)) {
+    if (edit.endIndex > edit.startIndex) requests.push({ deleteContentRange: { range: { startIndex: edit.startIndex, endIndex: edit.endIndex } } });
+    if (edit.text) requests.push({ insertText: { location: { index: edit.startIndex }, text: edit.text } });
+  }
+  if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
+}
+
+function findProgramSignatory(committee: any[], role: string) {
+  const sought = templateTextKey(role);
+  return (committee || []).find((row: any) => templateTextKey(row.role_title) === sought) || null;
+}
+
+function splitTemplateList(value: unknown) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+  return raw.split(/\n+|\s*;\s*/).map((item) => item.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim()).filter(Boolean).slice(0, 12);
+}
+
+function formatTemplateTime(value: unknown) {
+  const time = String(value || "").trim();
+  return time.replace(":", ".");
+}
+
+function formatTemplateDuration(start: unknown, end: unknown) {
+  const parse = (value: unknown) => {
+    const match = String(value || "").match(/^(\d{1,2})[:.](\d{2})$/);
+    return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+  };
+  const first = parse(start), last = parse(end);
+  if (first === null || last === null) return "—";
+  const minutes = (last - first + 1440) % 1440;
+  return `${minutes} menit`;
+}
+
+function formatTemplateDate(value: unknown, withWeekday = true) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return clean(raw, 120);
+  const date = new Date(`${raw}T00:00:00+07:00`);
+  const options: Intl.DateTimeFormatOptions = {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Jakarta",
+  };
+  if (withWeekday) options.weekday = "long";
+  return new Intl.DateTimeFormat("id-ID", options).format(date);
+}
+
+function formatTemplateDateRange(data: any, actual = false) {
+  const start = clean(actual ? data.actual_date_start : data.event_date_start, 40);
+  const end = clean(actual ? data.actual_date_end : data.event_date_end, 40);
+  const fallback = clean(actual ? data.actual_date_text : data.event_date_text, 150);
+  if (!start) return fallback || "Belum ditetapkan";
+  const first = formatTemplateDate(start);
+  const last = end && end !== start ? formatTemplateDate(end) : "";
+  return last ? `${first}–${last}` : first;
+}
+
+function programDivisionLabel(value: unknown) {
+  const raw = clean(value, 100).replace(/^(?:departemen|divisi)\s+/i, "").trim();
+  const key = templateTextKey(raw);
+  const labels: Record<string, string> = {
+    psdm: "Pengembangan Sumber Daya Manusia",
+    p3m: "Pendidikan, Penelitian, dan Pengabdian Masyarakat",
+    advo: "Advokasi dan Hubungan Luar",
+    advokasi: "Advokasi dan Hubungan Luar",
+    medinfo: "Media dan Informasi",
+    sekretariat: "Sekretariat",
+    bendahara: "Bendahara",
+    bph: "Badan Pengurus Harian",
+    lainnya: "Lainnya",
+  };
+  return labels[key] || raw || "CSSMoRA UNAIR";
+}
+
+function templateCellFillEdits(table: any, values: string[][], headerRowIndex: number) {
+  const rows = templateTableRows(table);
+  const edits: Array<{ startIndex: number; endIndex: number; text: string }> = [];
+  for (let rowIndex = headerRowIndex + 1; rowIndex < rows.length; rowIndex++) {
+    const cells = rows[rowIndex]?.tableCells || [];
+    const valueRowIndex = rowIndex - headerRowIndex - 1;
+    if (valueRowIndex >= values.length) continue;
+    const valuesForCells = cells.length === values[valueRowIndex].length
+      ? values[valueRowIndex]
+      : cells.map((cell: any, cellIndex: number) => {
+        const logicalIndex = cells.slice(0, cellIndex).reduce((sum: number, prior: any) => sum + Math.max(1, Number(prior?.tableCellStyle?.columnSpan || 1)), 0);
+        return cellIndex === cells.length - 1 && logicalIndex < values[valueRowIndex].length - 1
+          ? values[valueRowIndex][values[valueRowIndex].length - 1] || values[valueRowIndex][logicalIndex] || ""
+          : values[valueRowIndex][logicalIndex] || "";
+      });
+    for (let columnIndex = 0; columnIndex < cells.length; columnIndex++) {
+      const value = valuesForCells[columnIndex] || "";
+      const edit = templateEditForCell(cells[columnIndex], value);
+      if (edit) edits.push(edit);
+    }
+  }
+  return edits;
+}
+
+async function resizeProgramTable(accessToken: string, documentId: string, headers: string[], dataRowCount: number, trailingRows = 1) {
+  let document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  let table = findProgramTable(document, headers);
+  if (!table) throw new AppError(502, `Tabel ${headers[1] || "dokumen"} tidak ditemukan pada template resmi.`);
+  const headerRowIndex = templateTableHeaderIndex(table, headers);
+  if (headerRowIndex < 0) throw new AppError(502, `Header tabel ${headers[1] || "dokumen"} tidak ditemukan pada template resmi.`);
+  const desiredRows = Math.max(headerRowIndex + 2 + trailingRows, headerRowIndex + 1 + dataRowCount + trailingRows);
+  let currentRows = templateTableRows(table).length;
+  if (currentRows === desiredRows) return document;
+  const tableStartIndex = Number(table.startIndex);
+  const requests: any[] = [];
+  const lastDataRow = () => currentRows - trailingRows - 1;
+  while (currentRows < desiredRows) {
+    requests.push({ insertTableRow: { tableCellLocation: { tableStartLocation: { index: tableStartIndex }, rowIndex: Math.max(headerRowIndex, lastDataRow()), columnIndex: 0 }, insertBelow: true } });
+    currentRows++;
+  }
+  while (currentRows > desiredRows) {
+    requests.push({ deleteTableRow: { tableCellLocation: { tableStartLocation: { index: tableStartIndex }, rowIndex: Math.max(headerRowIndex + 1, lastDataRow()), columnIndex: 0 } } });
+    currentRows--;
+  }
+  await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
+  document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  return document;
+}
+
+async function fillProgramTable(accessToken: string, documentId: string, headers: string[], dataRowCount: number, values: string[][], trailingRows = 1) {
+  const document = await resizeProgramTable(accessToken, documentId, headers, dataRowCount, trailingRows);
+  const table = findProgramTable(document, headers);
+  if (!table) throw new AppError(502, `Tabel ${headers[1] || "dokumen"} tidak dapat diisi.`);
+  const headerRowIndex = templateTableHeaderIndex(table, headers);
+  await applyTemplateEdits(accessToken, documentId, templateCellFillEdits(table, values, headerRowIndex));
+}
+
+function programPhotoMarkers(photos: any[]) {
+  return photos.map((photo, index) => ({
+    marker: `CSSMORA_LPJ_PHOTO_${String(index + 1).padStart(5, "0")}`,
+    uri: String(photo.uri || ""),
+    caption: clean(photo.caption || `Dokumentasi kegiatan ${index + 1}`, 300),
+  })).filter((photo) => /^https:\/\//i.test(photo.uri));
+}
+
+async function appendProgramPhotos(accessToken: string, documentId: string, photos: any[]) {
+  const markers = programPhotoMarkers(photos);
+  if (!markers.length) return;
+  const document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  const content = templateDocumentBody(document).content || [];
+  const endIndex = Number(content[content.length - 1]?.endIndex || 2);
+  const bodyText = markers.map((photo) => `${photo.marker}\n${photo.caption}\n\n`).join("");
+  await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests: [{ insertText: { location: { index: Math.max(1, endIndex - 1) }, text: bodyText } }] } });
+  const refreshed = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  const ranges = markers.map((photo) => ({ ...photo, range: findGoogleDocMarkerRanges(refreshed, photo.marker)[0] })).filter((photo) => photo.range);
+  const requests: any[] = [];
+  for (const photo of ranges.sort((a, b) => b.range.startIndex - a.range.startIndex)) {
+    requests.push({ deleteContentRange: { range: photo.range } });
+    requests.push({ insertInlineImage: { location: { index: photo.range.startIndex }, uri: photo.uri, objectSize: { width: { magnitude: 390, unit: "PT" } } } });
+  }
+  if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
+}
+
+function topParagraphMatches(paragraphs: any[], text: string) {
+  const key = templateTextKey(text);
+  return paragraphs.filter((paragraph) => templateTextKey(templateParagraphText(paragraph.paragraph)) === key);
+}
+
+function sectionParagraphs(paragraphs: any[], startLabel: string, endLabel: string) {
+  const start = paragraphs.findIndex((paragraph) => templateTextKey(templateParagraphText(paragraph.paragraph)) === templateTextKey(startLabel));
+  if (start < 0) throw new AppError(502, `Bagian “${startLabel}” tidak ditemukan pada template resmi.`);
+  let end = paragraphs.length;
+  if (endLabel) {
+    const found = paragraphs.findIndex((paragraph, index) => index > start && templateTextKey(templateParagraphText(paragraph.paragraph)) === templateTextKey(endLabel));
+    if (found >= 0) end = found;
+  }
+  return paragraphs.slice(start + 1, end);
+}
+
+function pushParagraphEdit(edits: Array<{ startIndex: number; endIndex: number; text: string }>, paragraph: any | undefined, text: unknown) {
+  if (!paragraph) return;
+  const edit = templateEditForParagraph(paragraph.paragraph, String(text || ""));
+  if (edit) edits.push(edit);
+}
+
+function approvalTableEditRequests(document: any, data: any) {
+  const table = templateTables(document).find((element: any) => {
+    const cells = templateTableRows(element)[0]?.tableCells || [];
+    return cells.length >= 2 &&
+      templateTextKey(templateTableCellText(cells[0])).includes("sekretaris umum cssmora universitas airlangga") &&
+      templateTextKey(templateTableCellText(cells[1])).includes("ketua panitia");
+  });
+  if (!table) throw new AppError(502, "Tabel lembar pengesahan tidak ditemukan pada template resmi.");
+  const edits: Array<{ startIndex: number; endIndex: number; text: string }> = [];
+  const committee = Array.isArray(data.committee) ? data.committee : [];
+  const chair = findProgramSignatory(committee, "Ketua Pelaksana") || findProgramSignatory(committee, "Ketua Panitia");
+  const marker = "Nama Ketua Panitia";
+  const range = findGoogleDocMarkerRanges(document, marker)[0];
+  if (range) edits.push({ ...range, text: chair?.name ? clean(chair.name, 180).toLocaleUpperCase("id-ID") : "Belum ditentukan" });
+  return { objectRequests: [], edits };
+}
+
+function committeeAppendixText(committee: any[], enabled: boolean) {
+  if (!enabled) return "Susunan kepanitiaan tidak disertakan.";
+  const rows = committee.filter((row) => clean(row.name, 180));
+  if (!rows.length) return "Susunan kepanitiaan belum ditentukan.";
+  const used = new Set<number>();
+  const lines: string[] = [];
+  const roles: Array<[string, string[]]> = [
+    ["Ketua", ["ketua pelaksana", "ketua panitia"]],
+    ["Wakil Ketua", ["wakil ketua pelaksana", "wakil ketua panitia"]],
+    ["Sekretaris", ["sekretaris pelaksana", "sekretaris panitia"]],
+    ["Bendahara", ["bendahara pelaksana", "bendahara panitia"]],
+  ];
+  for (const [label, aliases] of roles) {
+    const index = rows.findIndex((row, rowIndex) => !used.has(rowIndex) && aliases.includes(templateTextKey(row.role_title)));
+    if (index < 0) continue;
+    used.add(index);
+    lines.push(`${label}\t: ${clean(rows[index].name, 180)}`);
+  }
+  const remaining = rows.map((row, index) => ({ row, index })).filter((item) => !used.has(item.index));
+  if (remaining.length) {
+    if (lines.length) lines.push("");
+    lines.push("Divisi-divisi:");
+    const groups = new Map<string, any[]>();
+    for (const { row } of remaining) {
+      const division = clean(row.division, 100) || "Lainnya";
+      const group = groups.get(division) || [];
+      group.push(row);
+      groups.set(division, group);
+    }
+    let groupNumber = 1;
+    for (const [division, members] of groups) {
+      members.forEach((row, memberIndex) => {
+        const role = clean(row.role_title, 120) || "Anggota";
+        const name = clean(row.name, 180);
+        if (memberIndex === 0) lines.push(`${groupNumber}. Divisi ${division} : ${role} — ${name}`);
+        else lines.push(`   ${role} — ${name}`);
+      });
+      groupNumber++;
+    }
+  }
+  return lines.join("\n");
+}
+
+async function fillProgramCommitteeSection(accessToken: string, documentId: string, committee: any[], enabled: boolean) {
+  const document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  const marker = "CSSMORA_COMMITTEE_SECTION_SLOT";
+  const ranges = findGoogleDocMarkerRanges(document, marker);
+  if (ranges.length !== 1) throw new AppError(502, "Posisi daftar panitia tidak ditemukan pada template proposal resmi.");
+  await applyTemplateEdits(accessToken, documentId, [{ ...ranges[0], text: committeeAppendixText(committee, enabled) }]);
+}
+
+async function renderProgramDocumentTemplate(accessToken: string, documentId: string, rawData: any) {
+  const data = rawData && typeof rawData === "object" ? rawData : {};
+  const documentType = data.document_type === "lpj" ? "lpj" : "proposal";
+  const document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  const paragraphs = templateTopParagraphs(document);
+  const edits: Array<{ startIndex: number; endIndex: number; text: string }> = [];
+  const setAll = (label: string, value: string) => topParagraphMatches(paragraphs, label).forEach((paragraph) => pushParagraphEdit(edits, paragraph, value));
+  const setFollowingSlots = (heading: string, nextHeading: string, values: string[]) => {
+    const slots = sectionParagraphs(paragraphs, heading, nextHeading);
+    slots.forEach((paragraph, index) => pushParagraphEdit(edits, paragraph, values[index] || ""));
+  };
+  const title = clean(data.title, 180) || "Nama Kegiatan";
+  const period = clean(data.period_label, 100);
+  const year = clean(data.year, 4) || "2026";
+  const committee = Array.isArray(data.committee) ? data.committee : [];
+  const eventDate = formatTemplateDateRange(data, documentType === "lpj");
+  const eventTime = clean(data.event_time_text || data.actual_time_text, 100) || "Belum ditetapkan";
+  const place = clean(data.place || data.actual_place, 300) || "Belum ditetapkan";
+
+  if (documentType === "proposal") {
+    setFollowingSlots("Latar Belakang", "Tujuan Kegiatan", [clean(data.background, 7000) || clean(data.description, 7000) || "Latar belakang kegiatan belum dilengkapi."]);
+    const goals = splitTemplateList(data.goals);
+    const goalSlots = sectionParagraphs(paragraphs, "Tujuan Kegiatan", "Nama Kegiatan");
+    const objectiveItems = goals.length > 4 ? [...goals.slice(0, 3), goals.slice(3).join("; ")] : goals;
+    pushParagraphEdit(edits, goalSlots[0], `Kegiatan ${title} CSSMoRA Universitas Airlangga bertujuan untuk:`);
+    for (let index = 1; index < goalSlots.length; index++) pushParagraphEdit(edits, goalSlots[index], objectiveItems[index - 1] || "");
+    setFollowingSlots("Nama Kegiatan", "Tema Kegiatan", [`Kegiatan ini bernama “${title}” CSSMoRA Universitas Airlangga${period ? ` Periode ${period}` : ""}.`]);
+    setFollowingSlots("Tema Kegiatan", "Deskripsi Kegiatan", [`Tema kegiatan ini adalah “${clean(data.theme, 600) || "Disesuaikan dengan arah dan tujuan kegiatan"}”.`]);
+    const descriptionSlots = sectionParagraphs(paragraphs, "Deskripsi Kegiatan", "Sasaran Kegiatan");
+    const materials = splitTemplateList(data.materials);
+    const description = clean(data.approach, 7000) || clean(data.description, 7000) || "Deskripsi kegiatan belum dilengkapi.";
+    pushParagraphEdit(edits, descriptionSlots[0], [description, materials.length ? `Materi kegiatan meliputi:\n${materials.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : ""].filter(Boolean).join("\n\n"));
+    setFollowingSlots("Sasaran Kegiatan", "Waktu dan Tempat Pelaksanaan", [clean(data.target, 1000) || "Seluruh pengurus dan anggota aktif CSSMoRA Universitas Airlangga"]);
+    const dateSlots = sectionParagraphs(paragraphs, "Waktu dan Tempat Pelaksanaan", "Penutup");
+    pushParagraphEdit(edits, dateSlots[0], `${title} CSSMoRA Universitas Airlangga dilaksanakan pada:`);
+    pushParagraphEdit(edits, dateSlots[1], `\tHari/tanggal\t: ${eventDate} · Waktu: ${eventTime}`);
+    pushParagraphEdit(edits, dateSlots[2], `\tTempat\t: ${place}`);
+    setFollowingSlots("Penutup", "Lampiran 1", [clean(data.closing, 7000) || `Demikian proposal kegiatan ${title} ini kami susun sebagai acuan pelaksanaan kegiatan.`, ""]);
+  } else {
+    setAll("(NAMA KEGIATAN)", title);
+    setAll("(Nama Kegiatan)", title);
+    setAll("(NAMA PROKER)", title);
+    setAll("Tahun 2026", `Tahun ${year}`);
+    setAll("(Waktu Pelaksanaan)", eventDate);
+    setAll("(Surabaya, tgl proposal disahkan)", `(Surabaya, ${clean(data.approval_date_text, 100) || eventDate})`);
+    const realizationHeading = "Realisasi Kegiatan (umum dan tiap seksi/divisi)";
+    const evaluationHeading = "Evaluasi dan Saran (umum dan tiap seksi/divisi yang berisi kendala, solusi, dan evaluasi)";
+    setAll(realizationHeading, "Realisasi Kegiatan");
+    setAll(evaluationHeading, "Evaluasi dan Saran");
+    const opening = sectionParagraphs(paragraphs, "Pendahuluan", realizationHeading);
+    pushParagraphEdit(edits, opening[0], clean(data.opening, 7000) || clean(data.realization_summary, 7000) || "Pendahuluan kegiatan belum dilengkapi.");
+    const realization = sectionParagraphs(paragraphs, realizationHeading, "Indikator Keberhasilan");
+    const realizationInfo = [
+      `Tanggal: ${eventDate} · Waktu: ${eventTime} · Tempat: ${place}`,
+      `Target peserta: ${clean(data.attendance_target, 100)} · Peserta hadir: ${clean(data.attendance_count, 100)}`,
+      clean(data.implementation, 6500) || clean(data.realization_summary, 6500) || "Realisasi kegiatan belum dicatat.",
+    ].filter(Boolean).join("\n");
+    pushParagraphEdit(edits, realization[0], realizationInfo);
+    pushParagraphEdit(edits, realization[1], clean(data.realization_by_division, 3000));
+    const outcome = sectionParagraphs(paragraphs, "Indikator Keberhasilan", evaluationHeading);
+    pushParagraphEdit(edits, outcome[0], clean(data.outcome, 5000) || "Indikator dan capaian kegiatan belum dicatat.");
+    const evaluation = sectionParagraphs(paragraphs, evaluationHeading, "Laporan Keuangan");
+    pushParagraphEdit(edits, evaluation[0], [
+      clean(data.obstacles, 1800) ? `Kendala dan solusi: ${clean(data.obstacles, 1800)}` : "",
+      clean(data.evaluation, 3000) || "Evaluasi kegiatan belum dicatat.",
+      clean(data.evaluation_by_division, 1800) ? `Evaluasi tiap seksi/divisi: ${clean(data.evaluation_by_division, 1800)}` : "",
+      clean(data.recommendations, 1800) ? `Saran tindak lanjut: ${clean(data.recommendations, 1800)}` : "",
+    ].filter(Boolean).join("\n"));
+    const finance = data.finance && typeof data.finance === "object" ? data.finance : null;
+    const incomeValue = !data.finance_enabled ? "Tidak disertakan" : finance?.confirmed_at ? formatMoney(finance.income_amount) : "Belum diverifikasi Bendahara";
+    const expenseValue = !data.finance_enabled ? "Tidak disertakan" : finance?.confirmed_at ? formatMoney(finance.expense_amount) : "Belum diverifikasi Bendahara";
+    const balanceValue = !data.finance_enabled ? "Tidak disertakan" : finance?.confirmed_at ? formatMoney(Number(finance.income_amount) - Number(finance.expense_amount)) : "Belum diverifikasi Bendahara";
+    setAll("Pemasukan", `Pemasukan: ${incomeValue}`);
+    setAll("Pengeluaran", `Pengeluaran: ${expenseValue}`);
+    setAll("Akumulasi Dana", `Akumulasi Dana: ${balanceValue}`);
+    const archiveLabel = "Arsip kegiatan (susunan acara, CV pemateri, MoU, absensi kegiatan, angket, sertifikat, dll.)";
+    const archiveText = [
+      clean(data.administration_summary, 1800),
+      Array.isArray(data.attendance) && data.attendance.length ? `Rekap absensi: ${data.attendance.map((row: any) => `${clean(row.activity, 100)} (${clean(row.present, 30)}/${clean(row.eligible, 30)} hadir)`).join("; ")}` : "",
+      finance?.akunpro_url ? `Referensi AkunPro: ${clean(finance.akunpro_url, 500)}` : "",
+      finance?.realization_note ? `Catatan Bendahara: ${clean(finance.realization_note, 1000)}` : "",
+    ].filter(Boolean).join("\n");
+    if (archiveText) setAll(archiveLabel, `Arsip kegiatan: ${archiveText}`);
+  }
+
+  const approval = approvalTableEditRequests(document, { committee });
+  const requests = [...approval.objectRequests];
+  for (const edit of [...edits, ...approval.edits].sort((a, b) => b.startIndex - a.startIndex)) {
+    if (edit.endIndex > edit.startIndex) requests.push({ deleteContentRange: { range: { startIndex: edit.startIndex, endIndex: edit.endIndex } } });
+    if (edit.text) requests.push({ insertText: { location: { index: edit.startIndex }, text: edit.text } });
+  }
+  if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
+
+  if (documentType === "proposal") {
+    await replaceTemplateMarkers(accessToken, documentId, {
+      "{{PROGRAM_TITLE}}": title.toLocaleUpperCase("id-ID"),
+      "{{PERIOD_LABEL}}": period || `${Number(year) - 1}-${year}`,
+      "{{YEAR}}": year,
+      "{{DIVISION_NAME}}": programDivisionLabel(data.program_division),
+      "{{EVENT_DATE}}": eventDate,
+      "{{EVENT_TIME}}": eventTime,
+      "{{EVENT_PLACE}}": place,
+      "{{APPROVAL_DATE}}": clean(data.approval_date_text, 100) || eventDate,
+    });
+
+    const rundown = data.rundown_enabled && Array.isArray(data.rundown) ? data.rundown : [];
+    const scheduleRows = (rundown.length ? rundown : [{}]).map((row: any, index: number) => [
+      String(index + 1),
+      clean(row.activity, 300) || (data.rundown_enabled ? "Belum ditentukan" : "Bagian susunan acara tidak disertakan."),
+      `${formatTemplateTime(row.start_time) || "—"}${row.end_time ? ` - ${formatTemplateTime(row.end_time)}` : ""}`,
+      formatTemplateDuration(row.start_time, row.end_time),
+      row.person ? `Penanggung jawab: ${clean(row.person, 120)}` : "",
+    ]);
+    const scheduleCount = Math.max(1, scheduleRows.length);
+    const scheduleHeaders = ["No", "Kegiatan", "Waktu", "Durasi", "Keterangan"];
+    const scheduleTable = findProgramTable((await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data, scheduleHeaders);
+    if (!scheduleTable) throw new AppError(502, "Tabel rundown tidak ditemukan pada template proposal resmi.");
+    const scheduleDoc = await resizeProgramTable(accessToken, documentId, scheduleHeaders, scheduleCount, 0);
+    const sizedSchedule = findProgramTable(scheduleDoc, scheduleHeaders);
+    if (sizedSchedule) await applyTemplateEdits(accessToken, documentId, templateCellFillEdits(sizedSchedule, scheduleRows, templateTableHeaderIndex(sizedSchedule, scheduleHeaders)));
+
+    const budget = data.rab_enabled && Array.isArray(data.budget) ? data.budget : [];
+    const income = budget.filter((row: any) => row.direction === "income");
+    const expense = budget.filter((row: any) => row.direction !== "income");
+    const amount = (row: any) => Math.round((Number(row.quantity) || 0) * (Number(row.unit_price) || 0));
+    const quantity = (row: any) => `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(Number(row.quantity) || 0)}${row.unit ? ` ${clean(row.unit, 40)}` : ""}`;
+    const incomeValues = data.rab_enabled
+      ? (income.length ? income : [{}]).map((row: any, index: number) => [`${index + 1}.`, clean(row.item_name, 240) || "Belum ditentukan", formatMoney(amount(row))])
+      : [["", "Bagian RAB tidak disertakan.", "—"]];
+    incomeValues.push([data.rab_enabled ? "Total Pemasukan" : "", "", data.rab_enabled ? formatMoney(income.reduce((sum: number, row: any) => sum + amount(row), 0)) : "—"]);
+    const expenseValues = data.rab_enabled
+      ? (expense.length ? expense : [{}]).map((row: any, index: number) => [String(index + 1), clean(row.item_name, 240) || "Belum ditentukan", formatMoney(Number(row.unit_price) || 0), quantity(row), formatMoney(amount(row))])
+      : [["", "Bagian RAB tidak disertakan.", "", "", "—"]];
+    expenseValues.push([data.rab_enabled ? "Total Pengeluaran" : "", "", "", "", data.rab_enabled ? formatMoney(expense.reduce((sum: number, row: any) => sum + amount(row), 0)) : "—"]);
+    await fillProgramTable(accessToken, documentId, ["No", "Sumber Dana", "Jumlah Total"], Math.max(1, income.length), incomeValues, 1);
+    await fillProgramTable(accessToken, documentId, ["No", "Nama", "Harga", "Pack", "Total"], Math.max(1, expense.length), expenseValues, 1);
+    await fillProgramCommitteeSection(accessToken, documentId, committee, Boolean(data.committee_enabled));
+  }
+
+  await appendProgramPhotos(accessToken, documentId, Array.isArray(data.photos) ? data.photos : []);
+}
+
+async function createSignerAssetUrl(actorId: string) {
+  const path = `${actorId}/signature.png`.split("/").map(encodeURIComponent).join("/");
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/cssmora-signer-assets/${path}`, {
+    method: "POST",
+    headers: { apikey: SERVICE_ROLE_KEY, Authorization: "Bearer " + SERVICE_ROLE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ expiresIn: 1800 }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.signedURL) throw new AppError(409, "Simpan tanda tangan PNG Anda terlebih dahulu pada fitur tanda tangan surat.");
+  const signed = String(data.signedURL);
+  return signed.startsWith("http") ? signed : SUPABASE_URL + signed;
+}
+
+function findGoogleDocMarkerRanges(document: any, marker: string) {
+  const ranges: Array<{ startIndex: number; endIndex: number }> = [];
+  const inspect = (content: any[]) => {
+    for (const structural of content || []) {
+      if (structural?.paragraph?.elements) {
+        for (const element of structural.paragraph.elements) {
+          const text = String(element?.textRun?.content || "");
+          const offset = text.indexOf(marker);
+          if (offset >= 0) {
+            const startIndex = Number(element.startIndex) + offset;
+            ranges.push({ startIndex, endIndex: startIndex + marker.length });
+          }
+        }
+      }
+      if (structural?.table?.tableRows) {
+        for (const row of structural.table.tableRows) for (const cell of row.tableCells || []) inspect(cell.content || []);
+      }
+    }
+  };
+  inspect(templateDocumentBody(document).content || []);
+  return ranges;
+}
+
+async function replaceTemplateMarkers(accessToken: string, documentId: string, replacements: Record<string, string>) {
+  const document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  const edits: Array<{ startIndex: number; endIndex: number; text: string }> = [];
+  for (const [marker, value] of Object.entries(replacements)) {
+    for (const range of findGoogleDocMarkerRanges(document, marker)) edits.push({ ...range, text: String(value || "") });
+  }
+  if (edits.length) await applyTemplateEdits(accessToken, documentId, edits);
+}
+
+function hasGoogleDocSignatureImage(document: any, stage: string) {
+  const expectedLabel = stage === "sekretaris" ? "Sekretaris Umum CSSMoRA Universitas Airlangga" : "Ketua Umum CSSMoRA Universitas Airlangga";
+  const containsImage = (content: any[]): boolean => (content || []).some((item: any) => {
+    if (item?.paragraph?.elements?.some((element: any) => Boolean(element.inlineObjectElement))) return true;
+    return (item?.table?.tableRows || []).some((row: any) => (row.tableCells || []).some((cell: any) => containsImage(cell.content || [])));
+  });
+  if (stage === "sekretaris") {
+    for (const table of templateTables(document)) {
+      for (const row of templateTableRows(table)) for (const cell of row.tableCells || []) {
+        if (templateTextKey(templateTableCellText(cell)).includes(templateTextKey(expectedLabel)) && containsImage(cell.content || [])) return true;
+      }
+    }
+    return false;
+  }
+  const content = templateDocumentBody(document).content || [];
+  for (let index = 0; index < content.length; index++) {
+    if (!content[index]?.paragraph || !templateTextKey(templateParagraphText(content[index].paragraph)).includes(templateTextKey(expectedLabel))) continue;
+    if (containsImage(content.slice(index, index + 7))) return true;
+  }
+  return false;
+}
+
+async function exportProgramPdf(accessToken: string, documentId: string) {
+  const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(documentId)}/export?mimeType=application%2Fpdf`;
+  const response = await fetch(url, { headers: { Authorization: "Bearer " + accessToken } });
+  if (!response.ok) throw new AppError(response.status, "PDF dari Google Docs belum dapat dibuat.");
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.length < 100 || bytes.length > 25 * 1024 * 1024) throw new AppError(502, "Ukuran PDF hasil ekspor tidak valid.");
+  return bytes;
+}
+
+async function saveProgramPdf(accessToken: string, connection: any, document: any, bytes: Uint8Array) {
+  const title = `${String(document.document_type || "DOKUMEN").toUpperCase()} - ${String(document.title || "Dokumen")} - ${String(document.period_label || "")}.pdf`.slice(0, 180);
+  let file: any;
+  const folderId = await findOrCreateProgramDocumentsFolder(accessToken, String(connection.drive_root_folder_id || ""));
+  let fileId = String(document.google_pdf_id || "");
+  if (!fileId) {
+    const query = new URLSearchParams({
+      q: `'${folderId}' in parents and appProperties has { key='cssmoraProgramDocumentId' and value='${String(document.id)}' } and appProperties has { key='cssmoraRevisionNumber' and value='${String(document.revision_number || 1)}' } and trashed=false`,
+      fields: "files(id,name,webViewLink)",
+      pageSize: "10",
+    });
+    const found = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files?" + query.toString());
+    fileId = String(found.data?.files?.[0]?.id || "");
+  }
+  if (fileId) {
+    const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(fileId)}?uploadType=media&fields=id,name,webViewLink`, {
+      method: "PATCH", headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/pdf" }, body: bytes,
+    });
+    const raw = await response.text();
+    file = raw ? JSON.parse(raw) : null;
+    if (!response.ok || !file?.id) throw new AppError(response.status, "PDF Drive yang ada belum dapat diperbarui.");
+  } else {
+    const boundary = `cssmora_${crypto.randomUUID().replace(/-/g, "")}`;
+    const encoder = new TextEncoder();
+    const metadata = { name: title, mimeType: "application/pdf", parents: [folderId], appProperties: { cssmoraProgramDocumentId: String(document.id), cssmoraRevisionNumber: String(document.revision_number || 1) } };
+    const prefix = encoder.encode(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/pdf\r\n\r\n`);
+    const suffix = encoder.encode(`\r\n--${boundary}--`);
+    const body = new Uint8Array(prefix.length + bytes.length + suffix.length);
+    body.set(prefix, 0); body.set(bytes, prefix.length); body.set(suffix, prefix.length + bytes.length);
+    const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
+      method: "POST", headers: { Authorization: "Bearer " + accessToken, "Content-Type": `multipart/related; boundary=${boundary}` }, body,
+    });
+    const raw = await response.text();
+    file = raw ? JSON.parse(raw) : null;
+    if (!response.ok || !file?.id) throw new AppError(response.status, "PDF belum dapat disimpan di Drive.");
+  }
+  const id = String(file.id);
+  return { google_pdf_id: id, google_pdf_url: String(file.webViewLink || `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`), title };
+}
+
+async function signProgramGoogleDoc(accessToken: string, connection: any, input: any, actor: any) {
+  const documentId = String(input.document_id || "");
+  const stage = String(input.stage || "");
+  const expectedRole = stage === "sekretaris" ? "sekretaris" : stage === "ketua" ? "ketua" : "";
+  if (!expectedRole || !actor.roles.includes(expectedRole) || String(input.actor_id || "") !== String(actor.user.id)) throw new AppError(403, "Akun ini tidak berwenang membubuhkan tanda tangan tahap tersebut.");
+  const rows = (await serviceRequest("cssmora_program_documents?select=id,created_by,status,document_type,title,period_label,google_doc_id,google_pdf_id,optional_sections,revision_number&id=eq." + encodeURIComponent(String(input.program_document_id || "")))).data;
+  const programDocument = Array.isArray(rows) ? rows[0] : null;
+  if (!programDocument || String(programDocument.google_doc_id || "") !== documentId) throw new AppError(404, "Google Docs tidak terhubung dengan dokumen program kerja ini.");
+  const requiredStatus = stage === "sekretaris" ? "secretary_review" : "chair_review";
+  if (programDocument.status !== requiredStatus) throw new AppError(409, "Dokumen belum berada pada tahap tanda tangan akun ini.");
+  if (String(programDocument.created_by) === String(actor.user.id)) throw new AppError(403, "PIC/pengaju tidak dapat menandatangani dokumennya sendiri.");
+  if (stage === "sekretaris" && programDocument.document_type === "lpj" && programDocument.optional_sections?.finance) {
+    const financeRows = (await serviceRequest("cssmora_program_document_finance?select=confirmed_by,confirmed_at,document_id&document_id=eq." + encodeURIComponent(programDocument.id))).data;
+    const finance = Array.isArray(financeRows) ? financeRows[0] : null;
+    if (!finance?.confirmed_by || !finance?.confirmed_at) throw new AppError(409, "Bendahara perlu memverifikasi bagian realisasi keuangan sebelum tanda tangan Sekretaris.");
+    const generatedRows = (await serviceRequest("cssmora_program_documents?select=google_doc_generated_at&id=eq." + encodeURIComponent(programDocument.id))).data;
+    const generatedAt = Array.isArray(generatedRows) ? new Date(generatedRows[0]?.google_doc_generated_at || 0).getTime() : 0;
+    if (generatedAt < new Date(finance.confirmed_at).getTime()) throw new AppError(409, "Perbarui Google Docs setelah verifikasi Bendahara sebelum Sekretaris menandatangani.");
+  }
+  const document = await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`);
+  const marker = stage === "sekretaris" ? "Menunggu tanda tangan Sekretaris" : "Menunggu tanda tangan Ketua";
+  const ranges = findGoogleDocMarkerRanges(document.data, marker);
+  if (ranges.length > 1) throw new AppError(409, "Penanda tanda tangan muncul lebih dari sekali pada Google Docs.");
+  const signerMarker = stage === "sekretaris" ? "Nama Sekretaris Umum" : "Nama Ketua Umum";
+  const signerRanges = findGoogleDocMarkerRanges(document.data, signerMarker);
+  if (signerRanges.length > 1) throw new AppError(409, "Nama penanda tangan muncul lebih dari sekali pada Google Docs.");
+  const requests: any[] = [];
+  if (ranges.length === 1) {
+    const uri = await createSignerAssetUrl(String(actor.user.id));
+    requests.push({ range: ranges[0], insert: { insertInlineImage: { location: { index: ranges[0].startIndex }, uri, objectSize: { width: { magnitude: 112, unit: "PT" }, height: { magnitude: 38, unit: "PT" } } } } });
+  } else if (!hasGoogleDocSignatureImage(document.data, stage)) {
+    throw new AppError(409, "Penanda tanda tangan tidak ditemukan. Muat ulang Docs sebelum melanjutkan.");
+  }
+  if (signerRanges.length === 1) {
+    const metadata = actor.user?.user_metadata && typeof actor.user.user_metadata === "object" ? actor.user.user_metadata : {};
+    const displayName = clean(metadata.full_name || metadata.name || metadata.display_name || actor.email?.split("@")[0] || "", 180) || "Nama belum tersedia";
+    requests.push({ range: signerRanges[0], insert: { insertText: { location: { index: signerRanges[0].startIndex }, text: displayName } } });
+  }
+  for (const item of requests.sort((a, b) => b.range.startIndex - a.range.startIndex)) {
+    await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests: [
+      { deleteContentRange: { range: item.range } },
+      item.insert,
+    ] } });
+  }
+  const pdfBytes = await exportProgramPdf(accessToken, documentId);
+  const pdf = await saveProgramPdf(accessToken, connection, programDocument, pdfBytes);
+  if (stage === "sekretaris") await shareProgramDocument(accessToken, documentId, [], ["ketua"]);
+  const chairEmails = await activeRoleEmails(["ketua"]);
+  await shareDriveFile(accessToken, pdf.google_pdf_id, [...chairEmails, String(actor.email || "")]);
+  return pdf;
 }
 
 
@@ -1151,6 +1909,13 @@ async function handleRequest(request: Request) {
       const actor = await requireUser(request);
       return jsonResponse(request, 200, await integrationStatus());
     }
+    if (action === "sign_program_document") {
+      const actor = await requireUser(request);
+      const connection = await currentConnection();
+      if (!connection?.refresh_token_ciphertext || !connection?.drive_root_folder_id) throw new AppError(409, "Drive CSSMoRA belum tersambung.");
+      const accessToken = await driveAccessToken(connection);
+      return jsonResponse(request, 200, { ok: true, action, ...(await signProgramGoogleDoc(accessToken, connection, body, actor)) });
+    }
     if (action === "create_document") {
       const actor = await requireUser(request);
       if (!actor.roles.some(role => ["ketua", "wakil", "sekretaris", "bendahara", "bph_departemen"].includes(role))) {
@@ -1159,14 +1924,14 @@ async function handleRequest(request: Request) {
       const programDocumentId = String(body.program_document_id || "").trim();
       if (!/^[0-9a-f-]{36}$/i.test(programDocumentId)) throw new AppError(400, "Dokumen program kerja tidak valid.");
       const documentRows = (await serviceRequest(
-        "cssmora_program_documents?select=id,created_by,status,google_doc_id&id=eq." + encodeURIComponent(programDocumentId),
+        "cssmora_program_documents?select=id,created_by,status,google_doc_id,document_type,optional_sections&id=eq." + encodeURIComponent(programDocumentId),
       )).data;
       const programDocument = Array.isArray(documentRows) ? documentRows[0] : null;
       if (!programDocument) throw new AppError(404, "Dokumen program kerja tidak ditemukan.");
-      const leadership = actor.roles.includes("ketua") || actor.roles.includes("wakil");
       const authorCanBuild = programDocument.created_by === actor.user.id && ["draft", "revision"].includes(programDocument.status);
       const treasurerCanBuild = programDocument.status === "treasurer_review" && actor.roles.includes("bendahara");
-      if (!leadership && !authorCanBuild && !treasurerCanBuild) throw new AppError(403, "Akun ini tidak dapat membuat dokumen pada tahap tersebut.");
+      const financialPreSignCanBuild = programDocument.status === "secretary_review" && programDocument.document_type === "lpj" && programDocument.optional_sections?.finance && actor.roles.includes("bendahara");
+      if (!authorCanBuild && !treasurerCanBuild && !financialPreSignCanBuild) throw new AppError(403, "Akun ini tidak dapat membuat dokumen pada tahap tersebut.");
       const requestedDocId = String(body.document_id || "").trim();
       if (requestedDocId && requestedDocId !== String(programDocument.google_doc_id || "")) {
         throw new AppError(403, "Google Docs tersebut tidak terhubung ke dokumen program kerja ini.");
@@ -1176,7 +1941,9 @@ async function handleRequest(request: Request) {
         throw new AppError(409, "Drive CSSMoRA belum tersambung. Hubungkan akun organisasi terlebih dahulu.");
       }
       const accessToken = await driveAccessToken(connection);
-      const document = await createProgramGoogleDoc(accessToken, connection, body);
+      const shareRoles = ["sekretaris", "ketua"];
+      if (programDocument.document_type === "lpj" && programDocument.optional_sections?.finance) shareRoles.push("bendahara");
+      const document = await createProgramGoogleDoc(accessToken, connection, { ...body, actor_email: actor.email, share_roles: shareRoles });
       return jsonResponse(request, 200, { ok: true, action, ...document });
     }
     if (action === "sync" || action === "backup") {

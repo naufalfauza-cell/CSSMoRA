@@ -6,15 +6,18 @@
   const cfg = () => window.CSSMORA_SUPABASE || {};
   const money = value => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value)||0);
   const typeLabels={proposal:'Proposal',lpj:'LPJ'};
-  const statusLabels={draft:'Draf',secretary_review:'Ditinjau Sekretaris',treasurer_review:'Ditinjau Bendahara',chair_review:'Menunggu Ketua',revision:'Perlu revisi',approved:'Disetujui'};
+  const statusLabels={draft:'Draf',secretary_review:'Menunggu tanda tangan Sekretaris',treasurer_review:'Verifikasi Bendahara',chair_review:'Menunggu tanda tangan Ketua',revision:'Perlu revisi',approved:'Disetujui'};
   const activeBucket='cssmora-program-documentation';
-  let programs=[],details=new Map(),members=[],documents=[],current=null,budget=[],committee=[],photos=[],pendingPhotos=[],finance={},subrecordsDirty=false;
+  let programs=[],details=new Map(),members=[],documents=[],current=null,budget=[],committee=[],rundown=[],photos=[],pendingPhotos=[],finance={},subrecordsDirty=false;
   let loading=null;
+  const committeeRoles=['Ketua Pelaksana','Wakil Ketua Pelaksana','Sekretaris Pelaksana','Bendahara Pelaksana','Koordinator Acara','Staf Acara','Staf Humas','Staf Publikasi dan Dokumentasi','Staf Konsumsi','Staf Perlengkapan','Staf Transportasi','Staf Keamanan','Anggota'];
+  const committeeDivisions=[['BPH','BPH'],['PSDM','PSDM'],['P3M','P3M'],['ADVO','Advokasi'],['MEDINFO','Medinfo'],['SEKRETARIAT','Sekretariat'],['BENDAHARA','Bendahara'],['LAINNYA','Lainnya']];
+  const budgetCategories={income:['Dana CSSMoRA','Sponsor','Tiket peserta','Iuran peserta','Donasi','Umum','Lainnya'],expense:['Konsumsi','Perlengkapan','Publikasi','Transportasi','Akomodasi','Honorarium','Sewa tempat','Operasional','Umum','Lainnya']};
 
   function message(text,kind='') { const node=$('#program-document-message');node.textContent=text;node.dataset.kind=kind; }
   function financeReviewer(){const roles=context().roles||[];return roles.includes('bendahara')||roles.includes('ketua')||roles.includes('wakil');}
   function mayReview(stage){const roles=context().roles||[];return stage==='sekretaris'?roles.includes('sekretaris'):stage==='bendahara'?roles.includes('bendahara'):roles.includes('ketua')||roles.includes('wakil');}
-  function isEditable(){return !current||(['draft','revision'].includes(current.status)&&(current.created_by===context().userId||context().isLeadership));}
+  function isEditable(){return !current||(['draft','revision'].includes(current.status)&&current.created_by===context().userId);}
   function setSelectOptions(select,rows,label,selected=''){
     select.innerHTML='<option value="">Pilih…</option>'+rows.map(row=>`<option value="${esc(row.id)}">${esc(label(row))}</option>`).join('');
     if(selected)select.value=selected;
@@ -31,33 +34,41 @@
     document.querySelectorAll('.program-document-options [data-option-for] input').forEach(input=>input.disabled=input.closest('[data-option-for]').dataset.optionFor!==type);
     const options=selectedSections();
     $('#program-document-committee-section').hidden=!options.committee;
+    $('#program-document-rundown-section').hidden=type!=='proposal'||!options.rundown_section;
     $('#program-document-budget-section').hidden=type!=='proposal'||!options.rab;
     const financeOn=type==='lpj'&&options.finance;
     $('#program-document-finance-section').hidden=!financeOn;
     $('#program-document-photos-section').hidden=type!=='lpj'||!options.documentation;
     $('#lpj-administration-field').hidden=type!=='lpj'||!options.administration;
     $('#lpj-administration').disabled=type!=='lpj'||!options.administration||!isEditable();
-    $('#program-document-finance-message').textContent=financeOn&&!financeReviewer()?'Ringkasan realisasi baru dapat diisi Bendahara pada tahap peninjauan.':'';
-    const mayEnterFinance=Boolean(current&&context().roles?.includes('bendahara')&&current.status==='treasurer_review');
+    $('#program-document-finance-message').textContent=financeOn&&current?.status==='secretary_review'?'Bendahara memeriksa bagian ini sebelum Sekretaris menandatangani. Setelah disimpan, perbarui Google Docs.':'';
+    const mayEnterFinance=Boolean(current&&context().roles?.includes('bendahara')&&current.document_type==='lpj'&&current.optional_sections?.finance&&['secretary_review','treasurer_review'].includes(current.status));
     ['lpj-income','lpj-expense','lpj-akunpro','lpj-finance-note'].forEach(id=>{const field=$('#'+id);field.disabled=!financeOn||!mayEnterFinance;});
     $('#program-document-required-note').textContent=type==='proposal'
       ?'Wajib: proker, periode, deskripsi, tujuan, dan sasaran. Bagian kepanitiaan, rundown, dan RAB dapat dimatikan jika tidak dipakai.'
       :'Wajib: proker, periode, ringkasan pelaksanaan, dan dokumen Google Docs. Angka kehadiran dan keuangan harus mengikuti sumber data; AI tidak mengarang fakta.';
-    if(type==='proposal'){
-      $('#proposal-rundown').disabled=!options.rundown_section||!isEditable();
-      $('#proposal-rundown').closest('label').hidden=!options.rundown_section;
-    }
     renderActions();
   }
   function renderCommittee(){
     const list=$('#program-document-committee-list');
     if(!committee.length){list.innerHTML='<p class="records-empty">Belum ada anggota panitia dipilih.</p>';return;}
-    list.innerHTML=committee.map((row,index)=>`<div class="program-document-committee-row" data-index="${index}"><select data-committee-member aria-label="Pilih anggota panitia"><option value="">Pilih anggota…</option>${members.map(member=>`<option value="${esc(member.id)}" ${member.id===row.member_id?'selected':''}>${esc(member.full_name)} · ${member.cohort}</option>`).join('')}</select><input data-committee-role maxlength="100" aria-label="Peran panitia" placeholder="Jabatan/peran" value="${esc(row.role_title||'Panitia')}"><button type="button" data-remove-committee="${index}" aria-label="Hapus anggota panitia">Hapus</button></div>`).join('');
+    list.innerHTML=`<div class="program-document-table-wrap"><table class="program-document-entry-table"><thead><tr><th>No.</th><th>Nama anggota</th><th>Jabatan / seksi</th><th>Divisi</th><th></th></tr></thead><tbody>${committee.map((row,index)=>{
+      const selectedElsewhere=new Set(committee.filter((item,itemIndex)=>itemIndex!==index).map(item=>item.member_id));
+      return `<tr data-index="${index}"><td>${index+1}</td><td><select data-committee-member aria-label="Pilih nama anggota"><option value="">Pilih anggota…</option>${members.map(member=>`<option value="${esc(member.id)}" ${member.id===row.member_id?'selected':''} ${selectedElsewhere.has(member.id)?'disabled':''}>${esc(member.full_name)}${member.nia?` · ${esc(member.nia)}`:''} · Angkatan ${esc(member.cohort)}</option>`).join('')}</select></td><td><select data-committee-role aria-label="Pilih jabatan atau seksi"><option value="">Pilih peran…</option>${committeeRoles.map(role=>`<option value="${esc(role)}" ${role===row.role_title?'selected':''}>${esc(role)}</option>`).join('')}</select></td><td><select data-committee-division aria-label="Pilih divisi">${committeeDivisions.map(([value,label])=>`<option value="${esc(value)}" ${(row.division||'BPH')===value?'selected':''}>${esc(label)}</option>`).join('')}</select></td><td><button type="button" data-remove-committee="${index}" aria-label="Hapus baris panitia">Hapus</button></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+  }
+  function renderRundown(){
+    const list=$('#program-document-rundown-list');
+    if(!rundown.length){list.innerHTML='<p class="records-empty">Belum ada susunan acara.</p>';return;}
+    list.innerHTML=`<div class="program-document-table-wrap"><table class="program-document-entry-table program-document-rundown-table"><thead><tr><th>No.</th><th>Mulai</th><th>Selesai</th><th>Kegiatan</th><th>Penanggung jawab</th><th></th></tr></thead><tbody>${rundown.map((row,index)=>`<tr data-index="${index}"><td>${index+1}</td><td><input type="time" data-rundown-start aria-label="Jam mulai acara ${index+1}" value="${esc(row.start_time||'')}"></td><td><input type="time" data-rundown-end aria-label="Jam selesai acara ${index+1}" value="${esc(row.end_time||'')}"></td><td><input type="text" data-rundown-activity maxlength="180" aria-label="Kegiatan rundown ${index+1}" placeholder="Nama sesi / kegiatan" value="${esc(row.activity||'')}"></td><td><select data-rundown-pic aria-label="Penanggung jawab acara ${index+1}"><option value="">Pilih panitia…</option>${members.map(member=>`<option value="${esc(member.id)}" ${member.id===row.member_id?'selected':''}>${esc(member.full_name)}</option>`).join('')}</select></td><td><button type="button" data-remove-rundown="${index}" aria-label="Hapus acara ${index+1}">Hapus</button></td></tr>`).join('')}</tbody></table></div>`;
   }
   function renderBudget(){
-    const list=$('#program-document-budget-list');
-    if(!budget.length)list.innerHTML='<p class="records-empty">Belum ada rincian anggaran.</p>';
-    else list.innerHTML=budget.map((row,index)=>`<div class="program-document-budget-row" data-index="${index}"><input data-budget-name maxlength="180" aria-label="Nama item RAB" placeholder="Nama barang/jasa" value="${esc(row.item_name||'')}"><select data-budget-direction aria-label="Jenis anggaran"><option value="expense" ${row.direction!=='income'?'selected':''}>Pengeluaran</option><option value="income" ${row.direction==='income'?'selected':''}>Pemasukan</option></select><input data-budget-quantity type="number" min="0.01" step="0.01" aria-label="Volume" placeholder="Vol." value="${esc(row.quantity??1)}"><input data-budget-unit maxlength="40" aria-label="Satuan" placeholder="Satuan" value="${esc(row.unit||'kegiatan')}"><input data-budget-unit-price type="number" min="0" max="1000000000000" step="1" aria-label="Harga satuan rupiah" placeholder="Harga Rp" value="${esc(row.unit_price??0)}"><button type="button" data-remove-budget="${index}" aria-label="Hapus baris RAB">×</button></div>`).join('');
+    for(const direction of ['income','expense']){
+      const list=$(`#program-document-${direction==='income'?'income':'expense'}-list`);
+      const rows=budget.map((row,index)=>({row,index})).filter(item=>(item.row.direction||'expense')===direction);
+      if(!rows.length){list.innerHTML=`<p class="records-empty">Belum ada ${direction==='income'?'sumber pemasukan':'rincian pengeluaran'}.</p>`;continue;}
+      list.innerHTML=`<div class="program-document-table-wrap"><table class="program-document-entry-table program-document-budget-table"><thead><tr><th>No.</th><th>Kategori</th><th>Nama barang / sumber</th><th>Volume</th><th>Satuan</th><th>Harga satuan</th><th>Jumlah</th><th></th></tr></thead><tbody>${rows.map(({row,index},rowNo)=>`<tr data-index="${index}"><td>${rowNo+1}</td><td><select data-budget-category aria-label="Kategori anggaran">${budgetCategories[direction].map(category=>`<option value="${esc(category)}" ${(row.category||'Lainnya')===category?'selected':''}>${esc(category)}</option>`).join('')}</select></td><td><input data-budget-name maxlength="180" aria-label="Nama ${direction==='income'?'sumber pemasukan':'barang atau jasa'}" placeholder="${direction==='income'?'Contoh: Dana CSSMoRA':'Nama barang/jasa'}" value="${esc(row.item_name||'')}"></td><td><input data-budget-quantity type="number" min="0.01" step="0.01" aria-label="Volume" placeholder="0" value="${esc(row.quantity??1)}"></td><td><input data-budget-unit maxlength="40" aria-label="Satuan" placeholder="kali / orang / unit" value="${esc(row.unit||'kegiatan')}"></td><td><input data-budget-unit-price type="number" min="0" max="1000000000000" step="1" aria-label="Harga satuan rupiah" placeholder="Rp" value="${esc(row.unit_price??0)}"></td><td class="program-document-line-total">${money((Number(row.quantity)||0)*(Number(row.unit_price)||0))}</td><td><button type="button" data-remove-budget="${index}" aria-label="Hapus baris anggaran">Hapus</button></td></tr>`).join('')}</tbody></table></div>`;
+    }
     renderBudgetTotal();
   }
   function renderBudgetTotal(){
@@ -76,7 +87,10 @@
     list.innerHTML=documents.map(doc=>{
       const program=programs.find(row=>row.id===doc.program_id);
       const creator=doc.created_by===context().userId?'Dibuat oleh Anda':'Draf pengurus';
-      return `<article class="program-document-card ${current?.id===doc.id?'is-selected':''}"><header class="program-document-card-header"><button type="button" data-select-document="${esc(doc.id)}">${esc(typeLabels[doc.document_type])} · ${esc(doc.title)}</button><span class="record-status ${doc.status==='approved'?'published':doc.status==='revision'?'needs-review':''}">${esc(statusLabels[doc.status]||doc.status)}</span></header><small>${esc(program?.name||'Proker')} · ${esc(doc.period_label)} · ${new Date(doc.updated_at).toLocaleDateString('id-ID')} · ${creator}</small><div class="program-document-card-actions">${doc.google_doc_url?`<a href="${esc(doc.google_doc_url)}" target="_blank" rel="noopener">Buka Google Docs ↗</a>`:''}${['secretary_review','treasurer_review','chair_review'].includes(doc.status)?'<small>Menunggu peninjauan tahap berikutnya</small>':''}</div></article>`;
+      const roles=context().roles||[];
+      const canOpenDoc=doc.created_by===context().userId||roles.includes('sekretaris')||roles.includes('ketua')||(roles.includes('bendahara')&&doc.document_type==='lpj'&&doc.optional_sections?.finance&&doc.status==='secretary_review');
+      const canOpenPdf=roles.includes('sekretaris')||roles.includes('ketua');
+      return `<article class="program-document-card ${current?.id===doc.id?'is-selected':''}"><header class="program-document-card-header"><button type="button" data-select-document="${esc(doc.id)}">${esc(typeLabels[doc.document_type])} · ${esc(doc.title)}</button><span class="record-status ${doc.status==='approved'?'published':doc.status==='revision'?'needs-review':''}">${esc(statusLabels[doc.status]||doc.status)}</span></header><small>${esc(program?.name||'Proker')} · ${esc(doc.period_label)} · ${new Date(doc.updated_at).toLocaleDateString('id-ID')} · ${creator}</small><div class="program-document-card-actions">${doc.google_doc_url&&canOpenDoc?`<a href="${esc(doc.google_doc_url)}" target="_blank" rel="noopener">Buka Google Docs ↗</a>`:''}${doc.google_pdf_url&&canOpenPdf?`<a href="${esc(doc.google_pdf_url)}" target="_blank" rel="noopener">Buka PDF di Drive ↗</a>`:''}${['secretary_review','treasurer_review','chair_review'].includes(doc.status)?'<small>Menunggu peninjauan tahap berikutnya</small>':''}</div></article>`;
     }).join('');
   }
   function renderAiPreview(){
@@ -92,15 +106,20 @@
     let stage=current.status==='secretary_review'?'sekretaris':current.status==='treasurer_review'?'bendahara':current.status==='chair_review'?'ketua':'';
     if(!stage||!mayReview(stage)||current.created_by===context().userId){root.hidden=true;root.innerHTML='';return;}
     root.hidden=false;
-    root.innerHTML=`<label for="program-document-review-note">Catatan peninjauan (wajib jika meminta revisi)</label><textarea id="program-document-review-note" rows="2" maxlength="2000" placeholder="Catatan untuk PIC"></textarea><div class="program-review-buttons"><button type="button" class="member-option-button" data-document-review="revision_requested">Minta revisi</button><button type="button" class="admin-button" data-document-review="approved">Setujui tahap ${stage==='sekretaris'?'Sekretaris':stage==='bendahara'?'Bendahara':'Ketua'} ✓</button></div>`;
+    const isTreasuryStage=stage==='bendahara';
+    const financeGate=current.document_type==='lpj'&&current.optional_sections?.finance&&stage==='sekretaris';
+    const canSign=stage==='sekretaris'?context().roles?.includes('sekretaris'):stage==='ketua'&&context().roles?.includes('ketua');
+    const actionButton=isTreasuryStage?'<button type="button" class="admin-button" data-document-review="approved">Selesaikan verifikasi Bendahara ✓</button>':canSign?`<button type="button" class="admin-button" data-document-sign="${stage}">Tanda tangani &amp; ${stage==='sekretaris'?'teruskan ke Ketua':'selesaikan'} ✓</button>`:'';
+    root.innerHTML=`${current.google_doc_url?`<a class="program-document-review-doc-link" href="${esc(current.google_doc_url)}" target="_blank" rel="noopener">Tinjau Google Docs ↗</a>`:''}${financeGate?'<p class="admin-muted">LPJ dengan realisasi keuangan harus diverifikasi Bendahara dan Docs diperbarui sebelum Sekretaris dapat menandatangani.</p>':''}<label for="program-document-review-note">Catatan peninjauan (wajib jika meminta revisi)</label><textarea id="program-document-review-note" rows="2" maxlength="2000" placeholder="Catatan untuk PIC"></textarea><div class="program-review-buttons"><button type="button" class="member-option-button" data-document-review="revision_requested">Minta revisi</button>${actionButton}</div>`;
   }
   function renderActions(){
     const editable=isEditable();
     const roles=context().roles||[];
-    const canRefreshDoc=editable||Boolean(current&&((current.status==='treasurer_review'&&roles.includes('bendahara'))||(['chair_review','approved'].includes(current.status)&&context().isLeadership)));
+    const canRefreshDoc=editable||Boolean(current&&((current.status==='treasurer_review'&&roles.includes('bendahara'))||(current.status==='secretary_review'&&current.document_type==='lpj'&&current.optional_sections?.finance&&roles.includes('bendahara'))));
     $('#program-document-save').disabled=!editable;$('#program-document-ai').disabled=!editable;$('#program-document-google').disabled=!canRefreshDoc;
+    $('#program-document-google').textContent=current?.google_doc_id?'Perbarui Google Docs':'Buat Google Docs';
     $('#program-document-submit').hidden=!current||!editable||!['draft','revision'].includes(current.status);
-    $('#program-document-submit').disabled=!current||!current.google_doc_id||!current.ai_content?.generated_at;
+    $('#program-document-submit').disabled=!editable;
     document.querySelectorAll('.program-document-fields').forEach(section=>section.querySelectorAll('input,textarea,select').forEach(field=>field.disabled=!editable||section.hidden));
     $('#program-document-type').disabled=!editable||Boolean(current);
     $('#program-document-program').disabled=!editable||Boolean(current);
@@ -109,12 +128,14 @@
     $('#program-document-start').disabled=!editable;
     $('#program-document-end').disabled=!editable;
     document.querySelectorAll('.program-document-options input').forEach(input=>input.disabled=!editable||input.closest('[data-option-for]').dataset.optionFor!==selectedType());
-    $('#program-document-add-committee').disabled=!editable;$('#program-document-add-budget').disabled=!editable;
+    $('#program-document-add-committee').disabled=!editable;$('#program-document-add-income').disabled=!editable;$('#program-document-add-expense').disabled=!editable;$('#program-document-add-rundown').disabled=!editable;
     $('#program-document-photos').disabled=!editable;
-    $('#program-document-finance-save').hidden=!(current?.document_type==='lpj'&&context().roles?.includes('bendahara')&&current.status==='treasurer_review');
-    $('#program-document-finance-save').disabled=!(current?.document_type==='lpj'&&context().roles?.includes('bendahara')&&current.status==='treasurer_review');
-    document.querySelectorAll('[data-remove-committee],[data-remove-budget],[data-remove-photo],[data-remove-pending-photo]').forEach(button=>button.disabled=!editable);
-    document.querySelectorAll('[data-committee-member],[data-committee-role],[data-budget-name],[data-budget-direction],[data-budget-quantity],[data-budget-unit],[data-budget-unit-price],[data-photo-caption],[data-pending-caption]').forEach(field=>field.disabled=!editable);
+    const mayEnterFinance=Boolean(current?.document_type==='lpj'&&current.optional_sections?.finance&&context().roles?.includes('bendahara')&&['secretary_review','treasurer_review'].includes(current.status));
+    $('#program-document-finance-save').hidden=!mayEnterFinance;
+    $('#program-document-finance-save').disabled=!mayEnterFinance;
+    document.querySelectorAll('[data-remove-committee],[data-remove-budget],[data-remove-rundown],[data-remove-photo],[data-remove-pending-photo]').forEach(button=>button.disabled=!editable);
+    document.querySelectorAll('[data-committee-member],[data-committee-role],[data-committee-division],[data-budget-category],[data-budget-name],[data-budget-quantity],[data-budget-unit],[data-budget-unit-price],[data-rundown-start],[data-rundown-end],[data-rundown-activity],[data-rundown-pic],[data-photo-caption],[data-pending-caption]').forEach(field=>field.disabled=!editable);
+    ['lpj-income','lpj-expense','lpj-akunpro','lpj-finance-note'].forEach(id=>{const field=$('#'+id);field.disabled=!mayEnterFinance;});
     renderReviewActions();
   }
   function prefillProgram(programId){
@@ -125,38 +146,46 @@
       if(detail.period_label)$('#program-document-period').value=detail.period_label;
       if(selectedType()==='proposal'){
         $('#proposal-description').value=detail.description||'';$('#proposal-goals').value=detail.goals||'';$('#proposal-target').value=detail.target||'';
-        if(/^\d{4}-\d{2}-\d{2}$/.test(detail.planned_schedule||''))$('#proposal-date').value=detail.planned_schedule;
+        if(/^\d{4}-\d{2}-\d{2}$/.test(detail.planned_schedule||''))$('#program-document-start').value=detail.planned_schedule;
       }
     }
   }
   function setFormData(data={}){
     const form=$('#program-document-form');
-    Object.entries(data).forEach(([name,value])=>{const field=form.elements.namedItem(name);if(field&&field.type!=='checkbox')field.value=value??'';});
+    $('#program-document-start').value=data.event_date||data.actual_date||current?.period_start||'';
+    $('#program-document-end').value=data.event_end_date||data.actual_end_date||current?.period_end||'';
+    rundown=Array.isArray(data.rundown)?data.rundown.map(row=>({...row})):typeof data.rundown==='string'&&data.rundown.trim()?data.rundown.split(/\n+/).map(line=>({activity:line.replace(/^\s*\d{1,2}[.:]\d{2}\s*(?:-|–|—)\s*/,'').trim()})).filter(row=>row.activity):[];
+    Object.entries(data).forEach(([name,value])=>{if(['event_date','event_end_date','actual_date','actual_end_date','rundown'].includes(name))return;const field=form.elements.namedItem(name);if(field&&field.type!=='checkbox')field.value=value??'';});
+    if(data.event_time&&!data.event_time_start)form.elements.namedItem('event_time_start').value=data.event_time;
+    if(data.actual_time&&!data.actual_time_start)form.elements.namedItem('actual_time_start').value=data.actual_time;
   }
   function getFormData(){
     const form=$('#program-document-form');const names=selectedType()==='proposal'
-      ?['description','goals','target','event_date','event_time','place','theme','rundown']
-      :['realization_summary','outcome_summary','obstacles','administration_summary','evaluation','recommendations','attendance_target','attendance_count','actual_date','actual_time','actual_place'];
-    return Object.fromEntries(names.map(name=>[name,form.elements.namedItem(name)?.value?.trim()||'']));
+      ?['description','goals','materials','target','event_time_start','event_time_end','place','theme']
+      :['realization_summary','outcome_summary','realization_by_division','obstacles','evaluation_by_division','administration_summary','evaluation','recommendations','attendance_target','attendance_count','actual_time_start','actual_time_end','actual_place'];
+    const data=Object.fromEntries(names.map(name=>[name,form.elements.namedItem(name)?.value?.trim()||'']));
+    if(selectedType()==='proposal')Object.assign(data,{event_date:$('#program-document-start').value||'',event_end_date:$('#program-document-end').value||'',rundown:rundown.map(row=>({start_time:row.start_time||'',end_time:row.end_time||'',activity:String(row.activity||'').trim(),member_id:row.member_id||''})).filter(row=>row.activity)});
+    else Object.assign(data,{actual_date:$('#program-document-start').value||'',actual_end_date:$('#program-document-end').value||''});
+    return data;
   }
   function clearEditor(){
-    current=null;budget=[];committee=[];photos=[];pendingPhotos.forEach(item=>URL.revokeObjectURL(item.preview));pendingPhotos=[];finance={};subrecordsDirty=false;
+    current=null;budget=[];committee=[];rundown=[];photos=[];pendingPhotos.forEach(item=>URL.revokeObjectURL(item.preview));pendingPhotos=[];finance={};subrecordsDirty=false;
     $('#program-document-form').reset();$('#program-document-id').value='';$('#program-document-type').value='proposal';
     $('#program-document-editor-title').textContent='Mulai proposal atau LPJ';
     $('#program-document-finance-message').textContent='';
-    renderType();renderCommittee();renderBudget();renderPhotos();renderDocumentList();message('');
+    renderType();renderCommittee();renderRundown();renderBudget();renderPhotos();renderDocumentList();message('');
     renderAiPreview();
   }
   async function loadSubrecords(id){
     const docId=encodeURIComponent(id);
     const [budgetRows,committeeRows,photoRows,reviewRows]=await Promise.all([
       api()(`cssmora_program_document_budget_items?select=*&document_id=eq.${docId}&order=position.asc`).catch(()=>[]),
-      api()(`cssmora_program_document_committee?select=id,member_id,role_title,position&document_id=eq.${docId}&order=position.asc`).catch(()=>[]),
+      api()(`cssmora_program_document_committee?select=id,member_id,role_title,division,position&document_id=eq.${docId}&order=position.asc`).catch(()=>[]),
       api()(`cssmora_program_document_photos?select=id,storage_path,caption,position&document_id=eq.${docId}&order=position.asc`).catch(()=>[]),
       api()(`cssmora_program_document_reviews?select=review_stage,decision,note,created_at&document_id=eq.${docId}&order=created_at.asc`).catch(()=>[])
     ]);
     budget=budgetRows||[];committee=committeeRows||[];photos=photoRows||[];
-    renderBudget();renderCommittee();renderPhotos();
+    renderBudget();renderCommittee();renderRundown();renderPhotos();
     const history=(reviewRows||[]).map(row=>`${row.review_stage}: ${row.decision==='approved'?'disetujui':'revisi diminta'}${row.note?` — ${row.note}`:''}`).join('\n');
     $('#program-document-review-actions').title=history;
     const historyNode=$('#program-document-review-history'),historyContent=$('#program-document-review-history-content');
@@ -212,11 +241,11 @@
       for(let index=0;index<rows.length;index++)await api()(table,{method:'POST',body:{...rows[index],document_id:current.id,position:index}});
     };
     if(subrecordsDirty&&type==='proposal'&&opts.rab){
-      const rows=budget.filter(row=>String(row.item_name||'').trim()).map(row=>({direction:row.direction==='income'?'income':'expense',item_name:String(row.item_name).trim(),quantity:Number(row.quantity)||1,unit:String(row.unit||'kegiatan').trim(),unit_price:Number(row.unit_price)||0,category:'Umum'}));
+      const rows=budget.filter(row=>String(row.item_name||'').trim()).map(row=>({direction:row.direction==='income'?'income':'expense',item_name:String(row.item_name).trim(),quantity:Number(row.quantity)||1,unit:String(row.unit||'kegiatan').trim(),unit_price:Number(row.unit_price)||0,category:String(row.category||'Umum')}));
       await saveRows('cssmora_program_document_budget_items',rows);
     }else if(subrecordsDirty&&type==='proposal')await api()(`cssmora_program_document_budget_items?document_id=eq.${id}`,{method:'DELETE'});
     if(subrecordsDirty&&opts.committee){
-      const rows=committee.filter(row=>row.member_id).map(row=>({member_id:row.member_id,role_title:String(row.role_title||'Panitia').trim()}));
+      const rows=committee.filter(row=>row.member_id).map(row=>({member_id:row.member_id,role_title:String(row.role_title||'Anggota').trim(),division:committeeDivisions.some(([value])=>value===row.division)?row.division:'BPH'}));
       await saveRows('cssmora_program_document_committee',rows);
     }else if(subrecordsDirty)await api()(`cssmora_program_document_committee?document_id=eq.${id}`,{method:'DELETE'});
     if(subrecordsDirty&&type==='lpj'&&opts.documentation){
@@ -244,14 +273,15 @@
     await loadSubrecords(current.id);
   }
   async function saveFinance(){
-    if(!current||current.document_type!=='lpj'||!context().roles?.includes('bendahara')||current.status!=='treasurer_review')throw new Error('Verifikasi realisasi hanya dapat disimpan Bendahara pada tahap pemeriksaan keuangan.');
+    if(!current||current.document_type!=='lpj'||!current.optional_sections?.finance||!context().roles?.includes('bendahara')||!['secretary_review','treasurer_review'].includes(current.status))throw new Error('Verifikasi realisasi hanya dapat disimpan Bendahara sebelum dokumen ditandatangani Ketua.');
     const maxAmount=1_000_000_000_000;
     if([$('#lpj-income').value,$('#lpj-expense').value].some(value=>Number(value)<0||Number(value)>maxAmount))throw new Error('Nilai realisasi harus berada di antara Rp0 dan Rp1 triliun.');
     const payload={document_id:current.id,income_amount:Number($('#lpj-income').value)||0,expense_amount:Number($('#lpj-expense').value)||0,
       akunpro_url:$('#lpj-akunpro').value.trim()||null,realization_note:$('#lpj-finance-note').value.trim()};
-    if(payload.akunpro_url){const url=new URL(payload.akunpro_url);if(url.protocol!=='https:')throw new Error('Tautan AkunPro harus menggunakan HTTPS.');}
+    if(!payload.akunpro_url)throw new Error('Tautan AkunPro wajib dicantumkan agar realisasi dapat diverifikasi.');
+    const url=new URL(payload.akunpro_url);if(url.protocol!=='https:')throw new Error('Tautan AkunPro harus menggunakan HTTPS.');
     await api()('cssmora_program_document_finance?on_conflict=document_id',{method:'POST',body:payload,extraHeaders:{Prefer:'resolution=merge-duplicates,return=minimal'}});
-    finance=payload;message('Verifikasi Bendahara tersimpan. Perbarui Google Docs setelahnya.','success');
+    finance=payload;message('Verifikasi Bendahara tersimpan. Perbarui Google Docs agar angkanya ikut masuk sebelum tanda tangan Sekretaris.','success');renderActions();
   }
   function formPayload(){
     const type=selectedType(),programId=$('#program-document-program').value;
@@ -261,10 +291,15 @@
     const options=selectedSections();
     if(!programId||!title||period.length<4)throw new Error('Pilih proker dan lengkapi judul serta periode.');
     if(type==='proposal'&&(formData.description.length<20||!formData.goals||!formData.target))throw new Error('Proposal wajib memiliki deskripsi (minimal 20 karakter), tujuan, dan sasaran.');
+    if(type==='proposal'&&!formData.event_date)throw new Error('Tanggal pelaksanaan proposal wajib diisi.');
+    if($('#program-document-start').value&&$('#program-document-end').value&&$('#program-document-end').value<$('#program-document-start').value)throw new Error('Tanggal akhir tidak boleh lebih awal daripada tanggal pelaksanaan.');
+    if(type==='proposal'&&formData.event_time_start&&formData.event_time_end&&formData.event_time_end<=formData.event_time_start)throw new Error('Jam selesai kegiatan harus sesudah jam mulai.');
+    if(type==='lpj'&&formData.actual_time_start&&formData.actual_time_end&&formData.actual_time_end<=formData.actual_time_start)throw new Error('Jam selesai pelaksanaan harus sesudah jam mulai.');
     if(type==='lpj'&&formData.realization_summary.length<20)throw new Error('Ringkasan pelaksanaan LPJ minimal 20 karakter.');
-    if(options.committee&&!committee.some(row=>row.member_id))throw new Error('Pilih minimal satu anggota panitia atau matikan bagian Kepanitiaan.');
-    if(type==='proposal'&&options.rundown_section&&!formData.rundown)throw new Error('Isi rundown atau matikan bagian Rundown.');
-    if(type==='proposal'&&options.rab&&!budget.some(row=>String(row.item_name||'').trim()))throw new Error('Tambahkan minimal satu baris RAB atau matikan bagian RAB.');
+    if(options.committee&&(!committee.some(row=>row.member_id)||committee.some(row=>(row.member_id||row.role_title)&&(!row.member_id||!row.role_title))))throw new Error('Lengkapi nama dan jabatan/divisi setiap panitia.');
+    const enteredRundown=rundown.filter(row=>row.activity||row.start_time||row.end_time||row.member_id);
+    if(type==='proposal'&&options.rundown_section&&(!enteredRundown.length||enteredRundown.some(row=>!String(row.activity||'').trim()||!row.start_time||!row.end_time)))throw new Error('Lengkapi setiap baris rundown dengan jam mulai, jam selesai, dan kegiatan.');
+    if(type==='proposal'&&options.rab&&!budget.some(row=>row.direction==='expense'&&String(row.item_name||'').trim()))throw new Error('Tambahkan minimal satu baris pengeluaran atau matikan bagian RAB.');
     if(type==='lpj'&&options.documentation&&!photos.length&&!pendingPhotos.length)throw new Error('Unggah minimal satu foto dokumentasi atau matikan bagian Dokumentasi.');
     if(type==='proposal'&&options.rab&&budget.some(row=>String(row.item_name||'').trim()&&(!(Number(row.quantity)>0)||Number(row.unit_price)<0)))throw new Error('Periksa volume dan harga pada setiap baris RAB.');
     const hasFinancial=type==='proposal'?Boolean(options.rab&&budget.some(row=>String(row.item_name||'').trim())):Boolean(options.finance);
@@ -300,19 +335,31 @@
     }else if(result.google_doc_url){
       current={...current,google_doc_id:result.google_doc_id,google_doc_url:result.google_doc_url,google_doc_generated_at:result.google_doc_generated_at};documents=documents.map(row=>row.id===current.id?current:row);
       message('Google Docs berhasil dibuat atau diperbarui.','success');
+    }else if(result.status){
+      current={...current,status:result.status,google_pdf_id:result.google_pdf_id,google_pdf_url:result.google_pdf_url,google_pdf_generated_at:new Date().toISOString()};documents=documents.map(row=>row.id===current.id?current:row);
+      message(`Tanda tangan tersimpan. PDF tersedia di Drive dan dokumen diteruskan ke ${result.status==='chair_review'?'Ketua':'arsip dokumen'}.`,'success');
     }
     renderDocumentList();renderActions();return result;
   }
   async function submitDocument(){
     if(!current)return;
-    const confirmText='Ajukan dokumen ini ke Sekretaris untuk pemeriksaan. Setelah itu dokumen melewati Bendahara bila ada bagian keuangan, lalu Ketua.';
-    if(!window.confirm(confirmText))return;
-    const button=$('#program-document-submit');button.disabled=true;message('Mengajukan dokumen…');
-    try{await api()('rpc/submit_cssmora_program_document',{method:'POST',body:{p_document_id:current.id}});message('Dokumen diajukan untuk diperiksa Sekretaris.','success');await load();selectDocument(current.id);}
+    if(!$('#program-document-form').reportValidity()){message('Lengkapi isian yang wajib terlebih dahulu.','error');return;}
+    if(!window.confirm('Simpan draf terbaru, buat Google Docs, lalu kirim tautannya ke Sekretaris untuk ditinjau dan ditandatangani?'))return;
+    const button=$('#program-document-submit');button.disabled=true;message('Menyimpan data dan menyusun narasi…');
+    try{
+      await assistant('generate_ai');
+      message('Membuat Google Docs dari data terbaru…');
+      await assistant('create_doc');
+      if(!current.google_doc_id||!current.google_doc_generated_at)throw new Error('Google Docs belum berhasil dibuat. Dokumen belum diajukan.');
+      await api()('rpc/submit_cssmora_program_document',{method:'POST',body:{p_document_id:current.id}});
+      message('Google Docs siap. Tautannya telah masuk ke antrean Sekretaris untuk ditinjau dan ditandatangani.','success');
+      const id=current.id;await load();selectDocument(id);
+    }
     catch(error){message(error.message||'Dokumen belum dapat diajukan.','error');button.disabled=false;}
   }
   async function reviewDocument(decision){
     if(!current)return;
+    if(decision==='approved'&&current.status!=='treasurer_review')return;
     const note=$('#program-document-review-note')?.value.trim()||'';
     if(decision==='revision_requested'&&!note){message('Isi catatan sebelum meminta revisi.','error');return;}
     try{
@@ -321,11 +368,26 @@
       const id=current.id;await load();selectDocument(id);
     }catch(error){message(error.message||'Keputusan peninjauan gagal.','error');}
   }
+  async function signDocument(stage){
+    if(!current)return;
+    const title=stage==='sekretaris'?'Sekretaris':'Ketua';
+    const destination=stage==='sekretaris'?'meneruskan dokumen dan PDF ke Ketua':'menyelesaikan dokumen';
+    if(!window.confirm(`Gunakan tanda tangan ${title} yang tersimpan untuk dokumen ini dan ${destination}?`))return;
+    const button=$(`[data-document-sign="${stage}"]`);if(button)button.disabled=true;
+    message(`Membubuhkan tanda tangan ${title} dan menyiapkan PDF di Drive…`);
+    try{
+      const result=await assistant('sign_document');
+      const id=current.id;await load();selectDocument(id);
+      if(result.google_pdf_url)message(`PDF sudah disimpan di Drive dan dibagikan. Tidak ada unduhan otomatis.`,'success');
+    }catch(error){message(error.message||`Tanda tangan ${title} gagal disimpan.`,'error');}
+    finally{renderActions();}
+  }
   function refreshBudgetFromInputs(){
-    document.querySelectorAll('.program-document-budget-row').forEach(row=>{
+    document.querySelectorAll('.program-document-budget-table tbody tr[data-index]').forEach(row=>{
       const target=budget[Number(row.dataset.index)];if(!target)return;
+      target.category=row.querySelector('[data-budget-category]').value;
       target.item_name=row.querySelector('[data-budget-name]').value;target.quantity=row.querySelector('[data-budget-quantity]').value;
-      target.direction=row.querySelector('[data-budget-direction]').value;target.unit=row.querySelector('[data-budget-unit]').value;target.unit_price=row.querySelector('[data-budget-unit-price]').value;
+      target.unit=row.querySelector('[data-budget-unit]').value;target.unit_price=row.querySelector('[data-budget-unit-price]').value;
     });renderBudget();
   }
   $('#program-document-type').addEventListener('change',()=>{renderType();if(!current)prefillProgram($('#program-document-program').value);});
@@ -339,26 +401,48 @@
     catch(error){message(error.message||'Draf belum tersimpan.','error');}
     finally{button.disabled=false;renderActions();}
   });
-  $('#program-document-add-committee').addEventListener('click',()=>{committee.push({member_id:'',role_title:'Panitia'});subrecordsDirty=true;renderCommittee();});
-  $('#program-document-committee-list').addEventListener('input',event=>{
+  $('#program-document-add-committee').addEventListener('click',()=>{committee.push({member_id:'',role_title:'',division:'BPH'});subrecordsDirty=true;renderCommittee();renderActions();});
+  $('#program-document-committee-list').addEventListener('change',event=>{
     const row=event.target.closest('[data-index]');if(!row)return;const item=committee[Number(row.dataset.index)];if(!item)return;
     if(event.target.matches('[data-committee-member]'))item.member_id=event.target.value;
     if(event.target.matches('[data-committee-role]'))item.role_title=event.target.value;
+    if(event.target.matches('[data-committee-division]'))item.division=event.target.value;
     subrecordsDirty=true;
+    renderCommittee();renderActions();
   });
   $('#program-document-committee-list').addEventListener('click',event=>{const button=event.target.closest('[data-remove-committee]');if(button){committee.splice(Number(button.dataset.removeCommittee),1);subrecordsDirty=true;renderCommittee();}});
-  $('#program-document-add-budget').addEventListener('click',()=>{refreshBudgetFromInputs();budget.push({direction:'expense',item_name:'',quantity:1,unit:'kegiatan',unit_price:0});subrecordsDirty=true;renderBudget();});
-  $('#program-document-budget-list').addEventListener('input',event=>{
+  $('#program-document-add-income').addEventListener('click',()=>{refreshBudgetFromInputs();budget.push({direction:'income',item_name:'',quantity:1,unit:'kegiatan',unit_price:0});subrecordsDirty=true;renderBudget();renderActions();});
+  $('#program-document-add-expense').addEventListener('click',()=>{refreshBudgetFromInputs();budget.push({direction:'expense',item_name:'',quantity:1,unit:'kegiatan',unit_price:0});subrecordsDirty=true;renderBudget();renderActions();});
+  $('#program-document-budget-section').addEventListener('input',event=>{
     const row=event.target.closest('[data-index]');if(!row)return;const item=budget[Number(row.dataset.index)];if(!item)return;
     if(event.target.matches('[data-budget-name]'))item.item_name=event.target.value;
-    if(event.target.matches('[data-budget-direction]'))item.direction=event.target.value;
     if(event.target.matches('[data-budget-quantity]'))item.quantity=event.target.value;
     if(event.target.matches('[data-budget-unit]'))item.unit=event.target.value;
     if(event.target.matches('[data-budget-unit-price]'))item.unit_price=event.target.value;
     subrecordsDirty=true;
+    row.querySelector('.program-document-line-total').textContent=money((Number(item.quantity)||0)*(Number(item.unit_price)||0));
     renderBudgetTotal();
   });
-  $('#program-document-budget-list').addEventListener('click',event=>{const button=event.target.closest('[data-remove-budget]');if(button){refreshBudgetFromInputs();budget.splice(Number(button.dataset.removeBudget),1);subrecordsDirty=true;renderBudget();}});
+  $('#program-document-budget-section').addEventListener('change',event=>{
+    if(!event.target.matches('[data-budget-category]'))return;
+    const row=event.target.closest('[data-index]');if(!row)return;
+    const item=budget[Number(row.dataset.index)];if(item){item.category=event.target.value;subrecordsDirty=true;}
+  });
+  $('#program-document-budget-section').addEventListener('click',event=>{const button=event.target.closest('[data-remove-budget]');if(button){refreshBudgetFromInputs();budget.splice(Number(button.dataset.removeBudget),1);subrecordsDirty=true;renderBudget();renderActions();}});
+  $('#program-document-add-rundown').addEventListener('click',()=>{rundown.push({start_time:'',end_time:'',activity:'',member_id:''});subrecordsDirty=true;renderRundown();renderActions();});
+  $('#program-document-rundown-list').addEventListener('input',event=>{
+    const row=event.target.closest('[data-index]');if(!row)return;const item=rundown[Number(row.dataset.index)];if(!item)return;
+    if(event.target.matches('[data-rundown-start]'))item.start_time=event.target.value;
+    if(event.target.matches('[data-rundown-end]'))item.end_time=event.target.value;
+    if(event.target.matches('[data-rundown-activity]'))item.activity=event.target.value;
+    subrecordsDirty=true;
+  });
+  $('#program-document-rundown-list').addEventListener('change',event=>{
+    const row=event.target.closest('[data-index]');if(!row)return;const item=rundown[Number(row.dataset.index)];if(!item)return;
+    if(event.target.matches('[data-rundown-pic]'))item.member_id=event.target.value;
+    subrecordsDirty=true;
+  });
+  $('#program-document-rundown-list').addEventListener('click',event=>{const button=event.target.closest('[data-remove-rundown]');if(button){rundown.splice(Number(button.dataset.removeRundown),1);subrecordsDirty=true;renderRundown();renderActions();}});
   $('#program-document-photos').addEventListener('change',event=>{
     for(const file of event.target.files||[]){pendingPhotos.push({file,caption:file.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').slice(0,240)||`Dokumentasi ${photos.length+pendingPhotos.length+1}`,preview:URL.createObjectURL(file)});subrecordsDirty=true;}
     event.target.value='';renderPhotos();renderActions();
@@ -399,7 +483,7 @@
     catch(error){message(error.message||'Verifikasi keuangan gagal disimpan.','error');}
     finally{renderActions();}
   });
-  $('#program-document-review-actions').addEventListener('click',event=>{const button=event.target.closest('[data-document-review]');if(button)void reviewDocument(button.dataset.documentReview);});
+  $('#program-document-review-actions').addEventListener('click',event=>{const sign=event.target.closest('[data-document-sign]');if(sign){void signDocument(sign.dataset.documentSign);return;}const button=event.target.closest('[data-document-review]');if(button)void reviewDocument(button.dataset.documentReview);});
   $('#program-document-list').addEventListener('click',event=>{const button=event.target.closest('[data-select-document]');if(button)selectDocument(button.dataset.selectDocument);});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#program-documents-panel').hidden)void load();});
   window.CSSMoRAProgramDocuments={load};
