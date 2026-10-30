@@ -459,23 +459,53 @@ async function activeRoleEmails(roles: string[]) {
   return [...new Set((Array.isArray(rows) ? rows : []).map((row: any) => String(row.email || "").trim().toLowerCase()).filter(Boolean))];
 }
 
-async function shareDriveFile(accessToken: string, fileId: string, emails: string[]) {
+function drivePermissionRank(role: string) {
+  return ({
+    reader: 1,
+    commenter: 2,
+    writer: 3,
+    fileOrganizer: 4,
+    organizer: 4,
+    owner: 5,
+  } as Record<string, number>)[role] || 0;
+}
+
+async function shareDriveFile(accessToken: string, fileId: string, emails: string[], role: "reader" | "writer" = "reader") {
   const uniqueEmails = [...new Set(emails.map(email => email.trim().toLowerCase()).filter(Boolean))];
   if (!fileId || !uniqueEmails.length) return;
-  const query = new URLSearchParams({ fields: "permissions(id,emailAddress,role,type)", pageSize: "100" });
-  const response = await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?${query}`);
-  const existing = new Set((response.data?.permissions || []).map((item: any) => String(item.emailAddress || "").toLowerCase()));
+  const permissions: any[] = [];
+  let pageToken = "";
+  do {
+    const query = new URLSearchParams({ fields: "nextPageToken,permissions(id,emailAddress,role,type,permissionDetails(inherited))", pageSize: "100" });
+    if (pageToken) query.set("pageToken", pageToken);
+    const response = await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?${query}`);
+    permissions.push(...(Array.isArray(response.data?.permissions) ? response.data.permissions : []));
+    pageToken = String(response.data?.nextPageToken || "");
+  } while (pageToken);
+
   for (const email of uniqueEmails) {
-    if (existing.has(email)) continue;
-    await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?sendNotificationEmail=false&fields=id`, {
-      method: "POST", body: { type: "user", role: "reader", emailAddress: email },
+    const matches = permissions.filter((item: any) => String(item.emailAddress || "").trim().toLowerCase() === email);
+    if (matches.some((item: any) => drivePermissionRank(String(item.role || "")) >= drivePermissionRank(role))) continue;
+    const directPermission = matches
+      .filter((item: any) => item.id && (!Array.isArray(item.permissionDetails) || !item.permissionDetails.some((detail: any) => detail?.inherited)))
+      .sort((a: any, b: any) => drivePermissionRank(String(a.role || "")) - drivePermissionRank(String(b.role || "")))[0];
+    if (directPermission) {
+      await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions/${encodeURIComponent(String(directPermission.id))}?fields=id,emailAddress,role`, {
+        method: "PATCH", body: { role },
+      });
+      directPermission.role = role;
+      continue;
+    }
+    await googleJson(accessToken, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?sendNotificationEmail=false&fields=id,emailAddress,role`, {
+      method: "POST", body: { type: "user", role, emailAddress: email },
     });
   }
 }
 
 async function shareProgramDocument(accessToken: string, documentId: string, extraEmails: string[] = [], roles: string[] = ["sekretaris"]) {
   const roleEmails = await activeRoleEmails(roles);
-  await shareDriveFile(accessToken, documentId, [...extraEmails, ...roleEmails]);
+  await shareDriveFile(accessToken, documentId, extraEmails, "writer");
+  await shareDriveFile(accessToken, documentId, roleEmails, "reader");
 }
 
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
