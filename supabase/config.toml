@@ -1,0 +1,2 @@
+[functions.drive-integration]
+static_files = ["./functions/drive-integration/templates/*.b64"]
