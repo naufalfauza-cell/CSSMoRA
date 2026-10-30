@@ -576,6 +576,37 @@ function templateCellRange(cell: any) {
   return endIndex >= startIndex ? { startIndex, endIndex } : null;
 }
 
+const PROGRAM_BODY_TEXT_STYLE = {
+  weightedFontFamily: { fontFamily: "Times New Roman" },
+  fontSize: { magnitude: 12, unit: "PT" },
+  foregroundColor: { color: { rgbColor: { red: 0, green: 0, blue: 0 } } },
+  bold: false,
+  italic: false,
+  underline: false,
+};
+
+const PROGRAM_COMMITTEE_TEXT_STYLE = {
+  weightedFontFamily: { fontFamily: "Times New Roman" },
+  fontSize: { magnitude: 11, unit: "PT" },
+  foregroundColor: { color: { rgbColor: { red: 0, green: 0, blue: 0 } } },
+  bold: false,
+  italic: false,
+  underline: false,
+};
+
+const PROGRAM_TABLE_TEXT_STYLE = {
+  weightedFontFamily: { fontFamily: "Times New Roman" },
+  fontSize: { magnitude: 9, unit: "PT" },
+  foregroundColor: { color: { rgbColor: { red: 0, green: 0, blue: 0 } } },
+  bold: false,
+  italic: false,
+  underline: false,
+};
+
+function textStyleFieldMask(textStyle: Record<string, unknown>) {
+  return Object.keys(textStyle).join(",");
+}
+
 function templateTopParagraphs(document: any) {
   return (templateDocumentBody(document).content || []).filter((item: any) => item?.paragraph);
 }
@@ -628,11 +659,26 @@ function templateEditForCell(cell: any, text: string) {
   return range ? { ...range, text: String(text || "") } : null;
 }
 
-async function applyTemplateEdits(accessToken: string, documentId: string, edits: Array<{ startIndex: number; endIndex: number; text: string }>) {
+async function applyTemplateEdits(
+  accessToken: string,
+  documentId: string,
+  edits: Array<{ startIndex: number; endIndex: number; text: string; textStyle?: Record<string, unknown> }>,
+  defaultTextStyle?: Record<string, unknown>,
+) {
   const requests: any[] = [];
   for (const edit of [...edits].sort((a, b) => b.startIndex - a.startIndex)) {
     if (edit.endIndex > edit.startIndex) requests.push({ deleteContentRange: { range: { startIndex: edit.startIndex, endIndex: edit.endIndex } } });
-    if (edit.text) requests.push({ insertText: { location: { index: edit.startIndex }, text: edit.text } });
+    if (edit.text) {
+      requests.push({ insertText: { location: { index: edit.startIndex }, text: edit.text } });
+      const textStyle = edit.textStyle || defaultTextStyle;
+      if (textStyle) requests.push({
+        updateTextStyle: {
+          range: { startIndex: edit.startIndex, endIndex: edit.startIndex + edit.text.length },
+          textStyle,
+          fields: textStyleFieldMask(textStyle),
+        },
+      });
+    }
   }
   if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
 }
@@ -730,6 +776,101 @@ function templateCellFillEdits(table: any, values: string[][], headerRowIndex: n
   return edits;
 }
 
+function programTableAlignment(headers: string[], columnIndex: number) {
+  const label = String(headers[columnIndex] || "").toLocaleLowerCase("id-ID");
+  if (label === "no") return "CENTER";
+  if (["harga", "jumlah total", "total"].includes(label)) return "END";
+  if (["pack", "waktu", "durasi"].includes(label)) return "CENTER";
+  return "START";
+}
+
+function programTableFormatRequests(document: any, headers: string[]) {
+  const table = findProgramTable(document, headers);
+  if (!table) return [];
+  const rows = templateTableRows(table);
+  const headerRowIndex = templateTableHeaderIndex(table, headers);
+  if (headerRowIndex < 0) return [];
+  const requests: any[] = [];
+  const tableStartIndex = Number(table.startIndex);
+  const headerCells = rows[headerRowIndex]?.tableCells || [];
+  const columnCount = headerCells.reduce((count: number, cell: any) => count + Math.max(1, Number(cell?.tableCellStyle?.columnSpan || 1)), 0);
+  if (Number.isInteger(tableStartIndex) && tableStartIndex > 0 && rows.length && columnCount) {
+    requests.push({
+      updateTableCellStyle: {
+        tableRange: {
+          tableCellLocation: { tableStartLocation: { index: tableStartIndex }, rowIndex: 0, columnIndex: 0 },
+          rowSpan: rows.length,
+          columnSpan: columnCount,
+        },
+        tableCellStyle: {
+          paddingTop: { magnitude: 3, unit: "PT" },
+          paddingBottom: { magnitude: 3, unit: "PT" },
+          paddingLeft: { magnitude: 4, unit: "PT" },
+          paddingRight: { magnitude: 4, unit: "PT" },
+          verticalAlignment: "MIDDLE",
+        },
+        fields: "paddingTop,paddingBottom,paddingLeft,paddingRight,verticalAlignment",
+      },
+    });
+  }
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    const cells = rows[rowIndex]?.tableCells || [];
+    const rowText = cells.map(templateCellText).join(" ").toLocaleLowerCase("id-ID");
+    const isHeader = rowIndex === headerRowIndex;
+    const isTotal = rowText.includes("total pemasukan") || rowText.includes("total pengeluaran");
+    let logicalColumn = 0;
+    for (const cell of cells) {
+      const cellText = templateCellText(cell);
+      const isTableTitle = rowIndex < headerRowIndex && Boolean(cellText);
+      const range = templateCellRange(cell);
+      const cellSpan = Math.max(1, Number(cell?.tableCellStyle?.columnSpan || 1));
+      const centerTotalLabel = isTotal && /total\s+(?:pemasukan|pengeluaran)/i.test(cellText);
+      if (range && range.endIndex > range.startIndex) {
+        requests.push({
+          updateTextStyle: {
+            range,
+            textStyle: {
+              weightedFontFamily: { fontFamily: "Times New Roman" },
+              fontSize: { magnitude: 9, unit: "PT" },
+              foregroundColor: { color: { rgbColor: { red: 0, green: 0, blue: 0 } } },
+              bold: isHeader || isTableTitle || isTotal,
+              italic: false,
+              underline: false,
+            },
+            fields: "weightedFontFamily,fontSize,foregroundColor,bold,italic,underline",
+          },
+        });
+      }
+      for (const item of cell?.content || []) {
+        if (!item?.paragraph) continue;
+        const paragraph = item.paragraph;
+        const startIndex = Number(item.startIndex);
+        const endIndex = Number(item.endIndex);
+        if (!Number.isInteger(startIndex) || !Number.isInteger(endIndex) || endIndex <= startIndex) continue;
+        requests.push({
+          updateParagraphStyle: {
+            range: { startIndex, endIndex },
+            paragraphStyle: {
+              alignment: isHeader || isTableTitle || centerTotalLabel
+                ? "CENTER"
+              : programTableAlignment(headers, logicalColumn),
+              indentStart: { magnitude: 0, unit: "PT" },
+              indentEnd: { magnitude: 0, unit: "PT" },
+              indentFirstLine: { magnitude: 0, unit: "PT" },
+              spaceAbove: { magnitude: 0, unit: "PT" },
+              spaceBelow: { magnitude: 0, unit: "PT" },
+              lineSpacing: 110,
+            },
+            fields: "alignment,indentStart,indentEnd,indentFirstLine,spaceAbove,spaceBelow,lineSpacing",
+          },
+        });
+      }
+      logicalColumn += cellSpan;
+    }
+  }
+  return requests;
+}
+
 async function resizeProgramTable(accessToken: string, documentId: string, headers: string[], dataRowCount: number, trailingRows = 1) {
   let document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
   let table = findProgramTable(document, headers);
@@ -760,7 +901,7 @@ async function fillProgramTable(accessToken: string, documentId: string, headers
   const table = findProgramTable(document, headers);
   if (!table) throw new AppError(502, `Tabel ${headers[1] || "dokumen"} tidak dapat diisi.`);
   const headerRowIndex = templateTableHeaderIndex(table, headers);
-  await applyTemplateEdits(accessToken, documentId, templateCellFillEdits(table, values, headerRowIndex));
+  await applyTemplateEdits(accessToken, documentId, templateCellFillEdits(table, values, headerRowIndex), PROGRAM_TABLE_TEXT_STYLE);
 }
 
 function programPhotoMarkers(photos: any[]) {
@@ -777,8 +918,9 @@ async function appendProgramPhotos(accessToken: string, documentId: string, phot
   const document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
   const content = templateDocumentBody(document).content || [];
   const endIndex = Number(content[content.length - 1]?.endIndex || 2);
+  const appendedStartIndex = Math.max(1, endIndex - 1);
   const bodyText = markers.map((photo) => `${photo.marker}\n${photo.caption}\n\n`).join("");
-  await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests: [{ insertText: { location: { index: Math.max(1, endIndex - 1) }, text: bodyText } }] } });
+  await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests: [{ insertText: { location: { index: appendedStartIndex }, text: bodyText } }] } });
   const refreshed = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
   const ranges = markers.map((photo) => ({ ...photo, range: findGoogleDocMarkerRanges(refreshed, photo.marker)[0] })).filter((photo) => photo.range);
   const requests: any[] = [];
@@ -787,6 +929,31 @@ async function appendProgramPhotos(accessToken: string, documentId: string, phot
     requests.push({ insertInlineImage: { location: { index: photo.range.startIndex }, uri: photo.uri, objectSize: { width: { magnitude: 390, unit: "PT" } } } });
   }
   if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
+  const withPhotos = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  const captions = new Set(markers.map((photo) => photo.caption));
+  const captionRequests: any[] = [];
+  for (const item of templateDocumentBody(withPhotos).content || []) {
+    if (!item?.paragraph || Number(item.startIndex) < appendedStartIndex) continue;
+    const paragraph = item.paragraph;
+    if (!captions.has(templateParagraphText(paragraph))) continue;
+    const range = templateParagraphRange(paragraph);
+    if (!range || range.endIndex <= range.startIndex) continue;
+    captionRequests.push({
+      updateTextStyle: {
+        range,
+        textStyle: { ...PROGRAM_COMMITTEE_TEXT_STYLE, fontSize: { magnitude: 10, unit: "PT" } },
+        fields: "weightedFontFamily,fontSize,foregroundColor,bold,italic,underline",
+      },
+    });
+    captionRequests.push({
+      updateParagraphStyle: {
+        range: { startIndex: Number(item.startIndex), endIndex: Number(item.endIndex) },
+        paragraphStyle: { alignment: "CENTER", indentStart: { magnitude: 0, unit: "PT" }, indentEnd: { magnitude: 0, unit: "PT" }, spaceAbove: { magnitude: 0, unit: "PT" }, spaceBelow: { magnitude: 6, unit: "PT" }, lineSpacing: 110 },
+        fields: "alignment,indentStart,indentEnd,spaceAbove,spaceBelow,lineSpacing",
+      },
+    });
+  }
+  if (captionRequests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests: captionRequests } });
 }
 
 function topParagraphMatches(paragraphs: any[], text: string) {
@@ -876,7 +1043,136 @@ async function fillProgramCommitteeSection(accessToken: string, documentId: stri
   const marker = "CSSMORA_COMMITTEE_SECTION_SLOT";
   const ranges = findGoogleDocMarkerRanges(document, marker);
   if (ranges.length !== 1) throw new AppError(502, "Posisi daftar panitia tidak ditemukan pada template proposal resmi.");
-  await applyTemplateEdits(accessToken, documentId, [{ ...ranges[0], text: committeeAppendixText(committee, enabled) }]);
+  await applyTemplateEdits(accessToken, documentId, [{ ...ranges[0], text: committeeAppendixText(committee, enabled) }], PROGRAM_COMMITTEE_TEXT_STYLE);
+}
+
+async function removeEmptyProgramGoalRows(accessToken: string, documentId: string) {
+  const document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  const paragraphs = templateTopParagraphs(document);
+  const start = paragraphs.findIndex((item: any) => templateTextKey(templateParagraphText(item.paragraph)) === "tujuan kegiatan");
+  const end = paragraphs.findIndex((item: any, index: number) => index > start && templateTextKey(templateParagraphText(item.paragraph)) === "nama kegiatan");
+  if (start < 0 || end <= start) return;
+  const requests: any[] = [];
+  for (const item of paragraphs.slice(start + 1, end)) {
+    const paragraph = item.paragraph;
+    if (templateParagraphText(paragraph) || !paragraph?.bullet) continue;
+    const startIndex = Number(item.startIndex);
+    const endIndex = Number(item.endIndex);
+    if (!Number.isInteger(startIndex) || !Number.isInteger(endIndex) || endIndex <= startIndex) continue;
+    requests.push({ deleteParagraphBullets: { range: { startIndex, endIndex } } });
+    requests.push({
+      updateParagraphStyle: {
+        range: { startIndex, endIndex },
+        paragraphStyle: { spaceAbove: { magnitude: 0, unit: "PT" }, spaceBelow: { magnitude: 0, unit: "PT" }, lineSpacing: 100 },
+        fields: "spaceAbove,spaceBelow,lineSpacing",
+      },
+    });
+    requests.push({
+      updateTextStyle: {
+        range: { startIndex, endIndex },
+        textStyle: { fontSize: { magnitude: 1, unit: "PT" } },
+        fields: "fontSize",
+      },
+    });
+  }
+  if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
+}
+
+async function normalizeProgramDocumentTypography(accessToken: string, documentId: string, documentType: string) {
+  const document = (await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)).data;
+  const body = templateDocumentBody(document);
+  const content = body.content || [];
+  const bodyEndIndex = Number(content[content.length - 1]?.endIndex || 2);
+  const requests: any[] = [];
+  if (bodyEndIndex > 2) requests.push({
+    updateTextStyle: {
+      range: { startIndex: 1, endIndex: bodyEndIndex - 1 },
+      textStyle: { weightedFontFamily: { fontFamily: "Times New Roman" } },
+      fields: "weightedFontFamily",
+    },
+  });
+  if (documentType === "proposal") requests.push({
+    updateDocumentStyle: {
+      documentStyle: {
+        pageSize: { width: { magnitude: 595.28, unit: "PT" }, height: { magnitude: 841.89, unit: "PT" } },
+        marginTop: { magnitude: 113, unit: "PT" },
+        marginBottom: { magnitude: 85, unit: "PT" },
+        marginLeft: { magnitude: 113, unit: "PT" },
+        marginRight: { magnitude: 85, unit: "PT" },
+      },
+      fields: "pageSize,marginTop,marginBottom,marginLeft,marginRight",
+    },
+  });
+
+  const paragraphs = templateTopParagraphs(document);
+  const formatParagraph = (item: any, paragraphStyle: Record<string, unknown>) => {
+    const startIndex = Number(item?.startIndex);
+    const endIndex = Number(item?.endIndex);
+    if (!Number.isInteger(startIndex) || !Number.isInteger(endIndex) || endIndex <= startIndex) return;
+    requests.push({
+      updateParagraphStyle: {
+        range: { startIndex, endIndex },
+        paragraphStyle,
+        fields: Object.keys(paragraphStyle).join(","),
+      },
+    });
+    const textRange = templateParagraphRange(item.paragraph);
+    if (textRange && textRange.endIndex > textRange.startIndex) {
+      requests.push({ updateTextStyle: { range: textRange, textStyle: { italic: false }, fields: "italic" } });
+    }
+  };
+
+  const approvalDate = paragraphs.find((item: any) => templateParagraphText(item.paragraph).toLocaleLowerCase("id-ID").startsWith("surabaya,"));
+  if (approvalDate) formatParagraph(approvalDate, {
+    alignment: "END",
+    indentStart: { magnitude: 0, unit: "PT" },
+    indentEnd: { magnitude: 0, unit: "PT" },
+    indentFirstLine: { magnitude: 0, unit: "PT" },
+    keepLinesTogether: true,
+  });
+
+  if (documentType === "proposal") {
+    const signerIndex = paragraphs.findIndex((item: any) => templateTextKey(templateParagraphText(item.paragraph)) === "nama ketua umum");
+    const bodyTitleIndex = signerIndex < 0
+      ? -1
+      : paragraphs.findIndex((item: any, index: number) => index > signerIndex && templateTextKey(templateParagraphText(item.paragraph)) === "proposal");
+    const backgroundIndex = paragraphs.findIndex((item: any, index: number) => index > bodyTitleIndex && templateTextKey(templateParagraphText(item.paragraph)) === "latar belakang");
+    if (bodyTitleIndex >= 0) {
+      const titleBlockEnd = backgroundIndex > bodyTitleIndex ? backgroundIndex : bodyTitleIndex + 1;
+      for (let index = bodyTitleIndex; index < titleBlockEnd; index++) {
+        const isFirstBodyTitle = index === bodyTitleIndex;
+        formatParagraph(paragraphs[index], {
+          ...(isFirstBodyTitle ? { pageBreakBefore: true } : {}),
+          keepWithNext: true,
+          keepLinesTogether: true,
+        });
+      }
+    }
+  }
+
+  const keepTogetherHeadings = new Set([
+    "latar belakang", "tujuan kegiatan", "nama kegiatan", "tema kegiatan", "deskripsi kegiatan",
+    "sasaran kegiatan", "waktu dan tempat pelaksanaan", "penutup", "lampiran 1", "susunan panitia",
+    "lampiran 2", "susunan acara", "lampiran 3", "rencana anggaran dana", "pemasukan", "pengeluaran",
+  ]);
+  for (const item of paragraphs) {
+    const key = templateTextKey(templateParagraphText(item.paragraph));
+    if (!keepTogetherHeadings.has(key)) continue;
+    formatParagraph(item, {
+      keepWithNext: true,
+      keepLinesTogether: true,
+      ...(key === "lampiran 3" ? { pageBreakBefore: true } : {}),
+    });
+  }
+
+  if (documentType === "proposal") {
+    for (const headers of [
+      ["No", "Kegiatan", "Waktu", "Durasi", "Keterangan"],
+      ["No", "Sumber Dana", "Jumlah Total"],
+      ["No", "Nama", "Harga", "Pack", "Total"],
+    ]) requests.push(...programTableFormatRequests(document, headers));
+  }
+  if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
 }
 
 async function renderProgramDocumentTemplate(accessToken: string, documentId: string, rawData: any) {
@@ -966,11 +1262,25 @@ async function renderProgramDocumentTemplate(accessToken: string, documentId: st
 
   const approval = approvalTableEditRequests(document, { committee });
   const requests = [...approval.objectRequests];
-  for (const edit of [...edits, ...approval.edits].sort((a, b) => b.startIndex - a.startIndex)) {
+  const styledBodyEdits = documentType === "proposal"
+    ? edits.map((edit) => ({ ...edit, textStyle: PROGRAM_BODY_TEXT_STYLE }))
+    : edits;
+  const allEdits: Array<{ startIndex: number; endIndex: number; text: string; textStyle?: Record<string, unknown> }> = [...styledBodyEdits, ...approval.edits];
+  for (const edit of allEdits.sort((a, b) => b.startIndex - a.startIndex)) {
     if (edit.endIndex > edit.startIndex) requests.push({ deleteContentRange: { range: { startIndex: edit.startIndex, endIndex: edit.endIndex } } });
-    if (edit.text) requests.push({ insertText: { location: { index: edit.startIndex }, text: edit.text } });
+    if (edit.text) {
+      requests.push({ insertText: { location: { index: edit.startIndex }, text: edit.text } });
+      if (edit.textStyle) requests.push({
+        updateTextStyle: {
+          range: { startIndex: edit.startIndex, endIndex: edit.startIndex + edit.text.length },
+          textStyle: edit.textStyle,
+          fields: textStyleFieldMask(edit.textStyle),
+        },
+      });
+    }
   }
   if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
+  if (documentType === "proposal") await removeEmptyProgramGoalRows(accessToken, documentId);
 
   if (documentType === "proposal") {
     await replaceTemplateMarkers(accessToken, documentId, {
@@ -998,7 +1308,9 @@ async function renderProgramDocumentTemplate(accessToken: string, documentId: st
     if (!scheduleTable) throw new AppError(502, "Tabel rundown tidak ditemukan pada template proposal resmi.");
     const scheduleDoc = await resizeProgramTable(accessToken, documentId, scheduleHeaders, scheduleCount, 0);
     const sizedSchedule = findProgramTable(scheduleDoc, scheduleHeaders);
-    if (sizedSchedule) await applyTemplateEdits(accessToken, documentId, templateCellFillEdits(sizedSchedule, scheduleRows, templateTableHeaderIndex(sizedSchedule, scheduleHeaders)));
+    if (sizedSchedule) {
+      await applyTemplateEdits(accessToken, documentId, templateCellFillEdits(sizedSchedule, scheduleRows, templateTableHeaderIndex(sizedSchedule, scheduleHeaders)), PROGRAM_TABLE_TEXT_STYLE);
+    }
 
     const budget = data.rab_enabled && Array.isArray(data.budget) ? data.budget : [];
     const income = budget.filter((row: any) => row.direction === "income");
@@ -1019,6 +1331,7 @@ async function renderProgramDocumentTemplate(accessToken: string, documentId: st
   }
 
   await appendProgramPhotos(accessToken, documentId, Array.isArray(data.photos) ? data.photos : []);
+  await normalizeProgramDocumentTypography(accessToken, documentId, documentType);
 }
 
 async function createSignerAssetUrl(actorId: string) {
