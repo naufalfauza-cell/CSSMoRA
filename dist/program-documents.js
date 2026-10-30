@@ -8,7 +8,7 @@
   const typeLabels={proposal:'Proposal',lpj:'LPJ'};
   const statusLabels={draft:'Draf',secretary_review:'Menunggu tanda tangan Sekretaris',treasurer_review:'Verifikasi Bendahara',chair_review:'Menunggu tanda tangan Ketua',revision:'Perlu revisi',approved:'Disetujui'};
   const activeBucket='cssmora-program-documentation';
-  let programs=[],details=new Map(),members=[],documents=[],current=null,budget=[],committee=[],rundown=[],photos=[],pendingPhotos=[],finance={},subrecordsDirty=false;
+  let programs=[],details=new Map(),members=[],documents=[],current=null,budget=[],committee=[],rundown=[],photos=[],pendingPhotos=[],finance={},subrecordsDirty=false,formDirty=false;
   let loading=null;
   const committeeRoles=['Ketua Pelaksana','Wakil Ketua Pelaksana','Sekretaris Pelaksana','Bendahara Pelaksana','Koordinator Acara','Staf Acara','Staf Humas','Staf Publikasi dan Dokumentasi','Staf Konsumsi','Staf Perlengkapan','Staf Transportasi','Staf Keamanan','Anggota'];
   const committeeDivisions=[['BPH','BPH'],['PSDM','PSDM'],['P3M','P3M'],['ADVO','Advokasi'],['MEDINFO','Medinfo'],['SEKRETARIAT','Sekretariat'],['BENDAHARA','Bendahara'],['LAINNYA','Lainnya']];
@@ -24,6 +24,7 @@
   }
   function selectedType(){return $('#program-document-type').value||'proposal';}
   function selectedSections(){const out={};document.querySelectorAll(`.program-document-options [data-option-for="${selectedType()}"] input`).forEach(node=>out[node.name]=node.checked);return out;}
+  function documentReadyForSubmission(){return Boolean(current?.google_doc_id&&current?.google_doc_generated_at&&current?.ai_content?.generated_at&&!formDirty&&!subrecordsDirty);}
   function renderType(){
     const type=selectedType();
     document.querySelectorAll('.program-document-fields').forEach(section=>{
@@ -118,8 +119,12 @@
     const canRefreshDoc=editable||Boolean(current&&((current.status==='treasurer_review'&&roles.includes('bendahara'))||(current.status==='secretary_review'&&current.document_type==='lpj'&&current.optional_sections?.finance&&roles.includes('bendahara'))));
     $('#program-document-save').disabled=!editable;$('#program-document-ai').disabled=!editable;$('#program-document-google').disabled=!canRefreshDoc;
     $('#program-document-google').textContent=current?.google_doc_id?'Perbarui Google Docs':'Buat Google Docs';
-    $('#program-document-submit').hidden=!current||!editable||!['draft','revision'].includes(current.status);
-    $('#program-document-submit').disabled=!editable;
+    const submitReady=documentReadyForSubmission();
+    const submitButton=$('#program-document-submit');
+    submitButton.hidden=!current||!editable||!['draft','revision'].includes(current.status);
+    submitButton.disabled=!editable||!submitReady;
+    submitButton.textContent=submitReady?'Ajukan saja':current?.google_doc_id?'Perbarui Docs dulu':'Buat Docs dulu';
+    submitButton.title=submitReady?'Mengajukan Google Docs yang sudah dibuat tanpa membuat ulang isinya.':'Buat atau perbarui Google Docs, lalu ajukan dokumen tersebut.';
     document.querySelectorAll('.program-document-fields').forEach(section=>section.querySelectorAll('input,textarea,select').forEach(field=>field.disabled=!editable||section.hidden));
     $('#program-document-type').disabled=!editable||Boolean(current);
     $('#program-document-program').disabled=!editable||Boolean(current);
@@ -169,7 +174,7 @@
     return data;
   }
   function clearEditor(){
-    current=null;budget=[];committee=[];rundown=[];photos=[];pendingPhotos.forEach(item=>URL.revokeObjectURL(item.preview));pendingPhotos=[];finance={};subrecordsDirty=false;
+    current=null;budget=[];committee=[];rundown=[];photos=[];pendingPhotos.forEach(item=>URL.revokeObjectURL(item.preview));pendingPhotos=[];finance={};subrecordsDirty=false;formDirty=false;
     $('#program-document-form').reset();$('#program-document-id').value='';$('#program-document-type').value='proposal';
     $('#program-document-editor-title').textContent='Mulai proposal atau LPJ';
     $('#program-document-finance-message').textContent='';
@@ -201,6 +206,7 @@
   }
   function selectDocument(id){
     current=documents.find(row=>row.id===id)||null;if(!current)return;
+    formDirty=false;subrecordsDirty=false;
     pendingPhotos.forEach(item=>URL.revokeObjectURL(item.preview));pendingPhotos=[];finance={};
     $('#program-document-id').value=current.id;$('#program-document-type').value=current.document_type;$('#program-document-program').value=current.program_id;
     $('#program-document-period').value=current.period_label;$('#program-document-title').value=current.title;$('#program-document-start').value=current.period_start||'';$('#program-document-end').value=current.period_end||'';
@@ -319,13 +325,15 @@
     current=result;
     renderAiPreview();
     await saveSubrecords();
+    formDirty=false;
     documents=[current,...documents.filter(doc=>doc.id!==current.id)];renderDocumentList();renderActions();
     return current;
   }
   async function assistant(action){
     const document=action==='generate_ai'||isEditable()?await saveDraft():current;
     if(!document)throw new Error('Pilih atau simpan draf terlebih dahulu.');
-    const response=await window.CSSMoRAAdmin.request(`${cfg().url}/functions/v1/program-document-assistant`,{method:'POST',headers:{apikey:cfg().publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action,document_id:document.id})});
+    const timeoutMs=action==='create_doc'?90000:action==='generate_ai'?60000:15000;
+    const response=await window.CSSMoRAAdmin.request(`${cfg().url}/functions/v1/program-document-assistant`,{method:'POST',headers:{apikey:cfg().publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action,document_id:document.id}),timeoutMs});
     const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Dokumen AI belum dapat dibuat.');
     if(result.ai_content){
       await api()(`cssmora_program_documents?id=eq.${encodeURIComponent(document.id)}`,{method:'PATCH',body:{ai_content:result.ai_content},extraHeaders:{Prefer:'return=representation'}});
@@ -334,6 +342,7 @@
       message('Narasi AI siap. Tinjau isinya, lalu buat Google Docs.','success');
     }else if(result.google_doc_url){
       current={...current,google_doc_id:result.google_doc_id,google_doc_url:result.google_doc_url,google_doc_generated_at:result.google_doc_generated_at};documents=documents.map(row=>row.id===current.id?current:row);
+      formDirty=false;subrecordsDirty=false;
       message('Google Docs berhasil dibuat atau diperbarui.','success');
     }else if(result.status){
       current={...current,status:result.status,google_pdf_id:result.google_pdf_id,google_pdf_url:result.google_pdf_url,google_pdf_generated_at:new Date().toISOString()};documents=documents.map(row=>row.id===current.id?current:row);
@@ -343,19 +352,15 @@
   }
   async function submitDocument(){
     if(!current)return;
-    if(!$('#program-document-form').reportValidity()){message('Lengkapi isian yang wajib terlebih dahulu.','error');return;}
-    if(!window.confirm('Simpan draf terbaru, buat Google Docs, lalu kirim tautannya ke Sekretaris untuk ditinjau dan ditandatangani?'))return;
-    const button=$('#program-document-submit');button.disabled=true;message('Menyimpan data dan menyusun narasi…');
+    if(!documentReadyForSubmission()){message(formDirty||subrecordsDirty?'Ada perubahan yang belum masuk ke Google Docs. Simpan draf, buat narasi jika diminta, lalu perbarui Docs sebelum mengajukan.':'Buat atau perbarui Google Docs terlebih dahulu sebelum mengajukan.','error');renderActions();return;}
+    if(!window.confirm('Ajukan Google Docs yang sudah dibuat ke Sekretaris? Isi dokumen yang sama akan dikirim tanpa dibuat ulang.'))return;
+    const button=$('#program-document-submit');button.disabled=true;message('Mengajukan Google Docs yang sudah dibuat…');
     try{
-      await assistant('generate_ai');
-      message('Membuat Google Docs dari data terbaru…');
-      await assistant('create_doc');
-      if(!current.google_doc_id||!current.google_doc_generated_at)throw new Error('Google Docs belum berhasil dibuat. Dokumen belum diajukan.');
       await api()('rpc/submit_cssmora_program_document',{method:'POST',body:{p_document_id:current.id}});
-      message('Google Docs siap. Tautannya telah masuk ke antrean Sekretaris untuk ditinjau dan ditandatangani.','success');
+      message('Pengajuan dikirim ke antrean Sekretaris. Google Docs yang sama digunakan tanpa dibuat ulang.','success');
       const id=current.id;await load();selectDocument(id);
     }
-    catch(error){message(error.message||'Dokumen belum dapat diajukan.','error');button.disabled=false;}
+    catch(error){message(error.message||'Dokumen belum dapat diajukan.','error');button.disabled=false;renderActions();}
   }
   async function reviewDocument(decision){
     if(!current)return;
@@ -392,7 +397,9 @@
   }
   $('#program-document-type').addEventListener('change',()=>{renderType();if(!current)prefillProgram($('#program-document-program').value);});
   $('#program-document-program').addEventListener('change',event=>prefillProgram(event.target.value));
-  document.querySelectorAll('.program-document-options input').forEach(input=>input.addEventListener('change',()=>{renderType();}));
+  $('#program-document-form').addEventListener('input',()=>{formDirty=true;renderActions();});
+  $('#program-document-form').addEventListener('change',()=>{formDirty=true;renderActions();});
+  document.querySelectorAll('.program-document-options input').forEach(input=>input.addEventListener('change',()=>{formDirty=true;renderType();}));
   $('#program-document-reset').addEventListener('click',clearEditor);
   $('#program-documents-refresh').addEventListener('click',()=>void load());
   $('#program-document-form').addEventListener('submit',async event=>{
@@ -410,7 +417,7 @@
     subrecordsDirty=true;
     renderCommittee();renderActions();
   });
-  $('#program-document-committee-list').addEventListener('click',event=>{const button=event.target.closest('[data-remove-committee]');if(button){committee.splice(Number(button.dataset.removeCommittee),1);subrecordsDirty=true;renderCommittee();}});
+  $('#program-document-committee-list').addEventListener('click',event=>{const button=event.target.closest('[data-remove-committee]');if(button){committee.splice(Number(button.dataset.removeCommittee),1);subrecordsDirty=true;renderCommittee();renderActions();}});
   $('#program-document-add-income').addEventListener('click',()=>{refreshBudgetFromInputs();budget.push({direction:'income',item_name:'',quantity:1,unit:'kegiatan',unit_price:0});subrecordsDirty=true;renderBudget();renderActions();});
   $('#program-document-add-expense').addEventListener('click',()=>{refreshBudgetFromInputs();budget.push({direction:'expense',item_name:'',quantity:1,unit:'kegiatan',unit_price:0});subrecordsDirty=true;renderBudget();renderActions();});
   $('#program-document-budget-section').addEventListener('input',event=>{
@@ -453,7 +460,7 @@
     if(id||index!==undefined)subrecordsDirty=true;
   });
   $('#program-document-photo-list').addEventListener('click',async event=>{
-    const pending=event.target.closest('[data-remove-pending-photo]');if(pending){const [item]=pendingPhotos.splice(Number(pending.dataset.removePendingPhoto),1);if(item)URL.revokeObjectURL(item.preview);subrecordsDirty=true;renderPhotos();return;}
+    const pending=event.target.closest('[data-remove-pending-photo]');if(pending){const [item]=pendingPhotos.splice(Number(pending.dataset.removePendingPhoto),1);if(item)URL.revokeObjectURL(item.preview);subrecordsDirty=true;renderPhotos();renderActions();return;}
     const remove=event.target.closest('[data-remove-photo]');if(!remove||!current)return;
     const row=photos.find(photo=>photo.id===remove.dataset.removePhoto);if(!row)return;
     remove.disabled=true;
@@ -471,9 +478,12 @@
     finally{button.disabled=false;renderActions();}
   });
   $('#program-document-google').addEventListener('click',async()=>{
-    const button=$('#program-document-google');button.disabled=true;message('Membuat Google Docs dan menata halaman…');
+    const button=$('#program-document-google');button.disabled=true;message('Membuat Google Docs dan menata halaman. Proses bisa memerlukan sekitar satu menit; jangan klik ulang.');
     try{await assistant('create_doc');}
-    catch(error){message(error.message||'Google Docs gagal dibuat.','error');}
+    catch(error){
+      const timedOut=/batas waktu|timeout/i.test(error.message||'');
+      message(timedOut?'Pembuatan Docs belum memberi jawaban. Muat ulang dokumen dan periksa tautan Google Docs sebelum mencoba lagi.':error.message||'Google Docs gagal dibuat.','error');
+    }
     finally{button.disabled=false;renderActions();}
   });
   $('#program-document-submit').addEventListener('click',()=>void submitDocument());
