@@ -368,7 +368,7 @@
 .agenda-videotron .event-dots::-webkit-scrollbar{display:none}
 .agenda-videotron .event-dots button{flex:0 0 auto;background:#ffffffa3}
 .agenda-videotron .event-dots button.on{background:#f2d46d}
-.agenda-videotron .event-empty{position:absolute;inset:0;display:grid;align-content:center;border:0;border-radius:inherit;background:linear-gradient(180deg,#19231e2e,#0b110ee8),url('./assets/cssmora-logo.webp?v=20261023-perf-assets') center/cover;color:#fff}
+.agenda-videotron .event-empty{position:absolute;inset:0;display:grid;align-content:center;border:0;border-radius:inherit;background:linear-gradient(145deg,#1c2a22,#111813);color:#fff}
 .agenda-videotron .event-empty strong{font-size:15px}
 .agenda-videotron .event-empty p{font-size:11px;color:#e6e6e5}
 @media(max-width:760px){
@@ -433,3 +433,30 @@
  .sign-board{padding:18px 15px}
 }
 
+
+
+/* One mobile video stays behind the full scrollable page. */
+@media(max-width:760px){
+  .campus-stage{
+    overflow:visible;
+    background-color:#354e42;
+  }
+  .campus-stage::before{content:none}
+  .campus-stage:after{
+    background:linear-gradient(180deg,rgba(33,48,41,.2) 0,rgba(33,48,41,.38) 100%);
+  }
+  .campus-background-video{
+    position:fixed;
+    inset:0 auto auto 0;
+    z-index:-2;
+    width:100vw;
+    height:100vh;
+    height:100svh;
+    height:100dvh;
+    aspect-ratio:auto;
+    object-fit:cover;
+    object-position:center 18%;
+    opacity:.58;
+    filter:blur(2px);
+  }
+}
