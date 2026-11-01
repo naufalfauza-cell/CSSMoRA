@@ -368,7 +368,7 @@
 .agenda-videotron .event-dots::-webkit-scrollbar{display:none}
 .agenda-videotron .event-dots button{flex:0 0 auto;background:#ffffffa3}
 .agenda-videotron .event-dots button.on{background:#f2d46d}
-.agenda-videotron .event-empty{position:absolute;inset:0;display:grid;align-content:center;border:0;border-radius:inherit;background:linear-gradient(180deg,#19231e2e,#0b110ee8),url('./assets/cssmora-logo.webp?v=20261023-perf-assets') center/cover;color:#fff}
+.agenda-videotron .event-empty{position:absolute;inset:0;display:grid;align-content:center;border:0;border-radius:inherit;background:linear-gradient(145deg,#1c2a22,#111813);color:#fff}
 .agenda-videotron .event-empty strong{font-size:15px}
 .agenda-videotron .event-empty p{font-size:11px;color:#e6e6e5}
 @media(max-width:760px){
@@ -433,3 +433,23 @@
  .sign-board{padding:18px 15px}
 }
 
+
+
+/* Continue the campus backdrop through the mobile landing page. */
+@media(max-width:760px){
+  .campus-stage::before{
+    content:"";
+    position:absolute;
+    inset:-14px;
+    z-index:-3;
+    background:
+      linear-gradient(180deg,rgba(20,34,27,.08),rgba(25,39,31,.34) 52%,rgba(33,48,41,.55)),
+      url('./assets/unair-campus-poster.jpg') center 38%/cover no-repeat;
+    filter:blur(3px);
+    transform:scale(1.025);
+    pointer-events:none;
+  }
+  .campus-stage:after{
+    background:linear-gradient(180deg,rgba(33,48,41,.08) 0,rgba(33,48,41,.16) 42%,rgba(33,48,41,.38) 100%);
+  }
+}
