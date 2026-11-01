@@ -32,13 +32,13 @@
   const stopCarousel=()=>{if(carouselTimer!==null){clearInterval(carouselTimer);carouselTimer=null;}};
   const state = (icon,title,copy) => {
     stopCarousel();
-    box.classList.add('is-empty');
+    box.classList?.add('is-empty');
     box.innerHTML='<div class="event-empty"><span class="event-icon" aria-hidden="true">'+icon+'</span><div><strong>'+title+'</strong><p>'+copy+'</p></div></div>';
   };
 
   const render = (items, month) => {
     stopCarousel();
-    box.classList.remove('is-empty');
+    box.classList?.remove('is-empty');
     box.innerHTML = items.map((event,index) => {
       const start = new Date(event.starts_at);
       const date = '<div class="event-date"><b>'+parts(start,{day:'numeric'})+'</b><span>'+parts(start,{month:'short'})+'</span></div>';
