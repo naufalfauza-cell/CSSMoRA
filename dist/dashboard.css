@@ -435,21 +435,28 @@
 
 
 
-/* Continue the campus backdrop through the mobile landing page. */
+/* One mobile video stays behind the full scrollable page. */
 @media(max-width:760px){
-  .campus-stage::before{
-    content:"";
-    position:absolute;
-    inset:-14px;
-    z-index:-3;
-    background:
-      linear-gradient(180deg,rgba(20,34,27,.08),rgba(25,39,31,.34) 52%,rgba(33,48,41,.55)),
-      url('./assets/unair-campus-poster.jpg') center 38%/cover no-repeat;
-    filter:blur(3px);
-    transform:scale(1.025);
-    pointer-events:none;
+  .campus-stage{
+    overflow:visible;
+    background-color:#354e42;
   }
+  .campus-stage::before{content:none}
   .campus-stage:after{
-    background:linear-gradient(180deg,rgba(33,48,41,.08) 0,rgba(33,48,41,.16) 42%,rgba(33,48,41,.38) 100%);
+    background:linear-gradient(180deg,rgba(33,48,41,.2) 0,rgba(33,48,41,.38) 100%);
+  }
+  .campus-background-video{
+    position:fixed;
+    inset:0 auto auto 0;
+    z-index:-2;
+    width:100vw;
+    height:100vh;
+    height:100svh;
+    height:100dvh;
+    aspect-ratio:auto;
+    object-fit:cover;
+    object-position:center 18%;
+    opacity:.58;
+    filter:blur(2px);
   }
 }
