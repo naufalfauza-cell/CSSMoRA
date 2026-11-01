@@ -409,3 +409,27 @@
 .agenda-videotron .event-date,.agenda-videotron .event-when,.agenda-videotron .event-body strong,.agenda-videotron .event-body p{text-shadow:0 1px 4px rgba(0,0,0,.8),0 2px 12px rgba(0,0,0,.55)}
 
 .attendance-entry[hidden]{display:none!important}
+
+/* Compact mobile home while keeping the agenda carousel readable. */
+@media(max-width:760px){
+ .campus-stage{padding-top:68px}
+ .agenda-videotron{margin-top:0;margin-bottom:12px}
+ .agenda-videotron #agenda-list.is-empty{flex:0 0 184px;height:184px;min-height:184px;background:linear-gradient(135deg,#1c2a22,#111813)}
+ .agenda-videotron #agenda-list.is-empty .event-empty{grid-template-columns:36px minmax(0,1fr);align-content:center;gap:12px;padding:18px 20px;background:linear-gradient(135deg,#1c2a22f5,#111813f2)}
+ .agenda-videotron #agenda-list.is-empty .event-icon{width:36px;height:36px;border-radius:50%}
+ .agenda-videotron #agenda-list.is-empty .event-empty strong{font-size:16px;line-height:1.25}
+ .agenda-videotron #agenda-list.is-empty .event-empty p{font-size:12px;line-height:1.5}
+ .sign-board{padding:20px 18px}
+ .sign-header{padding-bottom:14px}
+ .sign-nav{padding:8px 0;gap:2px 10px}
+ .sign-link{min-height:56px}
+}
+@media(max-width:390px){
+ .campus-stage{padding-top:64px}
+ .agenda-videotron #agenda-list.is-empty{flex-basis:172px;height:172px;min-height:172px}
+ .agenda-videotron #agenda-list.is-empty .event-empty{gap:9px;padding:16px}
+ .agenda-videotron #agenda-list.is-empty .event-empty strong{font-size:15px}
+ .agenda-videotron #agenda-list.is-empty .event-empty p{font-size:11px}
+ .sign-board{padding:18px 15px}
+}
+
