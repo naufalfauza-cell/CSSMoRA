@@ -8,6 +8,7 @@ const DRIVE_SCOPE = "openid email https://www.googleapis.com/auth/drive.file";
 const MAX_SYNC_BATCH = 5;
 const MAX_SYNC_ATTEMPTS = 8;
 const BACKUP_PREFIX = new TextEncoder().encode("CSSMORA-DRIVE-BACKUP-V1\n");
+const ATTENDANCE_PROOF_BUCKET = "attendance-proofs";
 
 class AppError extends Error {
   status: number;
@@ -253,6 +254,46 @@ async function createDriveFolder(accessToken: string, name: string, parentId?: s
   const id = String(result.data?.id || "");
   if (!id) throw new AppError(502, "Folder privat Google Drive tidak berhasil dibuat.");
   return id;
+}
+
+async function findDriveFolder(accessToken: string, query: string) {
+  const params = new URLSearchParams({
+    q: query,
+    fields: "files(id,name)",
+    pageSize: "10",
+  });
+  const result = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files?" + params.toString());
+  const files = Array.isArray(result.data?.files) ? result.data.files : [];
+  const file = files.find((item: any) => item?.id);
+  return file?.id ? String(file.id) : null;
+}
+
+async function findOrCreateAttendanceEventFolder(accessToken: string, parentId: string, eventId: string, folderName: string) {
+  const existing = await findDriveFolder(
+    accessToken,
+    `appProperties has { key='cssmoraAttendanceEventId' and value='${eventId}' } and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+  );
+  if (existing) return existing;
+  const metadata = {
+    name: folderName,
+    mimeType: "application/vnd.google-apps.folder",
+    parents: [parentId],
+    appProperties: { cssmoraAttendanceEventId: eventId },
+  };
+  const result = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files?fields=id,name", {
+    method: "POST",
+    body: metadata,
+  });
+  const id = String(result.data?.id || "");
+  if (!id) throw new AppError(502, "Folder arsip absensi tidak berhasil dibuat.");
+  return id;
+}
+
+async function findDriveArchiveFile(accessToken: string, folderId: string, pathHash: string) {
+  return await findDriveFolder(
+    accessToken,
+    `appProperties has { key='cssmoraAttendancePathHash' and value='${pathHash}' } and '${folderId}' in parents and trashed=false`,
+  );
 }
 
 async function findOrCreateProgramDocumentsFolder(accessToken: string, parentId: string) {
@@ -2031,6 +2072,128 @@ async function processSyncJob(accessToken: string, connection: any, job: any) {
   await removeClaimedQueueJob(job);
 }
 
+async function archiveAttendancePhoto(body: Record<string, unknown>) {
+  const eventId = clean(body.event_id, 36).toLowerCase();
+  const proofPath = clean(body.proof_path, 120);
+  const match = proofPath.match(/^([0-9a-f-]{36})\/([0-9a-f-]{36})\/proof\.jpg$/i);
+  if (!/^[0-9a-f-]{36}$/i.test(eventId) || !match || match[1].toLowerCase() !== eventId) {
+    throw new AppError(400, "Foto absensi tidak valid.");
+  }
+  const memberId = match[2].toLowerCase();
+  const connection = await currentConnection();
+  if (!connection?.refresh_token_ciphertext || !connection?.drive_uploads_folder_id) {
+    throw new AppError(409, "Drive CSSMoRA belum tersambung.");
+  }
+
+  const eventRows = (await serviceRequest(queryPath("secretariat_attendance_events", {
+    select: "id,title,event_date,session_name,agenda_id",
+    id: "eq." + eventId,
+    limit: "1",
+  }))).data;
+  const event = Array.isArray(eventRows) ? eventRows[0] : null;
+  if (!event) throw new AppError(404, "Agenda absensi tidak ditemukan.");
+
+  let title = clean(event.title || event.session_name || "Agenda absensi", 100);
+  let eventDate = clean(event.event_date, 10);
+  if (event.agenda_id) {
+    const agendaRows = (await serviceRequest(queryPath("agenda", {
+      select: "title,starts_at",
+      id: "eq." + String(event.agenda_id),
+      limit: "1",
+    }))).data;
+    const agenda = Array.isArray(agendaRows) ? agendaRows[0] : null;
+    if (agenda?.title) title = clean(agenda.title, 100);
+    if (agenda?.starts_at) {
+      const parsedDate = new Date(String(agenda.starts_at));
+      if (!Number.isNaN(parsedDate.getTime())) {
+        eventDate = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Jakarta",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(parsedDate);
+      }
+    }
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) eventDate = "Tanggal tidak tercatat";
+  const safeTitle = title.replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim() || "Agenda absensi";
+  const folderName = `${eventDate} - ${safeTitle} - ${eventId.slice(0, 8)}`.slice(0, 180);
+
+  const memberRows = (await serviceRequest(queryPath("secretariat_members", {
+    select: "full_name",
+    id: "eq." + memberId,
+    limit: "1",
+  }))).data;
+  const memberName = clean(Array.isArray(memberRows) ? memberRows[0]?.full_name : "", 80)
+    .replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+  const fileName = `${memberName || "Anggota"} (${memberId.slice(0, 8)}) - Bukti Absensi.jpg`.slice(0, 180);
+
+  const sourceUrl = SUPABASE_URL + "/storage/v1/object/" + ATTENDANCE_PROOF_BUCKET + "/" + encodeStoragePath(proofPath);
+  const sourceResponse = await fetch(sourceUrl, {
+    headers: { apikey: SERVICE_ROLE_KEY, Authorization: "Bearer " + SERVICE_ROLE_KEY },
+  });
+  if (!sourceResponse.ok) throw new AppError(sourceResponse.status, "Foto sumber absensi tidak dapat dibaca.");
+  const bytes = new Uint8Array(await sourceResponse.arrayBuffer());
+  if (bytes.byteLength > 512000) throw new AppError(413, "Ukuran foto absensi melewati batas penyimpanan.");
+  const mimeType = String(sourceResponse.headers.get("content-type") || "image/jpeg").split(";")[0].trim().toLowerCase();
+  if (mimeType !== "image/jpeg") throw new AppError(415, "Jenis foto absensi tidak didukung untuk arsip.");
+  const checksum = await sha256Bytes(bytes);
+  const pathHash = await sha256Hex(ATTENDANCE_PROOF_BUCKET + "\n" + proofPath);
+
+  const accessToken = await driveAccessToken(connection);
+  const archiveRoot = await findDriveFolder(
+    accessToken,
+    `name='Arsip Absensi' and '${connection.drive_uploads_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+  ) || await createDriveFolder(accessToken, "Arsip Absensi", connection.drive_uploads_folder_id);
+  const eventFolder = await findOrCreateAttendanceEventFolder(accessToken, archiveRoot, eventId, folderName);
+
+  const archiveRows = (await serviceRequest(queryPath("cssmora_drive_archives", {
+    select: "drive_file_id,sha256_checksum",
+    bucket_id: "eq." + ATTENDANCE_PROOF_BUCKET,
+    object_path: "eq." + proofPath,
+    limit: "1",
+  }))).data;
+  const archive = Array.isArray(archiveRows) ? archiveRows[0] : null;
+  let fileId = String(archive?.drive_file_id || "");
+  if (fileId) {
+    try {
+      const file = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(fileId) + "?fields=id,trashed");
+      if (file.data?.trashed === true) fileId = "";
+    } catch (error) {
+      if (!(error instanceof AppError) || error.status !== 404) throw error;
+      fileId = "";
+    }
+  }
+  if (!fileId) fileId = await findDriveArchiveFile(accessToken, eventFolder, pathHash) || "";
+  const driveFileId = await uploadDriveFile(accessToken, {
+    fileId: fileId || null,
+    parentId: eventFolder,
+    name: fileName,
+    mimeType,
+    bytes,
+    appProperties: {
+      cssmoraAttendanceEventId: eventId,
+      cssmoraAttendancePathHash: pathHash,
+    },
+  });
+  await serviceRequest("cssmora_drive_archives?on_conflict=bucket_id,object_path", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: {
+      bucket_id: ATTENDANCE_PROOF_BUCKET,
+      object_path: proofPath,
+      event_id: eventId,
+      drive_folder_id: eventFolder,
+      drive_file_id: driveFileId,
+      content_type: mimeType,
+      size_bytes: bytes.byteLength,
+      sha256_checksum: checksum,
+      archived_at: new Date().toISOString(),
+    },
+  });
+  return { archived: true, size_bytes: bytes.byteLength };
+}
+
 function safeSyncError(error: unknown) {
   if (error instanceof AppError) return "Sinkronisasi Drive gagal (HTTP " + error.status + ").";
   return "Koneksi sinkronisasi Drive gagal.";
@@ -2226,6 +2389,12 @@ async function authorizeWorker(request: Request, action: string) {
   return { source: "admin", email: actor.email };
 }
 
+function requireInternalServiceRole(request: Request) {
+  if (!SERVICE_ROLE_KEY || request.headers.get("authorization") !== "Bearer " + SERVICE_ROLE_KEY || request.headers.get("apikey") !== SERVICE_ROLE_KEY) {
+    throw new AppError(401, "Akses internal Drive ditolak.");
+  }
+}
+
 async function handleRequest(request: Request) {
   if (request.method === "OPTIONS") {
     const headers = corsHeaders(request);
@@ -2244,6 +2413,10 @@ async function handleRequest(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || "");
+    if (action === "archive_attendance_photo") {
+      requireInternalServiceRole(request);
+      return jsonResponse(request, 200, { ok: true, action, ...(await archiveAttendancePhoto(body)) });
+    }
     if (action === "connect") {
       const result = await startOAuth(request);
       return jsonResponse(request, 200, result);
