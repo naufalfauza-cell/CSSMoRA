@@ -314,12 +314,12 @@ recordList.addEventListener('click',async event=>{
   if(button.dataset.action==='delete'&&confirm(`Hapus lomba “${item.title}”?`)){
     button.disabled=true;
     try{
+      const cleaned=await cleanupCompetitionPoster(item.posterImage,item.id);
+      if(!cleaned)throw new Error('Poster belum dapat dihapus dari Supabase dan Drive. Lomba tetap tersimpan.');
       await api(`competitions?id=eq.${encodeURIComponent(item.id)}`,{method:'DELETE'});
-      const cleaned=await cleanupCompetitionPoster(item.posterImage);
       competitions=competitions.filter(row=>row.id!==item.id);
       renderRecords();
       if($('#record-id').value===item.id)clearEditor();
-      if(!cleaned)showMessage('#editor-message','Lomba terhapus. Poster lama belum dapat dibersihkan; coba lagi saat koneksi stabil.','error');
     }catch(error){alert(`Lomba belum terhapus: ${error.message}`);button.disabled=false;}
   }
 });
@@ -387,7 +387,7 @@ const storageHeaders=contentType=>({
 });
 const objectUrl=path=>`${config.url}/storage/v1/object/public/${programBucket}/${path.split('/').map(encodeURIComponent).join('/')}`;
 
-async function cleanupCompetitionPoster(url){
+async function cleanupCompetitionPoster(url,exceptCompetitionId){
   if(!url)return true;
   try{
     const base=new URL(config.url+'/storage/v1/object/public/posters/');
@@ -395,7 +395,8 @@ async function cleanupCompetitionPoster(url){
     if(candidate.origin!==base.origin||!candidate.pathname.startsWith(base.pathname))return true;
     const path=decodeURIComponent(candidate.pathname.slice(base.pathname.length));
     if(!path||path.split('/').some(part=>!part||part==='.'||part==='..'))return true;
-    const references=await api('competitions?select=id&posterImage=eq.'+encodeURIComponent(url)+'&limit=1');
+    const exclude=exceptCompetitionId?'&id=not.eq.'+encodeURIComponent(exceptCompetitionId):'';
+    const references=await api('competitions?select=id&posterImage=eq.'+encodeURIComponent(url)+exclude+'&limit=1');
     if(!references.length)await removeCompetitionPoster(path);
     return true;
   }catch{return false;}
@@ -569,15 +570,13 @@ programRecordList.addEventListener('click',async event=>{
         return;
       }
       showMessage('#program-editor-message','Menghapus proker dan foto…');
+      await deleteProgramPhoto(program.photo_path);
       const removed=await api(`agenda_programs?id=eq.${encodeURIComponent(program.id)}`,{method:'DELETE',extraHeaders:{Prefer:'return=representation'}});
-      if(!Array.isArray(removed)||!removed.some(item=>item.id===program.id))throw new Error('Proker tidak terhapus. Periksa akses akun lalu muat ulang.');
-      let photoWarning='';
-      try { await deleteProgramPhoto(program.photo_path); }
-      catch { photoWarning='Proker terhapus, tetapi foto belum dapat dibersihkan dari penyimpanan.'; }
+      if(!Array.isArray(removed)||!removed.some(item=>item.id===program.id))throw new Error('Proker tidak terhapus. Foto sudah dibersihkan dari Supabase dan antrean Drive.');
       const editingDeletedProgram=$('#program-record-id').value===program.id;
       if(editingDeletedProgram)clearProgramEditor();
       await Promise.all([loadPrograms(),loadAgenda()]);
-      showMessage('#program-editor-message',photoWarning||'Proker dan foto berhasil dihapus.',photoWarning?'error':'success');
+      showMessage('#program-editor-message','Proker dan foto berhasil dihapus.','success');
     } catch(error) {
       showMessage('#program-editor-message',`Proker belum terhapus: ${error.message}`,'error');
       button.disabled=false;
@@ -797,6 +796,8 @@ agendaRecordList.addEventListener('click',async event=>{
   if(button.dataset.agendaAction==='delete'&&confirm(`Hapus agenda “${item.title}”?`)) {
     button.disabled=true;
     try {
+      const linkedAttendance=await api(`secretariat_attendance_events?select=id&agenda_id=eq.${encodeURIComponent(item.id)}`);
+      for(const attendanceEvent of linkedAttendance)await deleteAttendanceEvent(attendanceEvent.id);
       await api(`agenda?id=eq.${encodeURIComponent(item.id)}`,{method:'DELETE'});
       agendas=agendas.filter(row=>row.id!==item.id);
       renderAgendas();

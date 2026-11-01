@@ -86,7 +86,7 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
     proof_path: "not.is.null",
     proof_expires_at: "lt." + new Date().toISOString(),
     order: "proof_expires_at.asc",
-    limit: "100",
+    limit: "5",
   });
   const recordsResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + query, { headers });
   if (!recordsResponse.ok) return json({ error: "Daftar foto kedaluwarsa belum dapat dimuat." }, 500);
@@ -94,9 +94,16 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
   if (!rows.length) return json({ success: true, deleted: 0, records_updated: 0 });
 
   const now = new Date().toISOString();
-  const paths = rows
-    .map((row: { proof_path: string }) => String(row.proof_path ?? ""))
-    .filter((path: string) => /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/proof\.jpg$/i.test(path));
+  const entries = rows
+    .map((row: { event_id: string; member_id: string; proof_path: string }) => ({
+      eventId: String(row.event_id ?? ""),
+      memberId: String(row.member_id ?? ""),
+      path: String(row.proof_path ?? ""),
+    }))
+    .filter((item: { eventId: string; memberId: string; path: string }) =>
+      isUuid(item.eventId) && isUuid(item.memberId) && item.path === `${item.eventId}/${item.memberId}/proof.jpg`
+    );
+  const paths = [...new Set(entries.map((item: { path: string }) => item.path))];
   if (!paths.length) return json({ success: true, deleted: 0, records_updated: 0 });
 
   const infoResults = await Promise.all(paths.map(async (path: string) => {
@@ -106,6 +113,10 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
   if (infoResults.some(item => !item.exists && item.status !== 404)) return json({ error: "Status foto lama belum dapat diperiksa." }, 500);
   const existingPaths = infoResults.filter(item => item.exists).map(item => item.path);
   const missingPaths = infoResults.filter(item => item.status === 404).map(item => item.path);
+  const photosToArchive = entries.filter((entry: { path: string }) => existingPaths.includes(entry.path));
+  if (!await archiveAttendancePhotos(supabaseUrl, serviceKey, photosToArchive)) {
+    return json({ error: "Foto belum dapat diarsipkan ke Drive. Foto sumber tetap tersimpan di Supabase." }, 503);
+  }
   if (existingPaths.length) {
     const removeResponse = await storage.removeMany("attendance-proofs", existingPaths);
     if (!removeResponse.ok) return json({ error: "Foto lama belum dapat dihapus dari Storage." }, 500);
@@ -125,7 +136,34 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
   const existingCleared = await clearRecords(existingPaths, now);
   const missingCleared = await clearRecords(missingPaths);
   if (!existingCleared || !missingCleared) return json({ error: "Foto sudah diproses, tetapi status penghapusan belum tercatat." }, 500);
-  return json({ success: true, deleted: existingPaths.length, reservations_cleared: missingPaths.length });
+  return json({ success: true, deleted: existingPaths.length, archived: existingPaths.length, reservations_cleared: missingPaths.length });
+}
+
+async function archiveAttendancePhoto(supabaseUrl: string, serviceKey: string, eventId: string, proofPath: string) {
+  try {
+    const response = await fetch(supabaseUrl.replace(/\/+$/, "") + "/functions/v1/drive-integration", {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        Authorization: "Bearer " + serviceKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "archive_attendance_photo", event_id: eventId, proof_path: proofPath }),
+    });
+    const result = await response.json().catch(() => ({}));
+    return response.ok && result?.ok === true && result?.archived === true;
+  } catch {
+    return false;
+  }
+}
+
+async function archiveAttendancePhotos(supabaseUrl: string, serviceKey: string, photos: Array<{ eventId: string; path: string }>) {
+  for (let index = 0; index < photos.length; index += 4) {
+    const batch = photos.slice(index, index + 4);
+    const archived = await Promise.all(batch.map(photo => archiveAttendancePhoto(supabaseUrl, serviceKey, photo.eventId, photo.path)));
+    if (archived.some(result => !result)) return false;
+  }
+  return true;
 }
 async function validateAttendanceMember(supabaseUrl: string, headers: Record<string, string>, eventId: string, input: Record<string, unknown>): Promise<{ error?: string; status?: number; member?: any; record?: any; cohort?: string; studyProgram?: string }> {
   const memberId = String(input.member_id ?? "").trim();
@@ -312,6 +350,9 @@ async function deleteAttendanceEvent(request: Request, url: URL, supabaseUrl: st
   }
   const paths = [...new Set(proofPaths)];
   if (paths.length) {
+    if (!await archiveAttendancePhotos(supabaseUrl, serviceKey, paths.map((path: string) => ({ eventId, path })))) {
+      return json({ error: "Foto belum dapat diarsipkan ke Drive. Foto sumber dan data absensi tetap tersimpan di Supabase." }, 503);
+    }
     const storageResponse = await storage.removeMany("attendance-proofs", paths);
     if (!storageResponse.ok) return json({ error: "Foto bukti belum dapat dihapus. Data absensi tetap tersimpan." }, 500);
   }
