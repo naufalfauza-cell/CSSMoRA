@@ -150,3 +150,34 @@
  .agenda-page .calendar-day{min-height:82px;padding:3px}
  .agenda-page .calendar-event-chip,.agenda-page .calendar-event-more{font-size:7px}
 }
+
+/* Keep event information readable when titles and descriptions wrap on narrow cards. */
+.agenda-page .agenda-card-body{
+  justify-content:flex-start;
+  min-width:0;
+}
+.agenda-page .agenda-card-top,
+.agenda-page .agenda-event-meta,
+.agenda-page .agenda-event-meta span{
+  min-width:0;
+}
+.agenda-page .agenda-date-line,
+.agenda-page .agenda-card-body h3,
+.agenda-page .agenda-program-name,
+.agenda-page .agenda-event-description,
+.agenda-page .agenda-event-meta span{
+  overflow-wrap:anywhere;
+}
+.agenda-page .agenda-date-line{line-height:1.45}
+.agenda-page .agenda-card-body h3{line-height:1.28}
+.agenda-page .agenda-program-name,
+.agenda-page .agenda-event-description{line-height:1.6}
+.agenda-page .agenda-event-meta{
+  margin-top:12px;
+  padding-top:0;
+  line-height:1.5;
+}
+.agenda-page .agenda-event-meta span{align-items:flex-start}
+@media(max-width:680px){
+ .agenda-page .agenda-event-meta{margin-top:12px}
+}
