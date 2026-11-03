@@ -181,3 +181,16 @@
 @media(max-width:680px){
  .agenda-page .agenda-event-meta{margin-top:12px}
 }
+
+
+/* Center sparse agenda rows and keep every cover close to its source aspect ratio. */
+.agenda-event-list{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),430px));
+  justify-content:center;
+}
+.agenda-event-card{width:100%;max-width:430px}
+.agenda-card-photo{height:clamp(190px,18vw,240px)}
+@media(max-width:680px){
+  .agenda-event-list{grid-template-columns:1fr}
+  .agenda-event-card{width:100%;max-width:430px;justify-self:center}
+}

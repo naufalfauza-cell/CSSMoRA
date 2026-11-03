@@ -219,3 +219,23 @@ body{font-size:14px}
  .admin-page .admin-columns,.admin-page .program-library-grid{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:12px}
  .admin-page .record-list,.admin-page .program-record-list{max-height:620px;overflow:auto}
 }
+
+
+/* Kemenag and LPDP lockup beside the public CSSMoRA wordmark. */
+.brand-partners{
+  display:flex;align-items:center;justify-content:center;flex:none;
+  height:42px;margin-left:3px;padding-left:11px;
+  border-left:1px solid var(--line);
+}
+.brand-partners img{
+  display:block;width:112px;height:40px;object-fit:cover;object-position:center;
+  background:#fff;
+}
+@media(max-width:760px){
+  .brand-partners{height:36px;margin-left:1px;padding-left:8px}
+  .brand-partners img{width:96px;height:34px}
+}
+@media(max-width:480px){
+  .brand-partners{height:32px;margin-left:0;padding-left:6px}
+  .brand-partners img{width:88px;height:30px}
+}
