@@ -104,26 +104,6 @@
 @media(prefers-reduced-motion:reduce){.agenda-event-card,.calendar-day{transition:none}}
 
 
-/* Arrange monthly agendas as responsive photo cards. */
-.agenda-event-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
-.agenda-event-card{display:flex;flex-direction:column;min-height:100%;border-radius:22px}
-.agenda-card-photo{flex:0 0 auto;height:clamp(170px,16vw,240px);min-height:0}
-.agenda-card-body{flex:1;padding:18px 19px}
-.agenda-card-top{align-items:flex-start;flex-direction:column;justify-content:flex-start;gap:10px;margin-bottom:12px}
-.agenda-countdowns{justify-content:flex-start}
-.agenda-card-body h3{font-size:clamp(18px,1.55vw,22px)}
-.agenda-event-meta{margin-top:auto;padding-top:12px}
-@media(max-width:1100px){.agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr))}.agenda-card-photo{height:clamp(175px,25vw,230px)}}
-@media(max-width:680px){.agenda-event-list{grid-template-columns:1fr}.agenda-event-card{min-height:0}.agenda-card-photo{height:clamp(190px,48vw,260px)}.agenda-card-body{padding:16px}.agenda-card-top{gap:8px}.agenda-event-meta{margin-top:12px;padding-top:0}}
-
-@media(min-width:1000px){.agenda-page{zoom:.8}}
-
-/* Keep agenda cards in fixed columns so partial rows leave open space. */
-@media(min-width:1101px){.agenda-event-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}}
-@media(max-width:1100px) and (min-width:681px){.agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}}
-@media(max-width:680px){.agenda-event-list{grid-template-columns:1fr}}
-
-
 /* Expand the monthly calendar and keep navigation visible while scrolling. */
 .agenda-page .site-header{position:sticky;top:0;z-index:100;background:#f5f6ef;box-shadow:0 4px 16px #183b2a0b}
 .agenda-page .calendar-section{scroll-margin-top:82px}
@@ -182,15 +162,58 @@
  .agenda-page .agenda-event-meta{margin-top:12px}
 }
 
-
-/* Center sparse agenda rows and keep every cover close to its source aspect ratio. */
-.agenda-event-list{
-  grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),430px));
+/* Compact agenda cards follow the Info Lomba catalog rhythm. */
+.agenda-page .agenda-event-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,292px),300px));
   justify-content:center;
+  align-items:stretch;
+  gap:28px 18px;
 }
-.agenda-event-card{width:100%;max-width:430px}
-.agenda-card-photo{height:clamp(190px,18vw,240px)}
-@media(max-width:680px){
-  .agenda-event-list{grid-template-columns:1fr}
-  .agenda-event-card{width:100%;max-width:430px;justify-self:center}
+.agenda-page .agenda-event-card{
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  max-width:300px;
+  min-width:0;
+  min-height:100%;
+  border-radius:18px;
+}
+.agenda-page .agenda-card-photo{
+  flex:0 0 auto;
+  width:100%;
+  height:clamp(160px,14vw,190px);
+  min-height:0;
+}
+.agenda-page .agenda-card-body{
+  flex:1;
+  min-width:0;
+  padding:16px;
+}
+.agenda-page .agenda-card-top{
+  align-items:flex-start;
+  flex-direction:column;
+  gap:8px;
+  margin-bottom:10px;
+}
+.agenda-page .agenda-card-body h3{
+  font-size:clamp(18px,1.4vw,21px);
+  line-height:1.25;
+}
+.agenda-page .agenda-program-name,
+.agenda-page .agenda-event-description{
+  font-size:13px;
+  line-height:1.55;
+}
+.agenda-page .agenda-event-meta{
+  margin-top:auto;
+  padding-top:12px;
+}
+@media(max-width:480px){
+  .agenda-page .agenda-event-list{
+    grid-template-columns:minmax(0,1fr);
+    justify-items:stretch;
+  }
+  .agenda-page .agenda-event-card{max-width:none}
+  .agenda-page .agenda-card-photo{height:clamp(160px,52vw,210px)}
 }
