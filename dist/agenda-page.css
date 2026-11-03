@@ -165,7 +165,7 @@
 /* Mirror Info Lomba's responsive grid and spacing; keep event photos landscape. */
 .agenda-page .agenda-event-list{
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));
   align-items:stretch;
   gap:35px 19px;
 }
@@ -181,7 +181,7 @@
 .agenda-page .agenda-card-photo{
   flex:0 0 auto;
   width:100%;
-  height:clamp(145px,13vw,190px);
+  aspect-ratio:2/1;
   min-height:0;
 }
 .agenda-page .agenda-card-body{
@@ -208,16 +208,9 @@
   margin-top:auto;
   padding-top:12px;
 }
-@media(min-width:1600px){
-  .agenda-page .agenda-event-list{grid-template-columns:repeat(5,minmax(0,1fr))}
-}
-@media(max-width:1100px){
-  .agenda-page .agenda-event-list{grid-template-columns:repeat(3,minmax(0,1fr))}
-}
 @media(max-width:760px){
-  .agenda-page .agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 14px}
+  .agenda-page .agenda-event-list{gap:28px 14px}
 }
 @media(max-width:480px){
   .agenda-page .agenda-event-list{gap:25px 10px}
-  .agenda-page .agenda-card-photo{height:clamp(135px,36vw,175px)}
 }
