@@ -1455,6 +1455,25 @@ async function loadLetters(){
     $('#letter-count').textContent=letters.length+' surat';
     if(!letters.length)list.innerHTML='<p class="records-empty">Belum ada surat yang diberi nomor.</p>';
     else list.innerHTML=letters.map(letter=>'<article class="letter-record"><div class="letter-record-heading"><strong>'+escapeHTML(letter.letter_number)+'</strong><button type="button" data-copy-letter="'+escapeHTML(letter.letter_number)+'">Salin nomor</button><span class="record-status '+(letter.archive_status==='archived'?'published':'')+'">'+(letter.archive_status==='archived'?'SUDAH ARSIP':letter.archive_status==='void'?'DIBATALKAN':'BELUM ARSIP')+'</span></div><p>'+escapeHTML(letter.subject)+'</p><small>'+escapeHTML(letter.issued_on)+' · '+escapeHTML(letter.department_code)+' · '+escapeHTML(letter.recipient||'Tujuan belum diisi')+'</small><form class="letter-archive-form" data-letter-id="'+escapeHTML(letter.id)+'"><input name="archiveUrl" type="url" value="'+escapeHTML(letter.archive_url||'')+'" placeholder="Tautan arsip Drive"><select name="archiveStatus" aria-label="Status arsip surat"><option value="pending" '+(letter.archive_status==='pending'?'selected':'')+'>Belum diarsipkan</option><option value="archived" '+(letter.archive_status==='archived'?'selected':'')+'>Sudah diarsipkan</option><option value="void" '+(letter.archive_status==='void'?'selected':'')+'>Dibatalkan</option></select><button type="submit">Simpan arsip</button></form></article>').join('');
+    list.querySelectorAll('.letter-archive-form').forEach(form=>{
+      const letter=letters.find(item=>item.id===form.dataset.letterId);
+      if(!letter)return;
+      if(/^https:\/\/drive\.google\.com\//i.test(String(letter.archive_url||''))){
+        const link=document.createElement('a');
+        link.href='https://accounts.google.com/AccountChooser?hd=cssmora.org&continue='+encodeURIComponent(letter.archive_url);
+        link.target='_blank';link.rel='noopener noreferrer';link.className='letter-drive-link';
+        link.textContent='Buka PDF surat di Google Drive ↗';
+        form.before(link);
+      }
+      if(letter.archive_status==='void'||!isSecretariatAdmin)return;
+      const upload=document.createElement('form');
+      upload.className='letter-upload-form';
+      upload.dataset.letterId=letter.id;
+      upload.innerHTML='<label>Arsip PDF final (maks. 10 MB)</label>'+
+        '<input type="file" name="archivePdf" accept="application/pdf,.pdf" required aria-label="Pilih PDF surat final">'+
+        '<button type="submit">Unggah PDF ke Drive</button>';
+      form.before(upload);
+    });
     list.scrollTop=0;
     void window.CSSMoRALetterSignatures?.load(letters);
   }catch(error){list.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
@@ -1659,6 +1678,37 @@ $('#letter-record-list').addEventListener('submit',async event=>{
   }catch(error){showMessage('#letter-message',error.message,'error');button.disabled=false;}
 });
 
+
+$('#letter-record-list').addEventListener('submit',async event=>{
+  const form=event.target.closest('.letter-upload-form');
+  if(!form)return;
+  event.preventDefault();
+  const file=form.elements.archivePdf.files[0];
+  const button=form.querySelector('button[type="submit"]');
+  if(!file){showMessage('#letter-message','Pilih PDF surat final terlebih dahulu.','error');return;}
+  if(!/\.pdf$/i.test(file.name)||file.size<8||file.size>10*1024*1024){
+    showMessage('#letter-message','PDF final harus berukuran maksimal 10 MB.','error');return;
+  }
+  button.disabled=true;button.textContent='Menyimpan ke Drive…';
+  showMessage('#letter-message','Mengunggah PDF dan menautkan arsip...');
+  try{
+    const encoded=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||'').split(',')[1]||'');
+      reader.onerror=()=>reject(new Error('Berkas tidak dapat dibaca.'));
+      reader.readAsDataURL(file);
+    });
+    if(!encoded)throw new Error('Berkas PDF kosong.');
+    const archived=await driveRequest('archive_outgoing_letter',{
+      letter_id:form.dataset.letterId,file_name:file.name,file_base64:encoded
+    });
+    await loadLetters();
+    showMessage('#letter-message','PDF tersimpan di Google Drive, status arsip otomatis diperbarui (revisi '+archived.revision+').','success');
+  }catch(error){
+    showMessage('#letter-message',error.message||'PDF belum berhasil diarsipkan. Coba lagi.','error');
+  }finally{button.disabled=false;button.textContent='Unggah PDF ke Drive';}
+});
+
 const achievementList=$('#achievement-application-list');
 const achievementStatusLabels={pending_bendahara:'Menunggu Bendahara',pending_ketua:'Menunggu Ketua',approved:'Disetujui',rejected:'Ditolak'};
 const hasAchievementRole=role=>achievementRoles.includes(role);
@@ -1747,13 +1797,13 @@ async function loadRoleAssignments(){
     roleList.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';
   }finally{roleList.removeAttribute('aria-busy');}
 }
-async function driveRequest(action) {
+async function driveRequest(action, payload={}) {
   if (!session?.access_token) throw new Error('Login pengurus diperlukan.');
   const response = await authenticatedFetch(config.url + '/functions/v1/drive-integration', {
     method: 'POST',
     headers: { ...baseHeaders(), Authorization: 'Bearer ' + session.access_token },
-    body: JSON.stringify({ action }),
-    timeoutMs: action === 'backup' || action === 'sync' ? 120000 : 15000
+    body: JSON.stringify({ action, ...payload }),
+    timeoutMs: ['backup','sync','archive_outgoing_letter'].includes(action) ? 120000 : 15000
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Permintaan Google Drive gagal.');
