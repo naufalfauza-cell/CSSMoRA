@@ -618,3 +618,39 @@ html.wallet-document body.wallet-home .wallet-quick-panel{
 html.wallet-document body.wallet-home .wallet-section-eyebrow{
   color:#007da9;
 }
+
+
+/* Preview audit: consistent surfaces, natural scale and accessible small screens. */
+body:is(.catalog-page,.agenda-page,.admin-page){zoom:1}
+body.achievement-page :is(.achievement-intro h1 em,.achievement-home,.achievement-back){color:var(--wallet-deep)}
+body.achievement-page .achievement-card{padding:24px;border:1px solid var(--wallet-line)}
+body.achievement-page .achievement-form>.achievement-card:nth-of-type(2){padding:24px;border:1px solid var(--wallet-line)}
+body.achievement-page .achievement-section-heading h2{font-weight:700;font-size:20px}
+body.achievement-page .public-prestasi-tabs button[aria-selected="true"]{background:var(--wallet-deep);color:#fff}
+body.achievement-page .participation-option:has(input:checked){background:#edf9fc;border-color:#58afc9}
+body.achievement-page .subsidy-result{background:#eaf7fb}
+body.achievement-page .subsidy-result strong{color:var(--wallet-deep)}
+body.achievement-page .achievement-form{column-gap:20px}
+body.achievement-page .achievement-section-heading{align-items:flex-start}
+body.achievement-page :is(.participation-option,.return-agreement){min-width:0}
+body.achievement-page :is(.participation-option,.return-agreement)>span{min-width:0;overflow-wrap:anywhere}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(input,select,textarea){min-width:0;max-width:100%}
+body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page){scroll-padding-bottom:110px}
+@media(max-width:780px){
+ body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page){padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+ .wallet-bottom-nav{height:calc(76px + env(safe-area-inset-bottom,0px));padding-bottom:calc(7px + env(safe-area-inset-bottom,0px))}
+ .wallet-bottom-nav>a{min-height:44px}
+ body.wallet-home .wallet-section-top{flex-wrap:wrap}
+ body.wallet-home .wallet-quick-grid{gap:6px}
+ body.wallet-home .wallet-more-link{white-space:normal;min-height:44px}
+ body.achievement-page .achievement-card,
+ body.achievement-page .achievement-form>.achievement-card:nth-of-type(2){padding:18px}
+ body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){font-size:16px;min-height:44px}
+ body.admin-page :is(.form-two>div,.admin-topbar-leading,.admin-topbar-user){min-width:0}
+ body.admin-page .admin-topbar-user{overflow-wrap:anywhere}
+}
+@media(prefers-reduced-motion:reduce){
+ html,html.wallet-document{scroll-behavior:auto}
+ body.admin-page .admin-sidebar .admin-tab{transition:none}
+ body.admin-page .admin-sidebar .admin-tab:hover{transform:none}
+}
