@@ -1503,7 +1503,7 @@ function renderIncomingDriveStatus(data){
     const folder=$('#incoming-letter-drive-folder'),sheet=$('#incoming-letter-drive-sheet'),status=$('#incoming-letter-drive-status');
     if(folder){folder.hidden=!data.incomingLettersFolderUrl;if(data.incomingLettersFolderUrl)folder.href='https://accounts.google.com/AccountChooser?hd=cssmora.org&continue='+encodeURIComponent(data.incomingLettersFolderUrl);}
     if(sheet){sheet.hidden=!data.incomingLettersSpreadsheetUrl;if(data.incomingLettersSpreadsheetUrl)sheet.href='https://accounts.google.com/AccountChooser?hd=cssmora.org&continue='+encodeURIComponent(data.incomingLettersSpreadsheetUrl);}
-    if(status)status.textContent=data.incomingLettersSheetError?'Sinkron spreadsheet akan dicoba lagi otomatis.':data.incomingLettersSheetPending?'Perubahan sedang disinkronkan ke Drive.':'PDF dan spreadsheet tersinkron otomatis ke folder Database Surat Masuk.';
+    if(status)status.textContent=!data.connected?'Drive belum tersambung. PDF tetap privat di aplikasi; hubungkan Drive untuk mengaktifkan salinan dan spreadsheet.':data.incomingLettersSheetError?'Sinkron spreadsheet tertunda dan akan dicoba lagi otomatis.':data.incomingLettersSheetPending?'Perubahan sedang disinkronkan ke Drive.':!data.incomingLettersSpreadsheetUrl?'Folder dan spreadsheet akan dibuat otomatis saat surat pertama diunggah.':'PDF dan spreadsheet tersinkron ke folder Database Surat Masuk.';
     return;
   }
   incomingSheetPending=false;
