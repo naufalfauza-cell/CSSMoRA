@@ -2293,11 +2293,15 @@ async function extractIncomingLetterText(request: Request, letterId: string) {
     const exportUrl = "https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(temporaryDocId) + "/export?mimeType=text%2Fplain";
     let text = "";
     let lastStatus = 502;
-    for (let attempt = 0; attempt < 4; attempt += 1) {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
       const response = await fetch(exportUrl, { headers: { Authorization: "Bearer " + accessToken } });
       lastStatus = response.status;
-      if (response.ok) { text = await response.text(); break; }
-      if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500));
+      if (response.ok) {
+        const exported = await response.text();
+        if (exported.trim()) { text = exported; break; }
+        lastStatus = 502;
+      }
+      if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 750));
     }
     if (!text.trim()) throw new AppError(lastStatus, "Teks PDF belum dapat diekspor setelah proses OCR.");
     return { text: text.slice(0, 28000), mimeType: "text/plain" };
