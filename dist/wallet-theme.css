@@ -911,3 +911,74 @@ body.wallet-home .wallet-brand-partners img{
   body.wallet-home .wallet-brand-partners img{width:78px;height:32px}
   body.wallet-home .wallet-hero-login{padding:8px}
 }
+
+/* Keep agenda copy inside each card and align paragraph edges cleanly. */
+.agenda-page .agenda-event-card{
+  overflow:hidden;
+  border-radius:19px;
+  background:#fff;
+}
+.agenda-page .agenda-card-photo{overflow:hidden}
+.agenda-page .agenda-card-body{
+  box-sizing:border-box;
+  padding:15px 16px 16px;
+}
+.agenda-page .agenda-card-top{gap:8px;margin-bottom:10px}
+.agenda-page .agenda-card-body h3{
+  line-height:1.32;
+  overflow-wrap:break-word;
+  text-wrap:pretty;
+}
+.agenda-page .agenda-program-name{
+  line-height:1.5;
+  overflow-wrap:break-word;
+}
+.agenda-page .agenda-event-description,
+.agenda-page .calendar-event-description,
+.agenda-page .calendar-empty p{
+  text-align:justify;
+  text-justify:inter-word;
+  hyphens:auto;
+  overflow-wrap:break-word;
+  line-height:1.62;
+}
+.agenda-page .agenda-event-description{margin-top:8px}
+.agenda-page .agenda-event-meta{
+  margin-top:14px;
+  padding-top:10px;
+  line-height:1.55;
+}
+.agenda-page .agenda-today-card{
+  box-sizing:border-box;
+  max-width:100%;
+  min-width:0;
+  gap:10px;
+  padding:11px 14px;
+}
+.agenda-page .agenda-today-card>div{min-width:0}
+.agenda-page .agenda-today-card strong{
+  line-height:1.4;
+  overflow-wrap:break-word;
+}
+.agenda-page .month-switcher{
+  box-sizing:border-box;
+  max-width:100%;
+  gap:8px;
+}
+.agenda-page .month-switcher strong{
+  min-width:0;
+  flex:1 1 auto;
+  line-height:1.35;
+  white-space:nowrap;
+}
+.agenda-page .month-switcher button{flex:0 0 34px}
+@media(max-width:760px){
+  .agenda-page .agenda-card-body{padding:14px 15px 15px}
+  .agenda-page .agenda-today-card{align-self:flex-end}
+  .agenda-page .month-switcher{width:100%}
+}
+@media(max-width:420px){
+  .agenda-page .agenda-card-body{padding:13px 14px 14px}
+  .agenda-page .month-switcher{gap:5px;padding:4px}
+  .agenda-page .month-switcher button{flex-basis:32px;width:32px;height:32px}
+}
