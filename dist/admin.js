@@ -971,7 +971,7 @@ async function loadSecretarySection(tab){
       loadAttendanceEvents()
     ]);
   } else if(panel==='letters-panel') {
-    await ensureAdminData('letters',loadLetters);
+    await Promise.all([ensureAdminData('letters',loadLetters),loadIncomingLetters()]);
   }
 }
 document.querySelectorAll('.letter-work-tab').forEach(tab=>tab.addEventListener('click',()=>{
@@ -982,6 +982,8 @@ document.querySelectorAll('.letter-work-tab').forEach(tab=>tab.addEventListener(
   });
   document.querySelectorAll('.letter-work-panel').forEach(panel=>{panel.hidden=panel.id!==tab.getAttribute('aria-controls');});
   $('#dashboard-title').textContent='Sekretaris · Persuratan · '+tab.textContent.trim();
+  if(tab.getAttribute('aria-controls')==='letter-incoming-panel')void loadIncomingLetters();
+  else stopIncomingSyncPolling();
 }));
 document.querySelectorAll('.secretariat-tab').forEach(tab=>tab.addEventListener('click',()=>{
   showSecretaryTab(tab);
@@ -1457,6 +1459,167 @@ async function loadLetters(){
     void window.CSSMoRALetterSignatures?.load(letters);
   }catch(error){list.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';}
 }
+let incomingLetters=[];
+function incomingDateLabel(value){
+  if(!value)return '—';
+  const raw=String(value);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw;
+  return new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Jakarta'}).format(new Date(`${raw}T00:00:00+07:00`));
+}
+function renderIncomingLetters(){
+  const list=$('#incoming-letter-list');if(!list)return;
+  const query=($('#incoming-letter-search')?.value||'').trim().toLocaleLowerCase('id-ID');
+  const rows=incomingLetters.filter(letter=>!query||[letter.incoming_number,letter.sender_name,letter.subject,letter.summary,letter.action_required,letter.category].some(value=>String(value||'').toLocaleLowerCase('id-ID').includes(query)));
+  if(!rows.length){list.innerHTML='<tr><td colspan="6"><p class="records-empty">'+(query?'Tidak ada surat yang cocok.':'Belum ada surat masuk.')+'</p></td></tr>';return;}
+  const statusLabel={baru:'Baru',diproses:'Diproses',selesai:'Selesai',arsip:'Arsip'};
+  const aiLabel={pending:'Menunggu dibaca AI',processing:'AI sedang membaca',completed:'AI sudah membaca',failed:'Pembacaan AI gagal'};
+  const priorityLabel={normal:'Normal',penting:'Penting',segera:'Segera'};
+  list.innerHTML=rows.map(letter=>{
+    const driveUrl=letter.drive_url?'https://accounts.google.com/AccountChooser?hd=cssmora.org&continue='+encodeURIComponent(letter.drive_url):'';
+    const priorityClass=letter.priority==='segera'?' is-urgent':letter.status==='selesai'?' is-complete':'';
+    const editControls=isSecretariatAdmin?'<button type="button" data-incoming-analyze="'+escapeHTML(letter.id)+'">'+(letter.ai_status==='failed'?'Coba baca lagi':'Baca ulang AI')+'</button><button type="button" data-action="delete" data-incoming-delete="'+escapeHTML(letter.id)+'">Hapus</button>':'';
+    const editForm=isSecretariatAdmin?'<details><summary class="incoming-letter-ai">Periksa atau koreksi data</summary><form class="incoming-letter-edit" data-incoming-edit="'+escapeHTML(letter.id)+'">'+
+      '<label>Nomor surat<input name="incoming_number" maxlength="120" value="'+escapeHTML(letter.incoming_number||'')+'"></label><label>Pengirim<input name="sender_name" maxlength="180" value="'+escapeHTML(letter.sender_name||'')+'"></label><label>Tanggal surat<input name="letter_date" type="date" value="'+escapeHTML(letter.letter_date||'')+'"></label><label>Jenis surat<input name="category" maxlength="80" value="'+escapeHTML(letter.category||'')+'"></label><label class="wide">Perihal<input name="subject" maxlength="240" value="'+escapeHTML(letter.subject||'')+'"></label><label class="wide">Ringkasan<textarea name="summary" maxlength="5000">'+escapeHTML(letter.summary||'')+'</textarea></label><label class="wide">Tindak lanjut<textarea name="action_required" maxlength="2500">'+escapeHTML(letter.action_required||'')+'</textarea></label><label>Batas waktu<input name="deadline" type="date" value="'+escapeHTML(letter.deadline||'')+'"></label><label>Prioritas<select name="priority"><option value="normal" '+(letter.priority==='normal'?'selected':'')+'>Normal</option><option value="penting" '+(letter.priority==='penting'?'selected':'')+'>Penting</option><option value="segera" '+(letter.priority==='segera'?'selected':'')+'>Segera</option></select></label><label>Status tindak lanjut<select name="status"><option value="baru" '+(letter.status==='baru'?'selected':'')+'>Baru</option><option value="diproses" '+(letter.status==='diproses'?'selected':'')+'>Diproses</option><option value="selesai" '+(letter.status==='selesai'?'selected':'')+'>Selesai</option><option value="arsip" '+(letter.status==='arsip'?'selected':'')+'>Arsip</option></select></label><label class="wide">Catatan sekretariat<textarea name="notes" maxlength="5000">'+escapeHTML(letter.notes||'')+'</textarea></label><button class="member-option-button wide" type="submit">Simpan koreksi</button></form></details>':'';
+    return '<tr data-incoming-row="'+escapeHTML(letter.id)+'">'+
+      '<td data-label="Diterima"><strong>'+escapeHTML(incomingDateLabel(letter.received_on))+'</strong><small>Tanggal surat: '+escapeHTML(incomingDateLabel(letter.letter_date))+'</small></td>'+
+      '<td data-label="Pengirim dan nomor"><strong>'+escapeHTML(letter.sender_name||'Pengirim belum dikenali')+'</strong><small>'+escapeHTML(letter.incoming_number||'Nomor belum tercatat')+'</small></td>'+
+      '<td data-label="Perihal dan ringkasan"><strong>'+escapeHTML(letter.subject||'Perihal belum dikenali')+'</strong><p>'+escapeHTML(letter.summary||letter.ai_error||'Ringkasan belum tersedia.')+'</p><small>'+escapeHTML(letter.category||'Jenis surat belum dicatat')+'</small></td>'+
+      '<td data-label="Tindak lanjut"><p>'+escapeHTML(letter.action_required||'Belum ada tindak lanjut yang dicatat.')+'</p><small>Batas waktu: '+escapeHTML(incomingDateLabel(letter.deadline))+'</small></td>'+
+      '<td data-label="Status"><span class="incoming-letter-status'+priorityClass+'">'+escapeHTML(statusLabel[letter.status]||letter.status||'Baru')+'</span><small>Prioritas: '+escapeHTML(priorityLabel[letter.priority]||'Normal')+'</small><span class="incoming-letter-ai">'+escapeHTML(aiLabel[letter.ai_status]||'Status AI belum diketahui')+'</span></td>'+
+      '<td data-label="PDF dan aksi"><div class="incoming-letter-actions">'+(driveUrl?'<a href="'+escapeHTML(driveUrl)+'" target="_blank" rel="noopener">Buka PDF di Drive</a>':'<span class="incoming-letter-ai">PDF sedang disalin ke Drive…</span>')+editControls+'</div>'+editForm+'</td></tr>';
+  }).join('');
+}
+async function loadIncomingDriveStatus(){
+  try{
+    const data=await driveRequest('status');
+    renderIncomingDriveStatus(data);
+    return data;
+  }catch(error){renderIncomingDriveStatus(null);return null;}
+}
+let incomingSheetPending=false;
+function renderIncomingDriveStatus(data){
+  if(data){
+    incomingSheetPending=Boolean(data.incomingLettersSheetPending);
+    const folder=$('#incoming-letter-drive-folder'),sheet=$('#incoming-letter-drive-sheet'),status=$('#incoming-letter-drive-status');
+    if(folder){folder.hidden=!data.incomingLettersFolderUrl;if(data.incomingLettersFolderUrl)folder.href='https://accounts.google.com/AccountChooser?hd=cssmora.org&continue='+encodeURIComponent(data.incomingLettersFolderUrl);}
+    if(sheet){sheet.hidden=!data.incomingLettersSpreadsheetUrl;if(data.incomingLettersSpreadsheetUrl)sheet.href='https://accounts.google.com/AccountChooser?hd=cssmora.org&continue='+encodeURIComponent(data.incomingLettersSpreadsheetUrl);}
+    if(status)status.textContent=!data.connected?'Drive belum tersambung. PDF tetap privat di aplikasi; hubungkan Drive untuk mengaktifkan salinan dan spreadsheet.':data.incomingLettersSheetError?'Sinkron spreadsheet tertunda dan akan dicoba lagi otomatis.':data.incomingLettersSheetPending?'Perubahan sedang disinkronkan ke Drive.':!data.incomingLettersSpreadsheetUrl?'Folder dan spreadsheet akan dibuat otomatis saat surat pertama diunggah.':'PDF dan spreadsheet tersinkron ke folder Database Surat Masuk.';
+    return;
+  }
+  incomingSheetPending=false;
+  const status=$('#incoming-letter-drive-status');if(status)status.textContent='Status Drive belum dapat dimuat; PDF tetap tersimpan privat di aplikasi.';
+}
+let incomingSyncPoll=null,incomingSyncPollAttempts=0;
+function stopIncomingSyncPolling(){if(incomingSyncPoll)clearInterval(incomingSyncPoll);incomingSyncPoll=null;incomingSyncPollAttempts=0;}
+function startIncomingSyncPolling(){
+  stopIncomingSyncPolling();
+  if($('#letter-incoming-panel')?.hidden||(!incomingLetters.some(letter=>!letter.drive_url)&&!incomingSheetPending))return;
+  incomingSyncPoll=setInterval(()=>{void refreshIncomingSyncProgress();},15000);
+}
+async function refreshIncomingSyncProgress(){
+  if(document.hidden||$('#letter-incoming-panel')?.hidden)return;
+  incomingSyncPollAttempts+=1;
+  try{
+    const [rows,status]=await Promise.all([
+      api('secretariat_incoming_letters?select=id,drive_file_id,drive_url'),
+      driveRequest('status')
+    ]);
+    const fresh=new Map(rows.map(letter=>[letter.id,letter]));
+    incomingLetters=incomingLetters.map(letter=>{
+      const synced=fresh.get(letter.id);if(!synced)return letter;
+      const next={...letter,drive_file_id:synced.drive_file_id,drive_url:synced.drive_url};
+      if(next.drive_url&&!letter.drive_url){
+        const row=document.querySelector('[data-incoming-row="'+CSS.escape(letter.id)+'"]');
+        const actions=row?.querySelector('.incoming-letter-actions');
+        if(actions){
+          let link=actions.querySelector('a');
+          if(!link){link=document.createElement('a');link.target='_blank';link.rel='noopener';link.textContent='Buka PDF di Drive';const pending=actions.querySelector('.incoming-letter-ai');if(pending)pending.replaceWith(link);else actions.prepend(link);}
+          link.href='https://accounts.google.com/AccountChooser?hd=cssmora.org&continue='+encodeURIComponent(next.drive_url);
+        }
+      }
+      return next;
+    });
+    renderIncomingDriveStatus(status);
+    if((!incomingLetters.some(letter=>!letter.drive_url)&&!incomingSheetPending)||incomingSyncPollAttempts>=40)stopIncomingSyncPolling();
+  }catch{
+    if(incomingSyncPollAttempts>=40)stopIncomingSyncPolling();
+  }
+}
+async function loadIncomingLetters(){
+  const list=$('#incoming-letter-list');if(!list)return;
+  list.innerHTML='<tr><td colspan="6"><p class="records-empty">Memuat surat masuk…</p></td></tr>';
+  try{
+    incomingLetters=await api('secretariat_incoming_letters?select=*&order=received_on.desc,created_at.desc,id.desc');
+    renderIncomingLetters();
+    await loadIncomingDriveStatus();
+    startIncomingSyncPolling();
+  }catch(error){list.innerHTML='<tr><td colspan="6"><p class="records-empty">'+escapeHTML(error.message)+'</p></td></tr>';}
+}
+async function analyzeIncomingLetter(id,button){
+  if(button)button.disabled=true;
+  showMessage('#incoming-letter-message','Membaca PDF dan menyusun ringkasan AI…');
+  try{
+    const response=await authenticatedFetch(config.url+'/functions/v1/program-document-assistant',{method:'POST',headers:baseHeaders(),body:JSON.stringify({action:'analyze_incoming_letter',letter_id:id}),timeoutMs:120000});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||'Pembacaan surat gagal.');
+    await loadIncomingLetters();showMessage('#incoming-letter-message','Surat dibaca. Periksa hasil ekstraksi sebelum mengandalkannya.','success');
+  }catch(error){showMessage('#incoming-letter-message',error.message||'Pembacaan surat gagal.','error');await loadIncomingLetters();}
+  finally{if(button)button.disabled=false;}
+}
+$('#incoming-letter-received-on').value=localDateInput();
+$('#incoming-letter-upload-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const button=$('#incoming-letter-upload'),file=$('#incoming-letter-pdf').files[0],receivedOn=$('#incoming-letter-received-on').value;
+  if(!file){showMessage('#incoming-letter-message','Pilih PDF surat terlebih dahulu.','error');return;}
+  if((file.type&&file.type!=='application/pdf')||!file.name.toLowerCase().endsWith('.pdf')||file.size>10*1024*1024){showMessage('#incoming-letter-message','Gunakan PDF yang valid dengan ukuran maksimal 10 MB.','error');return;}
+  button.disabled=true;showMessage('#incoming-letter-message','Menyimpan PDF surat…');
+  const id=crypto.randomUUID(),path=`incoming/${id}/original.pdf`;
+  let rowCreated=false;
+  try{
+    await api('secretariat_incoming_letters',{method:'POST',body:{id,received_on:receivedOn,original_filename:file.name.slice(0,255),storage_path:path,ai_status:'pending'},extraHeaders:{Prefer:'return=minimal'}});
+    rowCreated=true;
+    const encoded=path.split('/').map(encodeURIComponent).join('/');
+    const upload=await authenticatedFetch(`${config.url}/storage/v1/object/cssmora-letter-pdfs/${encoded}`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/pdf','x-upsert':'false'},body:file});
+    if(!upload.ok){const error=await upload.json().catch(()=>({}));throw new Error(error.message||error.error||'PDF gagal diunggah ke Supabase.');}
+    await loadIncomingLetters();
+    showMessage('#incoming-letter-message','PDF tersimpan. AI sedang membaca isinya; salinan Drive dan spreadsheet menyusul otomatis.');
+    await analyzeIncomingLetter(id,null);
+    event.target.reset();$('#incoming-letter-received-on').value=localDateInput();
+  }catch(error){
+    if(rowCreated){
+      const encoded=path.split('/').map(encodeURIComponent).join('/');
+      await authenticatedFetch(`${config.url}/storage/v1/object/cssmora-letter-pdfs/${encoded}`,{method:'DELETE',headers:{apikey:config.publishableKey}}).catch(()=>null);
+      await api('secretariat_incoming_letters?id=eq.'+encodeURIComponent(id),{method:'DELETE'}).catch(()=>null);
+    }
+    showMessage('#incoming-letter-message',error.message||'PDF surat belum dapat disimpan.','error');
+  }finally{button.disabled=false;}
+});
+$('#incoming-letter-refresh').addEventListener('click',loadIncomingLetters);
+$('#incoming-letter-search').addEventListener('input',renderIncomingLetters);
+$('#incoming-letter-list').addEventListener('click',async event=>{
+  const analyze=event.target.closest('[data-incoming-analyze]');
+  if(analyze){await analyzeIncomingLetter(analyze.dataset.incomingAnalyze,analyze);return;}
+  const remove=event.target.closest('[data-incoming-delete]');if(!remove)return;
+  const row=incomingLetters.find(item=>item.id===remove.dataset.incomingDelete);if(!row||!confirm(`Hapus surat masuk “${row.subject||row.original_filename}”? PDF dan tautannya di Drive juga akan disinkronkan untuk dihapus.`))return;
+  remove.disabled=true;
+  try{
+    const path=row.storage_path.split('/').map(encodeURIComponent).join('/');
+    const response=await authenticatedFetch(`${config.url}/storage/v1/object/cssmora-letter-pdfs/${path}`,{method:'DELETE',headers:{apikey:config.publishableKey}});
+    if(!response.ok&&response.status!==404)throw new Error('PDF belum dapat dihapus dari Supabase. Catatan surat tetap tersimpan.');
+    await api('secretariat_incoming_letters?id=eq.'+encodeURIComponent(row.id),{method:'DELETE'});
+    await loadIncomingLetters();showMessage('#incoming-letter-message','Surat, PDF Supabase, dan salinan Drive sudah masuk alur penghapusan.','success');
+  }catch(error){showMessage('#incoming-letter-message',error.message,'error');remove.disabled=false;}
+});
+$('#incoming-letter-list').addEventListener('submit',async event=>{
+  const form=event.target.closest('[data-incoming-edit]');if(!form)return;
+  event.preventDefault();const button=form.querySelector('button[type=submit]');button.disabled=true;
+  const payload=Object.fromEntries(new FormData(form).entries());
+  payload.letter_date=payload.letter_date||null;payload.deadline=payload.deadline||null;
+  try{
+    await api('secretariat_incoming_letters?id=eq.'+encodeURIComponent(form.dataset.incomingEdit),{method:'PATCH',body:payload});
+    await loadIncomingLetters();showMessage('#incoming-letter-message','Koreksi tersimpan dan spreadsheet Drive akan diperbarui otomatis.','success');
+  }catch(error){showMessage('#incoming-letter-message',error.message,'error');button.disabled=false;}
+});
 $('#letters-refresh').addEventListener('click',loadLetters);
 $('#letter-record-list').addEventListener('click',async event=>{
   const button=event.target.closest('[data-copy-letter]');if(!button)return;
