@@ -552,3 +552,69 @@ body.wallet-home .wallet-campus-section .wallet-campus-copy{max-width:550px}
  body.wallet-home .wallet-hero-campus-video{display:none}
  body.wallet-home .wallet-hero{background-image:url('./assets/unair-campus-poster.jpg')}
 }
+
+
+/* v3 — Restore document scrolling (legacy dashboard.css locks html/body at 100%). */
+html.wallet-document{
+  height:auto!important;
+  min-height:100%;
+  max-height:none!important;
+  overflow-x:clip!important;
+  overflow-y:auto!important;
+  scroll-behavior:smooth;
+}
+html.wallet-document body.wallet-home{
+  height:auto!important;
+  min-height:100vh!important;
+  max-height:none!important;
+  overflow-x:clip!important;
+  overflow-y:visible!important;
+  overscroll-behavior-y:auto;
+}
+html.wallet-document .wallet-app{
+  min-height:100vh;
+  height:auto;
+  overflow:visible;
+}
+
+/* Show the original UNAIR campus video colors, without any tinted / gradient overlay. */
+html.wallet-document body.wallet-home .wallet-hero::before,
+html.wallet-document body.wallet-home .wallet-hero::after,
+html.wallet-document body.wallet-home .wallet-hero-video-tint{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+}
+html.wallet-document body.wallet-home .wallet-hero-campus-video{
+  filter:none!important;
+  opacity:1!important;
+  mix-blend-mode:normal!important;
+}
+html.wallet-document body.wallet-home .wallet-hero{
+  isolation:isolate;
+  background-color:#0f6da0;
+  background-image:url('./assets/unair-campus-poster.jpg');
+}
+/* Keep text legible over unfiltered footage, without recoloring a single pixel of it. */
+html.wallet-document body.wallet-home .wallet-hero :is(.wallet-hero-text,.wallet-brand,.wallet-hero-eyebrow){
+  text-shadow:0 1px 5px rgba(0,20,38,.8),0 2px 13px rgba(0,20,38,.55);
+}
+html.wallet-document body.wallet-home .wallet-hero-actions a,
+html.wallet-document body.wallet-home .wallet-hero-login{
+  background:#006d9b;
+  border-color:rgba(255,255,255,.55);
+  color:#fff;
+}
+html.wallet-document body.wallet-home .wallet-hero-actions a:hover,
+html.wallet-document body.wallet-home .wallet-hero-login:hover{background:#005987}
+html.wallet-document body.wallet-home .wallet-hero-videotron{
+  background:#075a81;
+  border-color:rgba(255,255,255,.83);
+}
+/* The rest of the page holds the blue GoPay-style identity. */
+html.wallet-document body.wallet-home .wallet-quick-panel{
+  border:1px solid #cde7ef;
+}
+html.wallet-document body.wallet-home .wallet-section-eyebrow{
+  color:#007da9;
+}
