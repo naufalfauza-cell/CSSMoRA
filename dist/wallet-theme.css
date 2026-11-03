@@ -331,7 +331,7 @@ body.admin-page .admin-sidebar .admin-tab:hover{background:#ffffff1d;transform:t
 body.admin-page .admin-sidebar .admin-tab.is-active{
   background:#e0f7fc;color:#055b8a;box-shadow:none;
 }
-body.admin-page .admin-sidebar .admin-tab.is-active :is(strong,small,.module-state){color:#055b8a}
+body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active :is(strong,small,.module-state){color:#fff}
 body.admin-page .admin-sidebar .admin-tab.is-active .module-icon{background:#b9eef9;color:#006d9f}
 body.admin-page .admin-sidebar .module-icon{background:#ffffff18;color:#dcf8ff;border-radius:13px}
 body.admin-page .admin-sidebar .module-copy strong{font-family:var(--wallet-font);font-size:12px;font-weight:750}
