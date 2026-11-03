@@ -659,7 +659,7 @@ body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,
 /* Keep the original short card; cover crops the supplied photo in the UI. */
 body.wallet-home .wallet-campus-section .wallet-campus-card{
   background-image:url('./assets/cssmora-active-together-wide-v3.jpg');
-  background-position:center 68%;
+  background-position:center 82%;
   background-size:cover;
   min-height:305px;
 }
@@ -672,7 +672,7 @@ body.wallet-home .wallet-campus-section .wallet-campus-card .wallet-campus-shade
 @media(max-width:680px){
   body.wallet-home .wallet-campus-section .wallet-campus-card{
     background-image:url('./assets/cssmora-active-together-mobile-v3.jpg');
-    background-position:center 70%;
+    background-position:center 78%;
     min-height:230px;
   }
 }
