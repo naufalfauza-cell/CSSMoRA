@@ -620,8 +620,10 @@ html.wallet-document body.wallet-home .wallet-section-eyebrow{
 }
 
 
-/* Preview audit: consistent surfaces, natural scale and accessible small screens. */
-body:is(.catalog-page,.agenda-page){zoom:1}
+/* Public secondary pages share a compact scale; home and admin keep their own layouts. */
+@media(min-width:1000px){
+ body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page){zoom:.8}
+}
 body.achievement-page :is(.achievement-intro h1 em,.achievement-home,.achievement-back){color:var(--wallet-deep)}
 body.achievement-page .achievement-card{padding:24px;border:1px solid var(--wallet-line)}
 body.achievement-page .achievement-form>.achievement-card:nth-of-type(2){padding:24px;border:1px solid var(--wallet-line)}
