@@ -982,3 +982,38 @@ body.wallet-home .wallet-brand-partners img{
   .agenda-page .month-switcher{gap:5px;padding:4px}
   .agenda-page .month-switcher button{flex-basis:32px;width:32px;height:32px}
 }
+
+/* Mobile polish: keep scrolling available without drawing scrollbar rails. */
+@media(max-width:780px){
+  html,body,*{
+    scrollbar-width:none!important;
+    -ms-overflow-style:none!important;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar{
+    display:none!important;
+    width:0!important;
+    height:0!important;
+  }
+  .wallet-bottom-nav .wallet-bottom-center{
+    position:relative;
+    justify-content:center;
+    gap:0;
+    overflow:visible;
+  }
+  .wallet-bottom-nav .wallet-bottom-center-icon{
+    flex:none;
+    width:52px;
+    height:52px;
+    margin-top:-18px;
+    border:4px solid #fff;
+    border-radius:16px;
+  }
+  .wallet-bottom-nav .wallet-bottom-center-icon svg{width:27px;height:27px}
+}
+
+/* Slightly lower video brightness so white hero text stays readable. */
+html.wallet-document body.wallet-home .wallet-hero-campus-video{
+  filter:brightness(.9) saturate(.94)!important;
+}
