@@ -656,20 +656,20 @@ body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,
 }
 
 
-/* Use the supplied CSSMoRA group photo with the videotron in focus. */
+/* Keep the original short card; cover crops the supplied photo in the UI. */
 body.wallet-home .wallet-campus-section .wallet-campus-card{
-  min-height:clamp(320px,31vw,420px);
-  background-image:url('./assets/cssmora-active-together-wide-v2.jpg');
-  background-position:center 50%;
+  background-image:url('./assets/cssmora-active-together-wide-v3.jpg');
+  background-position:center 68%;
   background-size:cover;
 }
 @media(max-width:680px){
   body.wallet-home .wallet-campus-section .wallet-campus-card{
-    min-height:clamp(320px,88vw,380px);
-    background-image:url('./assets/cssmora-active-together-mobile-v2.webp');
-    background-position:center 48%;
+    background-image:url('./assets/cssmora-active-together-mobile-v3.jpg');
+    background-position:center 70%;
   }
 }
-@media(max-width:380px){
-  body.wallet-home .wallet-campus-section .wallet-campus-card{min-height:320px}
+@media(max-width:420px){
+  body.wallet-home .wallet-campus-section .wallet-campus-card{
+    background-position:center 88%;
+  }
 }
