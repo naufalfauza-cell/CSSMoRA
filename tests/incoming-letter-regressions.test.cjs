@@ -51,6 +51,7 @@ test('AI OCR is secretary-only, deletes its temporary Google Doc, and rejects in
   assert.match(action, /parsed\.toISOString\(\)\.slice\(0,10\)===raw/);
   const extraction = drive.slice(drive.indexOf('async function extractIncomingLetterText'), drive.indexOf('\nasync function archiveAttendancePhoto'));
   assert.match(extraction, /ocrLanguage/);
+  assert.match(extraction, /attempt < 8/);
   assert.match(extraction, /finally\s*\{\s*await deleteDriveFile\(accessToken, temporaryDocId\)/);
 });
 
@@ -71,6 +72,7 @@ test('only Secretary sees incoming-letter correction actions, with a responsive 
   const css = read('dist/letter-inbox.css');
   assert.match(app, /const editControls=isSecretariatAdmin\?/);
   assert.match(app, /const editForm=isSecretariatAdmin\?/);
+  assert.match(app, /!data\.connected\?'Drive belum tersambung/);
   assert.match(html, /id="letter-incoming-panel"/);
   assert.match(css, /@media\(max-width:560px\)/);
   assert.match(css, /data-label/);
