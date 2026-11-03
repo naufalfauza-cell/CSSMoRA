@@ -716,13 +716,13 @@ body.wallet-home .wallet-campus-section .wallet-campus-card .wallet-campus-shade
 .admin-page .admin-sidebar::before{
   background:linear-gradient(180deg,#0879a8 0%,#06658f 54%,#07547b 100%);
 }
-.admin-page .admin-sidebar .admin-tab.is-active{
+body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active{
   border-color:#b8e7ef;
   background:#dff6f9;
   color:#075b86;
   box-shadow:inset 4px 0 var(--admin-teal),0 4px 12px rgba(0,35,60,.12);
 }
-.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active :is(strong,small,.module-state){
+body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active :is(strong,small,.module-state){
   color:#075b86;
 }
 .admin-page .admin-sidebar .admin-tab.is-active .module-icon{
