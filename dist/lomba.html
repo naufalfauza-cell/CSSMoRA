@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#087443">
+  <meta name="theme-color" content="#076caa">
   <meta name="description" content="Jelajahi informasi perlombaan CSSMoRA UNAIR. Cek poster, biaya, tenggat, dan tautan pendaftaran resmi.">
   <title>Info Lomba — CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png?v=20261023-perf-assets">
@@ -12,6 +12,7 @@
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./app.js?v=20261023-performance-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261022-soft-ui">
+  <link rel="stylesheet" href="./wallet-theme.css?v=20261103-preview">
 </head>
 <body class="catalog-page">
   <a class="skip" href="#catalog-page">Langsung ke katalog lomba</a>
@@ -54,5 +55,13 @@
     </section>
 
   </main>
+
+  <nav class="wallet-bottom-nav" aria-label="Navigasi cepat CSSMoRA">
+    <a href="./" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/></svg><span>Beranda</span></a>
+    <a href="./lomba.html" class="is-current" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v3a4 4 0 0 1-8 0V4ZM8 5H4v3a5 5 0 0 0 5 5m7-8h4v3a5 5 0 0 1-5 5M12 11v5m-4 4h8"/></svg><span>Lomba</span></a>
+    <a href="./agenda.html" class="wallet-bottom-center " ><span class="wallet-bottom-center-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg></span><span>Agenda</span></a>
+    <a href="./prestasi.html" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3 6 6 1-4.4 4 1.1 6.5L12 17l-5.7 2.5L7.4 13 3 9l6-1z"/></svg><span>Prestasi</span></a>
+    <a href="./admin.html" ><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Pengurus</span></a>
+  </nav>
 </body>
 </html>
