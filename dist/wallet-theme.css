@@ -1012,8 +1012,3 @@ body.wallet-home .wallet-brand-partners img{
   }
   .wallet-bottom-nav .wallet-bottom-center-icon svg{width:27px;height:27px}
 }
-
-/* Slightly lower video brightness so white hero text stays readable. */
-html.wallet-document body.wallet-home .wallet-hero-campus-video{
-  filter:brightness(.9) saturate(.94)!important;
-}
