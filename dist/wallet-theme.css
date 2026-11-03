@@ -662,6 +662,9 @@ body.wallet-home .wallet-campus-section .wallet-campus-card{
   background-position:center 68%;
   background-size:cover;
 }
+body.wallet-home .wallet-campus-section .wallet-campus-card .wallet-campus-shade{
+  opacity:.72;
+}
 @media(max-width:680px){
   body.wallet-home .wallet-campus-section .wallet-campus-card{
     background-image:url('./assets/cssmora-active-together-mobile-v3.jpg');
