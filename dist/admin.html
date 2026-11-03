@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261103-incoming-letters-v1" defer></script>
+  <script src="./admin.js?v=20261103-incoming-letters-v2" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261029-v5" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -36,7 +36,7 @@
   <script src="./program-documents.js?v=20261101-drive-archive-mobile-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
-  <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v1">
+  <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v2">
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -503,10 +503,16 @@
                 <div class="editor-heading"><div><span class="admin-kicker">BUKU AGENDA SURAT MASUK</span><h3 id="incoming-letter-title">Catat surat masuk</h3></div></div>
                 <p class="field-hint">PDF asli tetap privat. Teks dibaca sementara dengan OCR Google Drive, lalu dianalisis AI Groq; periksa hasilnya sebelum dipakai. Dokumen OCR sementara dihapus setelah dibaca.</p>
                 <form id="incoming-letter-upload-form">
-                  <label for="incoming-letter-received-on">Tanggal diterima</label>
-                  <input id="incoming-letter-received-on" type="date" required>
-                  <label for="incoming-letter-pdf">File surat (PDF, maks. 10 MB)</label>
-                  <input id="incoming-letter-pdf" type="file" accept="application/pdf,.pdf" required>
+                  <div class="incoming-letter-form-grid">
+                    <div class="incoming-letter-form-field">
+                      <label for="incoming-letter-received-on">Tanggal diterima</label>
+                      <input id="incoming-letter-received-on" type="date" required>
+                    </div>
+                    <div class="incoming-letter-form-field">
+                      <label for="incoming-letter-pdf">File surat (PDF, maks. 10 MB)</label>
+                      <input id="incoming-letter-pdf" type="file" accept="application/pdf,.pdf" required>
+                    </div>
+                  </div>
                   <button class="admin-button" id="incoming-letter-upload" type="submit">Unggah dan baca surat <span aria-hidden="true">↗</span></button>
                 </form>
                 <p class="form-message" id="incoming-letter-message" role="status" aria-live="polite"></p>
@@ -518,7 +524,7 @@
                 </div>
                 <label class="incoming-letter-search-label" for="incoming-letter-search">Cari surat</label>
                 <input id="incoming-letter-search" type="search" placeholder="Pengirim, nomor, perihal, atau tindak lanjut">
-                <div class="incoming-letter-table-wrap"><table class="incoming-letter-table"><thead><tr><th>Diterima</th><th>Pengirim dan nomor</th><th>Perihal dan ringkasan</th><th>Tindak lanjut</th><th>Status</th><th>PDF dan aksi</th></tr></thead><tbody id="incoming-letter-list"><tr><td colspan="6"><p class="records-empty">Memuat surat masuk…</p></td></tr></tbody></table></div>
+                <div class="incoming-letter-table-wrap"><table class="incoming-letter-table"><thead><tr><th>Diterima</th><th>Pengirim</th><th>Nomor surat</th><th>Perihal dan ringkasan</th><th>Tindak lanjut</th><th>Status</th><th>PDF dan aksi</th></tr></thead><tbody id="incoming-letter-list"><tr><td colspan="7"><p class="records-empty">Memuat surat masuk…</p></td></tr></tbody></table></div>
               </section>
             </div>
           </section>
