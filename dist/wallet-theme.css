@@ -654,3 +654,22 @@ body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,
  body.admin-page .admin-sidebar .admin-tab{transition:none}
  body.admin-page .admin-sidebar .admin-tab:hover{transform:none}
 }
+
+
+/* Use the supplied CSSMoRA group photo with the videotron in focus. */
+body.wallet-home .wallet-campus-section .wallet-campus-card{
+  min-height:clamp(320px,31vw,420px);
+  background-image:url('./assets/cssmora-active-together-wide.webp');
+  background-position:center 50%;
+  background-size:cover;
+}
+@media(max-width:680px){
+  body.wallet-home .wallet-campus-section .wallet-campus-card{
+    min-height:clamp(320px,88vw,380px);
+    background-image:url('./assets/cssmora-active-together-mobile.webp');
+    background-position:center 48%;
+  }
+}
+@media(max-width:380px){
+  body.wallet-home .wallet-campus-section .wallet-campus-card{min-height:320px}
+}
