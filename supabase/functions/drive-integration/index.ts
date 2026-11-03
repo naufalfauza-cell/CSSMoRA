@@ -289,6 +289,123 @@ async function findOrCreateAttendanceEventFolder(accessToken: string, parentId: 
   return id;
 }
 
+async function ensureIncomingLettersFolder(accessToken: string, connection: any) {
+  const stored = (await serviceRequest("cssmora_drive_incoming_letter_archive?select=folder_id,spreadsheet_id&singleton=eq.true&limit=1")).data;
+  const state = Array.isArray(stored) ? stored[0] : null;
+  let folderId = String(state?.folder_id || "");
+  if (folderId) {
+    try {
+      const existing = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(folderId) + "?fields=id,trashed");
+      if (existing.data?.trashed === true) folderId = "";
+    } catch (error) {
+      if (!(error instanceof AppError) || error.status !== 404) throw error;
+      folderId = "";
+    }
+  }
+  if (!folderId) {
+    folderId = await findDriveFolder(
+      accessToken,
+      `appProperties has { key='cssmoraArchiveType' and value='incoming-letters' } and '${connection.drive_uploads_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    ) || "";
+  }
+  if (!folderId) {
+    const result = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files?fields=id,name", {
+      method: "POST",
+      body: {
+        name: "Database Surat Masuk",
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [connection.drive_uploads_folder_id],
+        appProperties: { cssmoraArchiveType: "incoming-letters" },
+      },
+    });
+    folderId = String(result.data?.id || "");
+    if (!folderId) throw new AppError(502, "Folder Database Surat Masuk belum dapat dibuat di Drive.");
+  }
+  await serviceRequest("cssmora_drive_incoming_letter_archive?singleton=eq.true", {
+    method: "PATCH", body: { folder_id: folderId, updated_at: new Date().toISOString() },
+  });
+  return { folderId, spreadsheetId: String(state?.spreadsheet_id || "") };
+}
+
+async function ensureIncomingLettersSpreadsheet(accessToken: string, connection: any, folderId: string) {
+  const apiBase = "https://sheets.googleapis.com/v4/spreadsheets";
+  const stored = (await serviceRequest("cssmora_drive_incoming_letter_archive?select=spreadsheet_id&singleton=eq.true&limit=1")).data;
+  let spreadsheetId = String(Array.isArray(stored) ? stored[0]?.spreadsheet_id || "" : "");
+  let info: any = null;
+  if (spreadsheetId) {
+    try {
+      info = (await googleJson(accessToken, apiBase + "/" + encodeURIComponent(spreadsheetId) + "?fields=spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title)")).data;
+    } catch (error) {
+      if (!(error instanceof AppError) || error.status !== 404) throw error;
+      spreadsheetId = "";
+    }
+  }
+  if (!spreadsheetId) {
+    info = (await googleJson(accessToken, apiBase + "?fields=spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title)", {
+      method: "POST",
+      body: { properties: { title: "Database Surat Masuk CSSMoRA" }, sheets: [{ properties: { title: "Surat Masuk" } }] },
+    })).data;
+    spreadsheetId = String(info?.spreadsheetId || "");
+    if (!spreadsheetId) throw new AppError(502, "Spreadsheet Database Surat Masuk belum dapat dibuat.");
+    await serviceRequest("cssmora_drive_incoming_letter_archive?singleton=eq.true", {
+      method: "PATCH", body: { spreadsheet_id: spreadsheetId, updated_at: new Date().toISOString() },
+    });
+  }
+  await moveDriveFile(accessToken, spreadsheetId, folderId);
+  return { spreadsheetId, spreadsheetUrl: String(info?.spreadsheetUrl || "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(spreadsheetId) + "/edit") };
+}
+
+async function syncIncomingLettersSpreadsheet(accessToken: string, connection: any) {
+  const queued = (await serviceRequest("cssmora_drive_incoming_letter_sync?select=generation,pending,attempts&singleton=eq.true&limit=1")).data;
+  const job = Array.isArray(queued) ? queued[0] : null;
+  if (!job?.pending) return { processed: false, pending: false };
+  const generation = String(job.generation);
+  try {
+    const archive = await ensureIncomingLettersFolder(accessToken, connection);
+    const sheet = await ensureIncomingLettersSpreadsheet(accessToken, connection, archive.folderId);
+    const letterRows: any[] = [];
+    const pageSize = 500;
+    for (let offset = 0; ; offset += pageSize) {
+      const page = await serviceRequest(
+        "secretariat_incoming_letters?select=received_on,letter_date,incoming_number,sender_name,subject,category,summary,action_required,deadline,priority,status,drive_url,ai_status,original_filename,notes&order=received_on.desc,created_at.desc,id.desc",
+        { headers: { "Range-Unit": "items", Range: `${offset}-${offset + pageSize - 1}` } },
+      );
+      const rows = Array.isArray(page.data) ? page.data : [];
+      letterRows.push(...rows);
+      if (rows.length < pageSize) break;
+    }
+    const columns = ["Tanggal diterima","Tanggal surat","Nomor surat","Pengirim","Perihal","Jenis","Ringkasan AI","Tindak lanjut","Batas waktu","Prioritas","Status","PDF Drive","Status AI","Nama file","Catatan Sekretariat"];
+    const values = [columns, ...letterRows.map((row: any) => [
+      row.received_on || "", row.letter_date || "", row.incoming_number || "", row.sender_name || "", row.subject || "",
+      row.category || "", row.summary || "", row.action_required || "", row.deadline || "", row.priority || "normal",
+      row.status || "baru", row.drive_url || "", row.ai_status || "pending", row.original_filename || "", row.notes || "",
+    ])];
+    const apiBase = "https://sheets.googleapis.com/v4/spreadsheets/" + encodeURIComponent(sheet.spreadsheetId);
+    const writeChunkSize = 1000;
+    for (let index = 0; index < values.length; index += writeChunkSize) {
+      const chunk = values.slice(index, index + writeChunkSize);
+      const firstRow = index + 1;
+      const lastRow = index + chunk.length;
+      const range = encodeURIComponent(`'Surat Masuk'!A${firstRow}:O${lastRow}`);
+      await googleJson(accessToken, `${apiBase}/values/${range}?valueInputOption=RAW`, {
+        method: "PUT", body: { majorDimension: "ROWS", values: chunk },
+      });
+    }
+    const clearRange = encodeURIComponent(`'Surat Masuk'!A${values.length + 1}:O`);
+    await googleJson(accessToken, apiBase + "/values:batchClear", { method: "POST", body: { ranges: [clearRange] } });
+    await serviceRequest("cssmora_drive_incoming_letter_sync?singleton=eq.true&generation=eq." + encodeURIComponent(generation) + "&pending=eq.true", {
+      method: "PATCH", body: { pending: false, attempts: 0, last_error: null, updated_at: new Date().toISOString() },
+    });
+    return { processed: true, pending: false, rows: values.length - 1, spreadsheetUrl: sheet.spreadsheetUrl };
+  } catch (error) {
+    const attempts = Number(job.attempts || 0) + 1;
+    await serviceRequest("cssmora_drive_incoming_letter_sync?singleton=eq.true&generation=eq." + encodeURIComponent(generation), {
+      method: "PATCH", body: { pending: true, attempts, last_error: safeSyncError(error), updated_at: new Date().toISOString() },
+    }).catch(() => null);
+    return { processed: true, pending: true, failed: true };
+  }
+}
+
 async function findDriveArchiveFile(accessToken: string, folderId: string, pathHash: string) {
   return await findDriveFolder(
     accessToken,
@@ -1891,14 +2008,18 @@ async function countQueue(status: string) {
 }
 
 async function integrationStatus() {
-  const [connection, pending, processing, failed, backupRows] = await Promise.all([
+  const [connection, pending, processing, failed, backupRows, archiveRows, sheetQueueRows] = await Promise.all([
     currentConnection(),
     countQueue("pending"),
     countQueue("processing"),
     countQueue("failed"),
     serviceRequest("cssmora_drive_backup_runs?select=status,started_at,finished_at,encrypted_size_bytes,sheet_status,sheet_updated_at,sheet_error_message&order=started_at.desc&limit=1"),
+    serviceRequest("cssmora_drive_incoming_letter_archive?select=folder_id,spreadsheet_id&singleton=eq.true&limit=1"),
+    serviceRequest("cssmora_drive_incoming_letter_sync?select=pending,last_error&singleton=eq.true&limit=1"),
   ]);
   const latestBackup = Array.isArray(backupRows.data) && backupRows.data.length ? backupRows.data[0] : null;
+  const archive = Array.isArray(archiveRows.data) ? archiveRows.data[0] : null;
+  const sheetQueue = Array.isArray(sheetQueueRows.data) ? sheetQueueRows.data[0] : null;
   return {
     connected: Boolean(connection),
     accountEmail: connection?.account_email || null,
@@ -1908,6 +2029,10 @@ async function integrationStatus() {
     spreadsheetUrl: connection?.backup_spreadsheet_id
       ? "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(connection.backup_spreadsheet_id) + "/edit"
       : null,
+    incomingLettersFolderUrl: archive?.folder_id ? "https://drive.google.com/drive/folders/" + encodeURIComponent(archive.folder_id) : null,
+    incomingLettersSpreadsheetUrl: archive?.spreadsheet_id ? "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(archive.spreadsheet_id) + "/edit" : null,
+    incomingLettersSheetPending: Boolean(sheetQueue?.pending),
+    incomingLettersSheetError: sheetQueue?.last_error || null,
     pendingFiles: pending + processing,
     failedFiles: failed,
     lastBackup: latestBackup,
@@ -1939,6 +2064,18 @@ async function deleteDriveFile(accessToken: string, fileId: string) {
     { method: "DELETE", headers: { Authorization: "Bearer " + accessToken } },
   );
   if (!response.ok && response.status !== 404) throw new AppError(response.status, "File Google Drive gagal dihapus.");
+}
+
+async function moveDriveFile(accessToken: string, fileId: string, parentId: string) {
+  const endpoint = "https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(fileId);
+  const metadata = (await googleJson(accessToken, endpoint + "?fields=id,parents")).data;
+  const parents = Array.isArray(metadata?.parents) ? metadata.parents.map(String) : [];
+  if (parents.includes(parentId)) return;
+  const url = new URL(endpoint);
+  url.searchParams.set("addParents", parentId);
+  url.searchParams.set("fields", "id,parents");
+  if (parents.length) url.searchParams.set("removeParents", parents.join(","));
+  await googleJson(accessToken, url.toString(), { method: "PATCH", body: {} });
 }
 
 async function uploadDriveFile(
@@ -1998,6 +2135,7 @@ async function removeClaimedQueueJob(job: any) {
 async function processSyncJob(accessToken: string, connection: any, job: any) {
   const bucket = String(job.bucket_id);
   const objectPath = String(job.object_path);
+  const incomingMatch = bucket === "cssmora-letter-pdfs" ? objectPath.match(/^incoming\/([0-9a-f-]{36})\/original\.pdf$/i) : null;
   const filters = {
     bucket_id: "eq." + bucket,
     object_path: "eq." + objectPath,
@@ -2007,6 +2145,11 @@ async function processSyncJob(accessToken: string, connection: any, job: any) {
     if (driveFileId) {
       await deleteDriveFile(accessToken, driveFileId);
       await serviceRequest(queryPath("cssmora_drive_mirrors", filters), { method: "DELETE" });
+    }
+    if (incomingMatch) {
+      await serviceRequest(queryPath("secretariat_incoming_letters", { id: "eq." + incomingMatch[1] }), {
+        method: "PATCH", body: { drive_file_id: null, drive_url: null, updated_at: new Date().toISOString() },
+      });
     }
     await removeClaimedQueueJob(job);
     return;
@@ -2022,14 +2165,31 @@ async function processSyncJob(accessToken: string, connection: any, job: any) {
     .split(";")[0].trim().toLowerCase();
   const existingId = await lookupMirror(bucket, objectPath);
   const baseName = objectPath.split("/").pop() || "file";
-  const name = (bucket + "__" + baseName).slice(0, 220);
+  let name = (bucket + "__" + baseName).slice(0, 220);
+  let parentId = connection.drive_uploads_folder_id;
+  let incomingLetter: any = null;
+  if (incomingMatch) {
+    const rows = (await serviceRequest(queryPath("secretariat_incoming_letters", {
+      select: "id,received_on,incoming_number,subject,original_filename",
+      id: "eq." + incomingMatch[1], limit: "1",
+    }))).data;
+    incomingLetter = Array.isArray(rows) ? rows[0] : null;
+    if (incomingLetter) {
+      const archive = await ensureIncomingLettersFolder(accessToken, connection);
+      parentId = archive.folderId;
+      const title = clean(incomingLetter.subject || "Surat masuk", 100).replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+      const number = clean(incomingLetter.incoming_number || "Tanpa nomor", 60).replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+      const originalName = clean(incomingLetter.original_filename || "surat.pdf", 100).replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+      name = `${incomingLetter.received_on || "Tanggal tidak dicatat"} - ${number} - ${title} - ${originalName} (${String(incomingLetter.id).slice(0, 8)})`.slice(0, 220);
+    }
+  }
   const pathHash = await sha256Hex(bucket + "\n" + objectPath);
   let driveFileId: string;
   if (existingId) {
     try {
       driveFileId = await uploadDriveFile(accessToken, {
         fileId: existingId,
-        parentId: connection.drive_uploads_folder_id,
+        parentId,
         name,
         mimeType,
         bytes,
@@ -2039,7 +2199,7 @@ async function processSyncJob(accessToken: string, connection: any, job: any) {
       if (!(error instanceof AppError) || error.status !== 404) throw error;
       await serviceRequest(queryPath("cssmora_drive_mirrors", filters), { method: "DELETE" });
       driveFileId = await uploadDriveFile(accessToken, {
-        parentId: connection.drive_uploads_folder_id,
+        parentId,
         name,
         mimeType,
         bytes,
@@ -2048,13 +2208,14 @@ async function processSyncJob(accessToken: string, connection: any, job: any) {
     }
   } else {
     driveFileId = await uploadDriveFile(accessToken, {
-      parentId: connection.drive_uploads_folder_id,
+      parentId,
       name,
       mimeType,
       bytes,
       appProperties: { cssmoraBucket: bucket, cssmoraObjectPathHash: pathHash },
     });
   }
+  await moveDriveFile(accessToken, driveFileId, parentId);
 
   await serviceRequest("cssmora_drive_mirrors?on_conflict=bucket_id,object_path", {
     method: "POST",
@@ -2069,7 +2230,80 @@ async function processSyncJob(accessToken: string, connection: any, job: any) {
       synced_at: new Date().toISOString(),
     },
   });
+  if (incomingLetter) {
+    await serviceRequest(queryPath("secretariat_incoming_letters", { id: "eq." + incomingMatch![1] }), {
+      method: "PATCH",
+      body: {
+        drive_file_id: driveFileId,
+        drive_url: "https://drive.google.com/file/d/" + encodeURIComponent(driveFileId) + "/view",
+        updated_at: new Date().toISOString(),
+      },
+    });
+  }
   await removeClaimedQueueJob(job);
+}
+
+async function extractIncomingLetterText(request: Request, letterId: string) {
+  const actor = await requireUser(request);
+  if (!actor.roles.includes("sekretaris")) throw new AppError(403, "Pembacaan surat masuk hanya tersedia untuk Sekretaris.");
+  if (!/^[0-9a-f-]{36}$/i.test(letterId)) throw new AppError(400, "ID surat masuk tidak valid.");
+  const rows = (await serviceRequest(queryPath("secretariat_incoming_letters", {
+    select: "id,storage_path,original_filename",
+    id: "eq." + letterId,
+    limit: "1",
+  }))).data;
+  const letter = Array.isArray(rows) ? rows[0] : null;
+  if (!letter) throw new AppError(404, "Surat masuk tidak ditemukan.");
+  const connection = await currentConnection();
+  if (!connection?.refresh_token_ciphertext || !connection?.drive_uploads_folder_id) throw new AppError(409, "Drive CSSMoRA belum tersambung.");
+  const storageResponse = await fetch(SUPABASE_URL + "/storage/v1/object/cssmora-letter-pdfs/" + encodeStoragePath(String(letter.storage_path)), {
+    headers: { apikey: SERVICE_ROLE_KEY, Authorization: "Bearer " + SERVICE_ROLE_KEY },
+  });
+  if (!storageResponse.ok) throw new AppError(storageResponse.status, "PDF surat tidak dapat dibaca dari Supabase.");
+  const bytes = new Uint8Array(await storageResponse.arrayBuffer());
+  if (!bytes.byteLength || bytes.byteLength > 10 * 1024 * 1024) throw new AppError(413, "Ukuran PDF tidak sesuai batas 10 MB.");
+  const mimeType = String(storageResponse.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (mimeType !== "application/pdf") throw new AppError(415, "File yang diunggah bukan PDF.");
+
+  const accessToken = await driveAccessToken(connection);
+  const archive = await ensureIncomingLettersFolder(accessToken, connection);
+  const boundary = "cssmora_ocr_" + randomHex(12);
+  const encoder = new TextEncoder();
+  const metadata = encoder.encode(
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: "OCR sementara surat masuk " + String(letter.id).slice(0, 8), mimeType: "application/vnd.google-apps.document", parents: [archive.folderId] })}\r\n--${boundary}\r\nContent-Type: application/pdf\r\n\r\n`,
+  );
+  const suffix = encoder.encode(`\r\n--${boundary}--`);
+  const body = new Uint8Array(metadata.byteLength + bytes.byteLength + suffix.byteLength);
+  body.set(metadata, 0);
+  body.set(bytes, metadata.byteLength);
+  body.set(suffix, metadata.byteLength + bytes.byteLength);
+  const createUrl = new URL("https://www.googleapis.com/upload/drive/v3/files");
+  createUrl.searchParams.set("uploadType", "multipart");
+  createUrl.searchParams.set("ocrLanguage", "id");
+  createUrl.searchParams.set("fields", "id,mimeType");
+  const createResponse = await fetch(createUrl.toString(), {
+    method: "POST",
+    headers: { Authorization: "Bearer " + accessToken, "Content-Type": "multipart/related; boundary=" + boundary },
+    body,
+  });
+  const created = await createResponse.json().catch(() => ({}));
+  if (!createResponse.ok || !created?.id) throw new AppError(createResponse.status || 502, "Google Drive belum dapat membaca teks PDF.");
+  const temporaryDocId = String(created.id);
+  try {
+    const exportUrl = "https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(temporaryDocId) + "/export?mimeType=text%2Fplain";
+    let text = "";
+    let lastStatus = 502;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const response = await fetch(exportUrl, { headers: { Authorization: "Bearer " + accessToken } });
+      lastStatus = response.status;
+      if (response.ok) { text = await response.text(); break; }
+      if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    if (!text.trim()) throw new AppError(lastStatus, "Teks PDF belum dapat diekspor setelah proses OCR.");
+    return { text: text.slice(0, 28000), mimeType: "text/plain" };
+  } finally {
+    await deleteDriveFile(accessToken, temporaryDocId).catch(() => null);
+  }
 }
 
 async function archiveAttendancePhoto(body: Record<string, unknown>) {
@@ -2241,7 +2475,9 @@ async function runSync(retryFailed = false) {
       }).catch(() => null);
     }
   }
-  return { processed: jobs.length, succeeded, failed };
+  const incomingLetterSheet = await syncIncomingLettersSpreadsheet(accessToken, connection);
+  if (incomingLetterSheet.failed) failed += 1;
+  return { processed: jobs.length, succeeded, failed, incomingLetterSheet };
 }
 
 async function gzipBytes(bytes: Uint8Array) {
@@ -2424,6 +2660,10 @@ async function handleRequest(request: Request) {
     if (action === "status") {
       const actor = await requireUser(request);
       return jsonResponse(request, 200, await integrationStatus());
+    }
+    if (action === "extract_incoming_letter_text") {
+      const letterId = String(body.letter_id || "").trim();
+      return jsonResponse(request, 200, { ok: true, action, ...(await extractIncomingLetterText(request, letterId)) });
     }
     if (action === "sign_program_document") {
       const actor = await requireUser(request);
