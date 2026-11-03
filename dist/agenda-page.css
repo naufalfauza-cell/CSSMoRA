@@ -162,19 +162,18 @@
  .agenda-page .agenda-event-meta{margin-top:12px}
 }
 
-/* Compact agenda cards follow the Info Lomba catalog rhythm. */
+/* Mirror Info Lomba's responsive grid and spacing; keep event photos landscape. */
 .agenda-page .agenda-event-list{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(min(100%,292px),300px));
-  justify-content:center;
+  grid-template-columns:repeat(4,minmax(0,1fr));
   align-items:stretch;
-  gap:28px 18px;
+  gap:35px 19px;
 }
 .agenda-page .agenda-event-card{
   display:flex;
   flex-direction:column;
   width:100%;
-  max-width:300px;
+  max-width:none;
   min-width:0;
   min-height:100%;
   border-radius:18px;
@@ -182,13 +181,13 @@
 .agenda-page .agenda-card-photo{
   flex:0 0 auto;
   width:100%;
-  height:clamp(160px,14vw,190px);
+  height:clamp(145px,13vw,190px);
   min-height:0;
 }
 .agenda-page .agenda-card-body{
   flex:1;
   min-width:0;
-  padding:16px;
+  padding:15px;
 }
 .agenda-page .agenda-card-top{
   align-items:flex-start;
@@ -197,7 +196,7 @@
   margin-bottom:10px;
 }
 .agenda-page .agenda-card-body h3{
-  font-size:clamp(18px,1.4vw,21px);
+  font-size:clamp(17px,1.2vw,20px);
   line-height:1.25;
 }
 .agenda-page .agenda-program-name,
@@ -209,11 +208,16 @@
   margin-top:auto;
   padding-top:12px;
 }
+@media(min-width:1600px){
+  .agenda-page .agenda-event-list{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media(max-width:1100px){
+  .agenda-page .agenda-event-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .agenda-page .agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 14px}
+}
 @media(max-width:480px){
-  .agenda-page .agenda-event-list{
-    grid-template-columns:minmax(0,1fr);
-    justify-items:stretch;
-  }
-  .agenda-page .agenda-event-card{max-width:none}
-  .agenda-page .agenda-card-photo{height:clamp(160px,52vw,210px)}
+  .agenda-page .agenda-event-list{gap:25px 10px}
+  .agenda-page .agenda-card-photo{height:clamp(135px,36vw,175px)}
 }
