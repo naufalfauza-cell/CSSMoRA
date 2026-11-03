@@ -297,3 +297,99 @@ body.admin-page .auth-brand-logos{display:flex;align-items:center;gap:14px;min-h
 body.admin-page .auth-cssmora-logo{display:block;width:44px;height:44px;object-fit:contain;flex:none}
 body.admin-page .auth-logo-divider{width:1px;height:30px;background:var(--ui-line);flex:none}
 body.admin-page .auth-partner-logo{display:block;width:110px;height:44px;object-fit:cover;object-position:center 60%;flex:none}
+
+/* Keep the agenda's cards at the same measured width as the Info Lomba cards. */
+.agenda-page .agenda-event-list{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  align-items:stretch;
+  gap:24px 16px;
+}
+.agenda-page :is(.agenda-empty,.agenda-loading){grid-column:1/-1}
+.agenda-page .agenda-event-card{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  height:100%;
+  overflow:visible;
+}
+.agenda-page .agenda-card-photo{
+  flex:none;
+  width:100%;
+  height:auto;
+  min-height:0;
+  aspect-ratio:2/1;
+}
+.agenda-page .agenda-card-body{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  min-width:0;
+  padding:12px 3px 6px;
+}
+.agenda-page .agenda-card-top{
+  display:grid;
+  align-content:start;
+  gap:7px;
+  margin:0 0 9px;
+}
+.agenda-page .agenda-date-line{
+  color:#6a7770;
+  font-size:10px;
+  font-weight:500;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+.agenda-page .agenda-countdowns{justify-content:flex-start;gap:5px;min-width:0}
+.agenda-page :is(.countdown-day,.countdown-time,.countdown-live){
+  padding:5px 8px;
+  font-size:9px;
+  line-height:1.3;
+  white-space:normal;
+}
+.agenda-page .agenda-card-body h3{
+  margin:0;
+  color:var(--ui-ink);
+  font-size:clamp(16px,1.15vw,18px);
+  line-height:1.28;
+  letter-spacing:-.025em;
+  overflow-wrap:anywhere;
+  text-wrap:pretty;
+}
+.agenda-page .agenda-program-name{
+  margin:5px 0 0;
+  color:#77817b;
+  font-size:9px;
+  font-weight:500;
+  line-height:1.45;
+  letter-spacing:.025em;
+  overflow-wrap:anywhere;
+}
+.agenda-page .agenda-event-description{
+  max-width:none;
+  margin:7px 0 0;
+  color:#68746e;
+  font-size:11px;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.agenda-page .agenda-event-meta{
+  flex:none;
+  margin:12px 0 0;
+  padding:9px 0 0;
+  border-top:1px solid #e4e6e2;
+  color:#596b61;
+  font-size:10px;
+  line-height:1.45;
+}
+.agenda-page .agenda-event-meta:empty{display:none}
+.agenda-page .agenda-event-meta span{min-width:0;align-items:flex-start;overflow-wrap:anywhere}
+@media(max-width:1200px){.agenda-page .agenda-event-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.agenda-page .agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}}
+@media(max-width:560px){
+  .agenda-page .agenda-event-list{grid-template-columns:1fr;gap:20px}
+  .agenda-page .agenda-card-photo{aspect-ratio:2.1/1}
+  .agenda-page .agenda-card-body{padding:11px 2px 4px}
+  .agenda-page .agenda-card-body h3{font-size:17px}
+  .agenda-page .agenda-event-description{font-size:12px;line-height:1.55}
+}

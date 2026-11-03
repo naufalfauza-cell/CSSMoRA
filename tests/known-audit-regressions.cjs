@@ -22,6 +22,8 @@ const record = (name,e)=>{
   if(name==='Announcement timeouts differ')assert.ok(e.clientMs>e.upstreamGroqMs);
   if(name==='Application reference formats differ')assert.equal(e.publicNumberPrefix,e.adminPrefix);
   if(name==='Competition ID becomes an executable HTML attribute')assert.equal(e.injectedEventHandler,false);
+  if(name==='Admin desktop scale stays compact'){assert.equal(e.desktopZoom,true);assert.equal(e.forcedNaturalScale,false);}
+  if(name==='Agenda detail text wraps without crowding'){assert.equal(e.startAligned,true);assert.equal(e.longTextWraps,true);}
   findings.push(name);
 };
 (async () => {
@@ -156,6 +158,17 @@ const record = (name,e)=>{
   const catalogMarkup = catalogNode('#competition-grid').innerHTML;
   record('Competition ID becomes an executable HTML attribute', {
     injectedEventHandler: catalogMarkup.includes('data-id="audit" onclick="globalThis.auditMarker=1"')
+  });
+  const walletTheme=read('dist/wallet-theme.css');
+  const baseStyles=read('dist/style.css');
+  const agendaStyles=read('dist/agenda-page.css');
+  record('Admin desktop scale stays compact', {
+    desktopZoom:/@media\(min-width:1000px\)\s*\{[\s\S]*?\.agenda-page,\.admin-page,\.catalog-page\{zoom:\.8\}/.test(baseStyles),
+    forcedNaturalScale:/body:is\(\.catalog-page,\.agenda-page,\.admin-page\)\s*\{\s*zoom:\s*1/.test(walletTheme)
+  });
+  record('Agenda detail text wraps without crowding', {
+    startAligned:/\.agenda-page \.agenda-card-body\{\s*justify-content:flex-start;\s*min-width:0;/.test(agendaStyles),
+    longTextWraps:/\.agenda-page \.agenda-event-description,[\s\S]{0,180}?\.agenda-page \.agenda-event-meta span\{\s*overflow-wrap:anywhere;/.test(agendaStyles)
   });
   console.log('PASS: '+findings.length+' focused regression checks.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

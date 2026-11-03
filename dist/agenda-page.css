@@ -104,26 +104,6 @@
 @media(prefers-reduced-motion:reduce){.agenda-event-card,.calendar-day{transition:none}}
 
 
-/* Arrange monthly agendas as responsive photo cards. */
-.agenda-event-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
-.agenda-event-card{display:flex;flex-direction:column;min-height:100%;border-radius:22px}
-.agenda-card-photo{flex:0 0 auto;height:clamp(170px,16vw,240px);min-height:0}
-.agenda-card-body{flex:1;padding:18px 19px}
-.agenda-card-top{align-items:flex-start;flex-direction:column;justify-content:flex-start;gap:10px;margin-bottom:12px}
-.agenda-countdowns{justify-content:flex-start}
-.agenda-card-body h3{font-size:clamp(18px,1.55vw,22px)}
-.agenda-event-meta{margin-top:auto;padding-top:12px}
-@media(max-width:1100px){.agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr))}.agenda-card-photo{height:clamp(175px,25vw,230px)}}
-@media(max-width:680px){.agenda-event-list{grid-template-columns:1fr}.agenda-event-card{min-height:0}.agenda-card-photo{height:clamp(190px,48vw,260px)}.agenda-card-body{padding:16px}.agenda-card-top{gap:8px}.agenda-event-meta{margin-top:12px;padding-top:0}}
-
-@media(min-width:1000px){.agenda-page{zoom:.8}}
-
-/* Keep agenda cards in fixed columns so partial rows leave open space. */
-@media(min-width:1101px){.agenda-event-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}}
-@media(max-width:1100px) and (min-width:681px){.agenda-event-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}}
-@media(max-width:680px){.agenda-event-list{grid-template-columns:1fr}}
-
-
 /* Expand the monthly calendar and keep navigation visible while scrolling. */
 .agenda-page .site-header{position:sticky;top:0;z-index:100;background:#f5f6ef;box-shadow:0 4px 16px #183b2a0b}
 .agenda-page .calendar-section{scroll-margin-top:82px}
@@ -149,4 +129,88 @@
 @media(max-width:420px){
  .agenda-page .calendar-day{min-height:82px;padding:3px}
  .agenda-page .calendar-event-chip,.agenda-page .calendar-event-more{font-size:7px}
+}
+
+/* Keep event information readable when titles and descriptions wrap on narrow cards. */
+.agenda-page .agenda-card-body{
+  justify-content:flex-start;
+  min-width:0;
+}
+.agenda-page .agenda-card-top,
+.agenda-page .agenda-event-meta,
+.agenda-page .agenda-event-meta span{
+  min-width:0;
+}
+.agenda-page .agenda-date-line,
+.agenda-page .agenda-card-body h3,
+.agenda-page .agenda-program-name,
+.agenda-page .agenda-event-description,
+.agenda-page .agenda-event-meta span{
+  overflow-wrap:anywhere;
+}
+.agenda-page .agenda-date-line{line-height:1.45}
+.agenda-page .agenda-card-body h3{line-height:1.28}
+.agenda-page .agenda-program-name,
+.agenda-page .agenda-event-description{line-height:1.6}
+.agenda-page .agenda-event-meta{
+  margin-top:12px;
+  padding-top:0;
+  line-height:1.5;
+}
+.agenda-page .agenda-event-meta span{align-items:flex-start}
+@media(max-width:680px){
+ .agenda-page .agenda-event-meta{margin-top:12px}
+}
+
+/* Mirror Info Lomba's responsive grid and spacing; keep event photos landscape. */
+.agenda-page .agenda-event-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));
+  align-items:stretch;
+  gap:35px 19px;
+}
+.agenda-page .agenda-event-card{
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  min-height:100%;
+  border-radius:18px;
+}
+.agenda-page .agenda-card-photo{
+  flex:0 0 auto;
+  width:100%;
+  aspect-ratio:2/1;
+  min-height:0;
+}
+.agenda-page .agenda-card-body{
+  flex:1;
+  min-width:0;
+  padding:15px;
+}
+.agenda-page .agenda-card-top{
+  align-items:flex-start;
+  flex-direction:column;
+  gap:8px;
+  margin-bottom:10px;
+}
+.agenda-page .agenda-card-body h3{
+  font-size:clamp(17px,1.2vw,20px);
+  line-height:1.25;
+}
+.agenda-page .agenda-program-name,
+.agenda-page .agenda-event-description{
+  font-size:13px;
+  line-height:1.55;
+}
+.agenda-page .agenda-event-meta{
+  margin-top:auto;
+  padding-top:12px;
+}
+@media(max-width:760px){
+  .agenda-page .agenda-event-list{gap:28px 14px}
+}
+@media(max-width:480px){
+  .agenda-page .agenda-event-list{gap:25px 10px}
 }

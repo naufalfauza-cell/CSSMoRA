@@ -1,0 +1,1014 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/*
+  CSSMoRA wallet-style visual preview, Nov 2026.
+  Design reference: blue/teal financial-app UI. No third-party brand assets.
+  This file only changes presentation; all original navigation and APIs remain.
+*/
+:root{
+  --wallet-bg:#eceef2;
+  --wallet-white:#fff;
+  --wallet-ink:#1d252e;
+  --wallet-muted:#69737e;
+  --wallet-line:#e4e8ee;
+  --wallet-blue:#0786b9;
+  --wallet-deep:#006ba7;
+  --wallet-darker:#054e7d;
+  --wallet-teal:#14b8c4;
+  --wallet-cyan:#b9f0f6;
+  --wallet-success:#14884b;
+  --wallet-card-shadow:0 3px 14px rgba(38,54,78,.045);
+  --wallet-font:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+  --bg:var(--wallet-bg);
+  --paper:#fff;
+  --ink:var(--wallet-ink);
+  --muted:var(--wallet-muted);
+  --line:var(--wallet-line);
+  --green:var(--wallet-deep);
+  --lime:#d0f6fa;
+  --orange:#f38c45;
+  --ui-ink:var(--wallet-ink);
+  --ui-muted:var(--wallet-muted);
+  --ui-green:var(--wallet-deep);
+  --ui-mint:#f2f8fb;
+  --ui-lime:#c3eef5;
+  --ui-paper:#fff;
+  --ui-line:var(--wallet-line);
+  --ui-shadow:var(--wallet-card-shadow);
+  --font:var(--wallet-font);
+  --display:var(--wallet-font);
+}
+html{scroll-behavior:smooth}
+body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.public-achievement-page,.checkin-page,.admin-page){
+  background:var(--wallet-bg);color:var(--wallet-ink);font-family:var(--wallet-font);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(h1,h2,h3,h4,strong){
+  font-family:var(--wallet-font);letter-spacing:-.029em;
+}
+body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(input,select,textarea,button){
+  font-family:var(--wallet-font);
+}
+body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(button,a,input,select,textarea):focus-visible{
+  outline:3px solid #40c5d4;outline-offset:3px;
+}
+body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(input,select,textarea){
+  accent-color:var(--wallet-blue);
+}
+body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(input,select,textarea):focus{
+  border-color:#69c0dc;box-shadow:0 0 0 3px #65c8dd27;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) .site-header{
+  background:#fff;border-bottom:1px solid var(--wallet-line);box-shadow:none;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(.brand-copy strong,.brand-copy i){
+  color:#126b9d;font-style:normal;font-weight:800;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(.portal-nav a[aria-current=page],.portal-nav .is-active){
+  background:#d9f4f9;color:#036aa1;border-radius:999px;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page) :is(.portal-nav-admin,.header-action){
+  border-color:#cdeaf1;background:#ecfbfd;color:#066c9a;border-radius:999px;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(.admin-button,.register-button,.agenda-reset-filter,.achievement-submit,.submit-button):not(:disabled){
+  background:var(--wallet-blue);color:#fff;border-color:transparent;box-shadow:none;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(.admin-button,.register-button,.submit-button){
+  border-radius:16px;font-weight:750;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(.auth-card,.editor-card,.records-card,.calendar-card,.checkin-card,.agenda-today-card,.finance-launch-card,.achievement-card,.competition-card,.detail-page-grid,.agenda-event-card){
+  background:#fff;border-color:var(--wallet-line);box-shadow:var(--wallet-card-shadow);border-radius:26px;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page) :is(.agenda-section-kicker,.agenda-eyebrow,.auth-kicker,.admin-kicker){
+  color:#007fa9;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page) :is(.catalog-heading h1,.agenda-intro h1,.achievement-intro h1,.checkin-card h1){
+  color:var(--wallet-ink);font-family:var(--wallet-font);letter-spacing:-.045em;font-weight:800;
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page) :is(.catalog-heading,.agenda-intro,.achievement-intro){
+  border-color:var(--wallet-line);
+}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page) :is(.search-box,.select-wrap,.month-switcher,.detail-back){
+  background:#fff;border-color:var(--wallet-line);border-radius:18px;color:var(--wallet-ink);
+}
+.catalog-page .catalog-section{background:var(--wallet-bg)}
+.catalog-page .competition-card{background:#fff;border:1px solid var(--wallet-line);border-radius:24px;overflow:hidden;box-shadow:var(--wallet-card-shadow)}
+.catalog-page .competition-card:hover{border-color:#9bd6e4;box-shadow:0 8px 26px rgba(14,78,121,.08)}
+.catalog-page .card-title-row h3{color:#1a313e}
+.catalog-page .detail-info h1{color:var(--wallet-ink)}
+.catalog-page :is(.detail-organizer,.poster-missing){background:#eaf7fb;color:#27607f;border-color:#acd7e3}
+.agenda-page .agenda-main{background:transparent}
+.agenda-page .agenda-today-card{background:#fff}
+.agenda-page :is(.calendar-day.is-today .calendar-day-number,.calendar-event-chip){background:#d8f3fa;color:#076e9e}
+.agenda-page .calendar-day.is-selected .calendar-day-number{background:#008dc0;color:#fff}
+.agenda-page .calendar-day{background:#fff;border-color:#e3e8ed}
+.agenda-page .calendar-day:hover{background:#edfafd}
+.agenda-page .calendar-event-chip{border-left-color:#19b5c0}
+.agenda-page .calendar-card{background:#fff}
+.achievement-page :is(.achievement-card,.achievement-panel,.achievement-stat,.achievement-banner){border-color:var(--wallet-line);box-shadow:var(--wallet-card-shadow)}
+.achievement-page :is(.achievement-header,.achievement-main){font-family:var(--wallet-font)}
+.checkin-page .checkin-wrap{background:transparent}
+.checkin-page :is(.flow-emblem,.checkin-label){background:#dff5f9;color:#08759a}
+.checkin-page .checkin-card{border-radius:30px;padding:clamp(20px,4vw,32px)}
+
+/* Home — GoPay-style blue header / floating white sheet. */
+body.wallet-home{min-width:320px;font-size:14px;overflow-x:hidden}
+.wallet-app{max-width:1320px;margin:0 auto;min-height:100vh;isolation:isolate}
+.wallet-hero{
+  position:relative;overflow:hidden;isolation:isolate;
+  min-height:330px;padding:25px clamp(20px,5vw,64px) 65px;
+  color:#fff;background:linear-gradient(133deg,#087bad 0%,#067db5 33%,#04679f 72%,#044d82 100%);
+}
+.wallet-hero::before{
+  content:"";position:absolute;inset:-90px -50px 0 30%;z-index:-1;pointer-events:none;opacity:.45;
+  background:
+    repeating-linear-gradient(136deg,transparent 0 46px,rgba(151,226,246,.17) 47px 49px,transparent 50px 88px),
+    repeating-linear-gradient(45deg,transparent 0 84px,rgba(185,234,247,.08) 85px 87px,transparent 88px 155px);
+  mask-image:linear-gradient(95deg,transparent,#000 55%);
+}
+.wallet-hero::after{
+  content:"";position:absolute;width:470px;height:470px;right:-245px;bottom:-375px;
+  border-radius:50%;background:#0cb4c56b;filter:blur(34px);z-index:-1;
+}
+.wallet-hero-top{display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;z-index:2}
+.wallet-brand{display:flex;align-items:center;gap:11px;color:#fff;text-decoration:none}
+.wallet-brand-logo{display:grid;place-items:center;width:47px;height:47px;border-radius:17px;background:#fffffff2;box-shadow:0 5px 18px #003a6220}
+.wallet-brand-logo img{width:36px;height:36px;object-fit:contain}
+.wallet-brand strong{display:block;font-size:19px;letter-spacing:-.055em;line-height:1.15;font-weight:800}
+.wallet-brand small{display:block;font-size:10px;letter-spacing:.19em;font-weight:700;opacity:.84}
+.wallet-hero-login{display:flex;align-items:center;gap:8px;padding:10px 15px;color:#fff;border:1px solid #a8e9f375;background:#ffffff1b;border-radius:999px;text-decoration:none;font-size:12px;font-weight:750}
+.wallet-hero-login svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.wallet-hero-login b{font-size:18px;font-weight:500}
+.wallet-hero-login:hover{background:#ffffff34}
+.wallet-hero-body{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:33px 0 27px;max-width:1060px}
+.wallet-hero-eyebrow{display:flex;align-items:center;gap:9px;font-size:10px;font-weight:800;letter-spacing:.11em;color:#cefaff}
+.wallet-live-dot{width:8px;height:8px;border-radius:50%;background:#9ef6e8;box-shadow:0 0 0 4px #dcffff30}
+.wallet-hero h1{margin:13px 0 9px;font-size:clamp(28px,3.4vw,49px);font-weight:800;letter-spacing:-.055em;line-height:1.12}
+.wallet-hero h1 span{color:#abf6f4}
+.wallet-hero p{max-width:530px;margin:0;color:#e7f9ff;font-size:clamp(11px,1.05vw,14px);line-height:1.75}
+.wallet-hero-emblem{display:grid;place-items:center;flex:none;width:135px;height:135px;border-radius:36px;background:linear-gradient(135deg,#ffffff2e,#ffffff06);border:1px solid #b8f5fd58;box-shadow:0 18px 40px #0036592b}
+.wallet-hero-emblem img{width:94px;height:94px;object-fit:contain;filter:drop-shadow(0 7px 8px #01466945)}
+.wallet-hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+.wallet-hero-actions a{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:14px;border:1px solid #b2edfa63;background:#ffffff18;color:#fff;font-size:12px;font-weight:700;text-decoration:none;min-width:150px}
+.wallet-hero-actions a:hover{background:#ffffff30}
+.wallet-hero-actions svg,.wallet-hero-actions span{width:20px;height:20px}
+.wallet-hero-actions svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.wallet-hero-actions span{margin-left:auto;font-size:21px;line-height:1}
+.wallet-content{
+  position:relative;z-index:1;margin-top:-30px;padding:28px clamp(16px,4vw,50px) 42px;
+  background:var(--wallet-bg);border-radius:34px 34px 0 0;
+}
+.wallet-section-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px}
+.wallet-section-top h2{margin:0;color:var(--wallet-ink);font-size:clamp(17px,1.8vw,23px);line-height:1.3;font-weight:800;letter-spacing:-.042em}
+.wallet-section-top>span{font-size:12px;color:#74808a}
+.wallet-section-eyebrow{display:block;margin-bottom:5px;color:#057eae;font-size:10px;font-weight:850;letter-spacing:.11em}
+.wallet-more-link{display:flex;align-items:center;gap:8px;color:#036b9d;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
+.wallet-more-link span{font-size:23px;line-height:1}
+.wallet-quick-panel,.wallet-service-card{
+  padding:23px 28px 25px;border-radius:28px;background:var(--wallet-white);
+  border:1px solid #e8ebf0;box-shadow:var(--wallet-card-shadow);
+}
+.wallet-quick-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:17px}
+.wallet-quick-item{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;min-width:0;color:#293238;text-decoration:none;font-size:12px;font-weight:650;text-align:center;line-height:1.45}
+.wallet-quick-icon,.wallet-service-icon{
+  display:grid;place-items:center;flex:none;border-radius:20px;color:#006c9d;
+  box-shadow:inset 0 0 0 1px #fff7;
+}
+.wallet-quick-icon{width:76px;height:72px;transition:transform .18s,box-shadow .18s}
+.wallet-quick-item:hover .wallet-quick-icon{transform:translateY(-3px);box-shadow:0 8px 18px #0b689517}
+.wallet-quick-icon svg,.wallet-service-icon svg{
+  width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+}
+.wallet-icon-cyan{background:linear-gradient(145deg,#d5fbfb,#94e2ec);color:#0777a5}
+.wallet-icon-orange{background:linear-gradient(145deg,#fff2df,#ffe0b8);color:#ef8d25}
+.wallet-icon-teal{background:linear-gradient(145deg,#dbfff3,#acead4);color:#098e7b}
+.wallet-icon-purple{background:linear-gradient(145deg,#eee9ff,#d2c6fa);color:#6651c5}
+.wallet-icon-blue{background:linear-gradient(145deg,#dcf1ff,#b5dcff);color:#1679c2}
+.wallet-feature-section{margin-top:30px}
+.wallet-agenda-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:18px;align-items:stretch}
+.wallet-home .agenda-videotron{
+  position:relative;inset:auto;left:auto;top:auto;width:100%;height:100%;min-width:0;
+  margin:0;padding:0;background:#fff;transform:none;border:1px solid #e8ebf0;
+  border-radius:26px;box-shadow:var(--wallet-card-shadow);overflow:hidden;
+}
+.wallet-home .videotron-bezel{height:100%;padding:0;background:transparent;border-radius:0}
+.wallet-home .videotron-screen{
+  display:flex;flex-direction:column;min-height:285px;height:100%;
+  padding:17px 18px 15px;border:0;border-radius:0;
+  background:linear-gradient(133deg,#075d94,#0485a9 70%,#0c9eaa);color:#fff;
+}
+.wallet-home .videotron-screen::before{opacity:.23}
+.wallet-home .screen-header{position:relative;top:auto;left:auto;right:auto;padding:0 0 11px;flex-shrink:0;border-bottom:1px solid #ffffff31}
+.wallet-home .screen-brand,.wallet-home .screen-brand span{color:#fff}
+.wallet-home .screen-brand img{width:23px;height:23px}
+.wallet-home .screen-status{color:#e0fff9}
+.wallet-home .screen-main{flex:1;min-height:0;padding:8px 0;overflow:visible}
+.wallet-home .screen-kicker{font-weight:750;letter-spacing:.1em;color:#b8f6fa;font-size:10px}
+.wallet-home #agenda-list{min-height:180px;height:auto;max-height:none}
+.wallet-home #agenda-list.is-empty{min-height:160px;height:auto;background:transparent}
+.wallet-home .event-item{border-radius:15px;overflow:hidden}
+.wallet-home .event-photo{border-radius:14px}
+.wallet-home .screen-footer{position:relative;bottom:auto;padding-top:10px;border-top:1px solid #ffffff31;font-size:9px}
+.wallet-home .event-content{background:linear-gradient(180deg,transparent 30%,#001a38bb 100%)}
+.wallet-campus-card{position:relative;display:flex;flex-direction:column;justify-content:flex-end;min-height:285px;isolation:isolate;overflow:hidden;border-radius:26px;text-decoration:none;color:#fff;background:#105d89;box-shadow:var(--wallet-card-shadow)}
+.wallet-campus-card video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.wallet-campus-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#0a3049df 1%,#11557763 56%,#0b2b3d38)}
+.wallet-campus-chip{position:absolute;top:19px;left:19px;max-width:calc(100% - 38px);padding:7px 10px;border:1px solid #ffffff8c;border-radius:999px;background:#002e4770;font-size:9px;font-weight:800;letter-spacing:.09em}
+.wallet-campus-copy{display:grid;gap:8px;padding:30px 23px 24px}
+.wallet-campus-copy strong{font-size:clamp(21px,2vw,28px);font-weight:800;line-height:1.16;letter-spacing:-.04em}
+.wallet-campus-copy small{font-size:11px;line-height:1.6;color:#e4f6ff}
+.wallet-campus-copy b{font-size:17px;color:#b7f1ff}
+.wallet-service-card{padding:4px 22px}
+.wallet-service-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px}
+.wallet-service-row>a{
+  display:grid;grid-template-columns:56px minmax(0,1fr) auto;grid-template-rows:auto auto;
+  align-items:center;column-gap:13px;min-width:0;padding:22px 10px;
+  border-bottom:1px solid #edf0f4;text-decoration:none;color:var(--wallet-ink);
+}
+.wallet-service-row>a:nth-last-child(-n+2){border-bottom:0}
+.wallet-service-row>a:hover{background:#f8fcfe}
+.wallet-service-icon{grid-column:1;grid-row:1/3;width:55px;height:55px;border-radius:18px}
+.wallet-service-icon svg{width:27px;height:27px}
+.wallet-service-row>a strong{grid-column:2;grid-row:1;font-size:13px;font-weight:750}
+.wallet-service-row>a small{grid-column:2;grid-row:2;color:var(--wallet-muted);font-size:10px;line-height:1.45}
+.wallet-service-row>a>b{grid-column:3;grid-row:1/3;color:#929ba4;font-size:25px;font-weight:400}
+.wallet-note-card{display:flex;align-items:center;gap:17px;min-height:100px;padding:19px 25px;border:1px solid #c9eced;border-radius:28px;background:linear-gradient(105deg,#e9fbf8,#f9ffff);color:#194351}
+.wallet-note-symbol{display:grid;place-items:center;flex:none;width:52px;height:52px;background:#bfefeb;border-radius:17px;color:#09849d;font-size:28px}
+.wallet-note-card>div{flex:1;min-width:0}
+.wallet-note-card strong{font-size:16px;font-weight:800}
+.wallet-note-card p{margin:5px 0 0;color:#56747b;font-size:11px;line-height:1.55}
+.wallet-note-card img{width:116px;max-height:62px;object-fit:contain}
+.wallet-footer{display:flex;justify-content:center;gap:8px;padding:36px 0 10px;color:#7b858e;font-size:11px;text-align:center}
+.wallet-bottom-nav{display:none}
+.wallet-home [hidden]{display:none!important}
+@media(min-width:1321px){body.wallet-home{background:#dfe4ea}.wallet-app{box-shadow:0 8px 45px #10293912}}
+@media(max-width:780px){
+ .wallet-hero{min-height:318px;padding:21px 22px 69px}
+ .wallet-hero-body{padding:31px 0 23px}
+ .wallet-hero h1{font-size:35px}
+ .wallet-hero-emblem{width:98px;height:98px;border-radius:27px}
+ .wallet-hero-emblem img{width:70px;height:70px}
+ .wallet-content{padding:25px 20px 105px;margin-top:-29px}
+ .wallet-quick-grid{gap:12px}
+ .wallet-quick-icon{width:62px;height:60px;border-radius:18px}
+ .wallet-quick-icon svg{width:28px;height:28px}
+ .wallet-agenda-grid{grid-template-columns:1fr 1fr;gap:13px}
+ .wallet-quick-panel{padding:21px 16px}
+ .wallet-home .videotron-screen{min-height:258px}
+ .wallet-campus-card{min-height:258px}
+ .wallet-service-row>a{padding:16px 7px}
+ .wallet-bottom-nav{
+   position:fixed;bottom:0;left:0;right:0;z-index:80;display:grid;
+   grid-template-columns:repeat(5,minmax(0,1fr));height:76px;padding:7px 6px max(7px,env(safe-area-inset-bottom));
+   background:#fff;box-shadow:0 -7px 25px #172e4b10;border-top:1px solid #e7ebef;
+ }
+ .wallet-bottom-nav>a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;color:#66717c;font-size:10px;font-weight:650;text-decoration:none}
+ .wallet-bottom-nav>a svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+ .wallet-bottom-nav>a.is-current{color:#0699bf;font-weight:800}
+ .wallet-bottom-nav .wallet-bottom-center{justify-content:flex-end;gap:1px}
+ .wallet-bottom-center-icon{display:grid;place-items:center;width:62px;height:62px;margin-top:-29px;border:5px solid #fff;border-radius:50%;background:linear-gradient(160deg,#19b9dc,#057eb5);color:#fff;box-shadow:0 3px 10px #044b794a}
+ .wallet-bottom-nav .wallet-bottom-center-icon svg{width:30px;height:30px}
+}
+@media(max-width:570px){
+ .wallet-hero{min-height:315px;padding:17px 19px 62px}
+ .wallet-brand-logo{width:44px;height:44px}
+ .wallet-brand strong{font-size:18px}
+ .wallet-hero-login{padding:9px 11px}
+ .wallet-hero-login span{display:none}
+ .wallet-hero-body{padding:27px 0 24px}
+ .wallet-hero h1{font-size:32px}
+ .wallet-hero p{max-width:310px;font-size:11px}
+ .wallet-hero-emblem{width:71px;height:71px;border-radius:20px}
+ .wallet-hero-emblem img{width:53px;height:53px}
+ .wallet-hero-eyebrow{font-size:8px}
+ .wallet-hero-actions a{min-width:0;flex:1;font-size:11px;padding:10px 12px}
+ .wallet-content{padding:20px 15px 98px;border-radius:32px 32px 0 0}
+ .wallet-quick-panel{padding:19px 14px}
+ .wallet-section-top h2{font-size:17px}
+ .wallet-section-top>span{font-size:10px}
+ .wallet-quick-grid{gap:6px}
+ .wallet-quick-icon{width:52px;height:52px;border-radius:16px}
+ .wallet-quick-icon svg{width:25px;height:25px}
+ .wallet-quick-item{font-size:10px;gap:8px}
+ .wallet-feature-section{margin-top:25px}
+ .wallet-agenda-grid{grid-template-columns:1fr}
+ .wallet-home .videotron-screen{min-height:290px}
+ .wallet-campus-card{min-height:185px}
+ .wallet-campus-copy{padding:24px 19px 17px}
+ .wallet-campus-copy strong{font-size:23px}
+ .wallet-service-card{padding:3px 14px}
+ .wallet-service-row{grid-template-columns:1fr}
+ .wallet-service-row>a:nth-last-child(2){border-bottom:1px solid #edf0f4}
+ .wallet-service-row>a{padding:15px 6px;grid-template-columns:52px minmax(0,1fr) auto}
+ .wallet-service-icon{width:48px;height:48px}
+ .wallet-note-card{padding:15px 17px}
+ .wallet-note-symbol{width:44px;height:44px;font-size:24px}
+ .wallet-note-card strong{font-size:13px}
+ .wallet-note-card p{font-size:10px}
+ .wallet-note-card img{width:70px}
+ .wallet-footer{flex-wrap:wrap;padding:28px 0 0;font-size:10px}
+}
+
+/* Admin desktop — deep blue rail, pale workspace, financial-app cards. */
+body.admin-page .admin-content-area{background:var(--wallet-bg)}
+body.admin-page .site-header{background:#fff;border-color:var(--wallet-line)}
+body.admin-page .admin-topbar{background:#fff;border-bottom:1px solid #e5ebf0;box-shadow:none}
+body.admin-page .admin-topbar-leading h2{color:#1e303a;font-family:var(--wallet-font);font-weight:800;letter-spacing:-.045em}
+body.admin-page .admin-topbar-user{color:#3f5664}
+body.admin-page .admin-user-avatar{background:linear-gradient(145deg,#a6ecf7,#3cb5d1);color:#034e78;border:1px solid #79c8db}
+body.admin-page .admin-sidebar,body.admin-page .admin-sidebar::before{
+  background:linear-gradient(180deg,#075d91 0%,#04507f 50%,#03446e 100%);
+}
+body.admin-page .app-sidebar-brand{color:#fff}
+body.admin-page .sidebar-account-card{background:#ffffff12;border:1px solid #abdaea4d;border-radius:22px}
+body.admin-page .sidebar-account-mark{background:#a8eff8;color:#075c89;border-radius:16px}
+body.admin-page .sidebar-account-copy strong{color:#e8faff}
+body.admin-page .sidebar-nav-label{color:#afd5e3}
+body.admin-page .admin-sidebar .admin-tab{
+  border:0;border-radius:17px;margin-block:3px;transition:background .17s ease,transform .17s ease;color:#e3f3fc;
+}
+body.admin-page .admin-sidebar .admin-tab:hover{background:#ffffff1d;transform:translateX(2px)}
+body.admin-page .admin-sidebar .admin-tab.is-active{
+  background:#e0f7fc;color:#055b8a;box-shadow:none;
+}
+body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active :is(strong,small,.module-state){color:#fff}
+body.admin-page .admin-sidebar .admin-tab.is-active .module-icon{background:#b9eef9;color:#006d9f}
+body.admin-page .admin-sidebar .module-icon{background:#ffffff18;color:#dcf8ff;border-radius:13px}
+body.admin-page .admin-sidebar .module-copy strong{font-family:var(--wallet-font);font-size:12px;font-weight:750}
+body.admin-page .admin-sidebar .module-copy small{color:#bcdfed}
+body.admin-page .admin-sidebar .drive-shortcut{border:1px solid #a8d3e833;border-radius:17px;background:#ffffff14;color:#fff}
+body.admin-page .admin-sidebar :is(.module-state,.app-sidebar-brand small){color:#cceaf4}
+body.admin-page :is(.editor-card,.records-card,.auth-card,.member-table-card,.member-editor-card,.access-form-card,.access-list-card,.finance-launch-card){
+  background:#fff;border:1px solid var(--wallet-line);border-radius:24px;box-shadow:var(--wallet-card-shadow);
+}
+body.admin-page .auth-card{max-width:430px;padding:30px;border-radius:28px}
+body.admin-page .auth-card h1{font-family:var(--wallet-font);font-weight:800;letter-spacing:-.045em}
+body.admin-page .auth-kicker{color:var(--wallet-deep)}
+body.admin-page .auth-help{color:var(--wallet-muted)}
+body.admin-page .auth-card input{background:#f8fafc;border-color:#e1e8ee;border-radius:15px}
+body.admin-page .admin-main{background:transparent}
+body.admin-page :is(.admin-kicker,.dashboard-kicker){color:#038cba;letter-spacing:.07em}
+body.admin-page :is(.editor-heading h3,.workflow-heading h3,.dashboard-top h2){color:#26343e;font-family:var(--wallet-font);font-weight:800;letter-spacing:-.045em}
+body.admin-page :is(.admin-muted,.editor-heading p,.workflow-heading p){color:#72808b}
+body.admin-page :is(.admin-button,.attendance-save,.letter-upload-form button){
+  background:var(--wallet-blue);color:#fff;border:0;border-radius:14px;box-shadow:none;font-weight:750;
+}
+body.admin-page :is(.admin-button,.attendance-save):hover{background:#006d9d}
+body.admin-page :is(.admin-button,.attendance-save):disabled{opacity:.55}
+body.admin-page :is(.text-button,.header-action){color:var(--wallet-deep)}
+body.admin-page :is(.agenda-admin-tab,.secretariat-tab,.letter-work-tab,.achievement-admin-tab,.member-option-button,.sidebar-toggle){
+  border-radius:14px;font-family:var(--wallet-font);
+}
+body.admin-page :is(.agenda-admin-tab.is-active,.secretariat-tab.is-active,.letter-work-tab.is-active,.achievement-admin-tab.is-active){
+  background:#d9f3fb;color:#036d9c;border-color:#b0ddea;
+}
+body.admin-page :is(.editor-card,.records-card,.auth-card) :is(input,select,textarea){
+  background:#fbfcfd;border:1px solid #dce5eb;border-radius:13px;color:var(--wallet-ink);
+}
+body.admin-page :is(.editor-card,.records-card) :is(input,select,textarea):focus{border-color:#49b4d2;background:#fff}
+body.admin-page :is(.record-status.published,.module-state.is-ready){color:#008d68}
+body.admin-page :is(.letter-record,.agenda-card,.member-card){border-color:#e6ebf0;background:#fff}
+body.admin-page .letter-record-list .letter-drive-link{color:#047aa9}
+body.admin-page .letter-record-list .letter-upload-form{border-color:#cfebf2;background:#f1fbfd;border-radius:16px}
+body.admin-page .letter-record-list .letter-upload-form label{color:#046a98}
+body.admin-page :is(.finance-launch-card,.secretariat-options-card){background:#fafdff}
+body.admin-page .admin-content-area :is(.record-count,.admin-pill){background:#ebf9fc;color:#086e9e}
+body.admin-page .header-action{background:#effaff;border:1px solid #c4e4ee;border-radius:999px}
+@media(max-width:760px){
+ body.admin-page .admin-topbar{box-shadow:0 3px 12px #1c39520b}
+ body.admin-page .admin-content-area{background:var(--wallet-bg)}
+ body.admin-page .auth-card{padding:23px;border-radius:26px}
+ body.admin-page .sidebar-toggle{background:#e8f9fc;color:#0878a9}
+ body.admin-page .admin-sidebar{background:linear-gradient(180deg,#065d95,#044972)}
+ body.admin-page :is(.editor-card,.records-card,.member-table-card){border-radius:22px}
+}
+@media(prefers-reduced-motion:reduce){
+ .wallet-quick-icon,.wallet-home .wallet-hero-actions a,.wallet-service-row a{transition:none}
+ .wallet-campus-card video{display:none}
+ .wallet-campus-card{background:linear-gradient(130deg,#0f769a,#07537d)}
+}
+
+
+/* v2: keep the original UNAIR campus moving background and the LIVE agenda
+   videotron visible on landing, while preserving wallet-style UI surfaces. */
+body.wallet-home .wallet-hero{
+  min-height:410px;
+  padding:17px clamp(20px,4.7vw,62px) 55px;
+  background:#075d91 url('./assets/unair-campus-poster.jpg') center 40%/cover no-repeat;
+}
+body.wallet-home .wallet-hero-campus-video{
+  position:absolute;inset:0;z-index:0;
+  display:block;width:100%;height:100%;max-width:none;
+  object-fit:cover;object-position:center 39%;opacity:1;
+  pointer-events:none;filter:saturate(.91);
+}
+body.wallet-home .wallet-hero-video-tint{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(98deg,rgba(0,56,94,.85) 0%,rgba(0,79,125,.72) 42%,rgba(0,62,109,.48) 100%);
+}
+body.wallet-home .wallet-hero::before{
+  z-index:2;opacity:.15;mask-image:linear-gradient(100deg,transparent,#000);
+}
+body.wallet-home .wallet-hero::after{z-index:1;opacity:.2}
+body.wallet-home .wallet-hero-top{z-index:4}
+body.wallet-home .wallet-hero-layout{
+  position:relative;z-index:3;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(350px,440px);
+  gap:clamp(22px,4vw,60px);align-items:center;
+  max-width:1200px;margin:16px auto 0;
+}
+body.wallet-home .wallet-hero-intro{min-width:0;align-self:center}
+body.wallet-home .wallet-hero-body{
+  max-width:580px;padding:0 0 17px;display:block;
+}
+body.wallet-home .wallet-hero h1{
+  margin:9px 0 10px;
+  font-size:clamp(29px,3.6vw,44px);
+  letter-spacing:-.047em;line-height:1.12;text-shadow:0 1px 8px #00335050;
+}
+body.wallet-home .wallet-hero h1 span{color:#b5f4ff}
+body.wallet-home .wallet-hero p{max-width:515px;font-size:12px;text-shadow:0 1px 6px #0034536b}
+body.wallet-home .wallet-hero-actions{gap:9px}
+body.wallet-home .wallet-hero-actions a{padding:10px 13px;min-width:136px;background:#fff2;border-color:#eafcff7a}
+body.wallet-home .wallet-hero-videotron{
+  align-self:stretch;justify-self:stretch;
+  position:relative;inset:auto;top:auto;left:auto;
+  width:100%;height:300px;min-width:0;max-width:none;
+  margin:0;padding:0;
+  border:1px solid rgba(238,252,255,.65);
+  border-radius:23px;
+  box-shadow:0 16px 42px rgba(0,31,60,.35),0 2px 8px rgba(0,16,44,.13);
+  transform:none;overflow:hidden;
+  background:#0a5c90;
+}
+body.wallet-home .wallet-hero-videotron .videotron-bezel{
+  height:100%;padding:0;background:none;
+}
+body.wallet-home .wallet-hero-videotron .videotron-screen{
+  height:100%;min-height:0;
+  padding:13px 14px 12px;
+  background:linear-gradient(135deg,#064d76,#05809a);
+}
+body.wallet-home .wallet-hero-videotron .screen-header{
+  position:relative;inset:auto;
+  padding-bottom:8px;display:flex;flex:none;
+  z-index:1;
+}
+body.wallet-home .wallet-hero-videotron .screen-main{
+  min-height:0;flex:1;
+  padding:8px 0 0;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+body.wallet-home .wallet-hero-videotron .screen-kicker{
+  flex:none;margin:0 0 7px;line-height:1.4;
+}
+body.wallet-home .wallet-hero-videotron #agenda-list{
+  position:relative;
+  flex:1;width:100%;height:auto;min-height:0;
+  border-radius:13px;overflow:hidden;
+}
+body.wallet-home .wallet-hero-videotron .event-item{border-radius:13px}
+body.wallet-home .wallet-hero-videotron .event-photo{border-radius:13px}
+body.wallet-home .wallet-hero-videotron .event-content{
+  padding:10px 15px 15px;justify-content:flex-end;
+}
+body.wallet-home .wallet-hero-videotron .event-body strong{
+  font-size:clamp(15px,1.45vw,19px);line-height:1.26;
+}
+body.wallet-home .wallet-hero-videotron .event-when{
+  font-size:9px;line-height:1.3;
+}
+body.wallet-home .wallet-hero-videotron .event-empty{
+  background:linear-gradient(135deg,#0a6079,#083957);
+}
+body.wallet-home .wallet-hero-videotron .screen-footer{display:none}
+body.wallet-home .wallet-content{
+  margin-top:-25px;
+  padding-top:17px;border-radius:32px 32px 0 0;
+}
+body.wallet-home .wallet-quick-panel{padding:15px 24px 18px}
+body.wallet-home .wallet-quick-panel .wallet-section-top{margin-bottom:13px}
+body.wallet-home .wallet-quick-icon{height:57px;width:65px;border-radius:18px}
+body.wallet-home .wallet-quick-icon svg{width:27px;height:27px}
+body.wallet-home .wallet-quick-grid{gap:13px}
+body.wallet-home .wallet-quick-item{gap:7px}
+body.wallet-home .wallet-campus-section .wallet-campus-card{
+  min-height:190px;
+  background:#166c96 url('./assets/unair-campus-poster.jpg') center 54%/cover no-repeat;
+}
+body.wallet-home .wallet-campus-section .wallet-campus-copy{max-width:550px}
+@media(min-width:1100px) and (max-height:800px){
+ body.wallet-home .wallet-hero{min-height:360px;padding-bottom:40px}
+ body.wallet-home .wallet-hero-layout{margin-top:10px}
+ body.wallet-home .wallet-hero-videotron{height:264px}
+ body.wallet-home .wallet-quick-panel{padding-top:12px;padding-bottom:14px}
+ body.wallet-home .wallet-quick-icon{height:51px;width:61px}
+}
+@media(max-width:900px){
+ body.wallet-home .wallet-hero-layout{
+  grid-template-columns:minmax(0,1fr) minmax(280px,47%);
+  gap:16px;
+ }
+ body.wallet-home .wallet-hero-videotron{height:282px}
+ body.wallet-home .wallet-hero h1{font-size:32px}
+}
+@media(max-width:680px){
+ body.wallet-home .wallet-hero{
+  padding:16px 18px 40px;min-height:0;
+  background-position:center 35%;
+ }
+ body.wallet-home .wallet-hero-layout{
+  grid-template-columns:minmax(0,1fr);
+  gap:17px;margin-top:18px;
+ }
+ body.wallet-home .wallet-hero-intro{display:flex;flex-direction:column;gap:0}
+ body.wallet-home .wallet-hero-body{padding:0 0 14px}
+ body.wallet-home .wallet-hero h1{font-size:29px;margin:9px 0 7px}
+ body.wallet-home .wallet-hero p{max-width:440px}
+ body.wallet-home .wallet-hero-actions{gap:8px}
+ body.wallet-home .wallet-hero-actions a{min-width:0;flex:1}
+ body.wallet-home .wallet-hero-videotron{
+  width:100%;height:278px;border-radius:20px;
+ }
+ body.wallet-home .wallet-hero-videotron .videotron-screen{padding:11px 12px 10px}
+ body.wallet-home .wallet-hero-videotron .event-body strong{font-size:17px}
+ body.wallet-home .wallet-hero-video-tint{
+  background:linear-gradient(180deg,rgba(0,63,106,.78),rgba(0,71,119,.76) 47%,rgba(0,73,124,.6) 100%);
+ }
+ body.wallet-home .wallet-content{margin-top:-18px;padding-top:15px}
+ body.wallet-home .wallet-quick-panel{padding:14px 11px 15px}
+ body.wallet-home .wallet-quick-panel .wallet-section-top{margin-bottom:11px}
+ body.wallet-home .wallet-quick-icon{width:48px;height:48px;border-radius:14px}
+ body.wallet-home .wallet-quick-icon svg{width:24px;height:24px}
+ body.wallet-home .wallet-quick-item{font-size:10px}
+}
+@media(max-width:380px){
+ body.wallet-home .wallet-hero{padding-inline:14px}
+ body.wallet-home .wallet-hero h1{font-size:26px}
+ body.wallet-home .wallet-hero-videotron{height:264px}
+ body.wallet-home .wallet-hero-videotron .event-body strong{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){
+ body.wallet-home .wallet-hero-campus-video{display:none}
+ body.wallet-home .wallet-hero{background-image:url('./assets/unair-campus-poster.jpg')}
+}
+
+
+/* v3 — Restore document scrolling (legacy dashboard.css locks html/body at 100%). */
+html.wallet-document{
+  height:auto!important;
+  min-height:100%;
+  max-height:none!important;
+  overflow-x:clip!important;
+  overflow-y:auto!important;
+  scroll-behavior:smooth;
+}
+html.wallet-document body.wallet-home{
+  height:auto!important;
+  min-height:100vh!important;
+  max-height:none!important;
+  overflow-x:clip!important;
+  overflow-y:visible!important;
+  overscroll-behavior-y:auto;
+}
+html.wallet-document .wallet-app{
+  min-height:100vh;
+  height:auto;
+  overflow:visible;
+}
+
+/* Show the original UNAIR campus video colors, without any tinted / gradient overlay. */
+html.wallet-document body.wallet-home .wallet-hero::before,
+html.wallet-document body.wallet-home .wallet-hero::after,
+html.wallet-document body.wallet-home .wallet-hero-video-tint{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+}
+html.wallet-document body.wallet-home .wallet-hero-campus-video{
+  filter:none!important;
+  opacity:1!important;
+  mix-blend-mode:normal!important;
+}
+html.wallet-document body.wallet-home .wallet-hero{
+  isolation:isolate;
+  background-color:#0f6da0;
+  background-image:url('./assets/unair-campus-poster.jpg');
+}
+/* Keep text legible over unfiltered footage, without recoloring a single pixel of it. */
+html.wallet-document body.wallet-home .wallet-hero :is(.wallet-hero-text,.wallet-brand,.wallet-hero-eyebrow){
+  text-shadow:0 1px 5px rgba(0,20,38,.8),0 2px 13px rgba(0,20,38,.55);
+}
+html.wallet-document body.wallet-home .wallet-hero-actions a,
+html.wallet-document body.wallet-home .wallet-hero-login{
+  background:#006d9b;
+  border-color:rgba(255,255,255,.55);
+  color:#fff;
+}
+html.wallet-document body.wallet-home .wallet-hero-actions a:hover,
+html.wallet-document body.wallet-home .wallet-hero-login:hover{background:#005987}
+html.wallet-document body.wallet-home .wallet-hero-videotron{
+  background:#075a81;
+  border-color:rgba(255,255,255,.83);
+}
+/* The rest of the page holds the blue GoPay-style identity. */
+html.wallet-document body.wallet-home .wallet-quick-panel{
+  border:1px solid #cde7ef;
+}
+html.wallet-document body.wallet-home .wallet-section-eyebrow{
+  color:#007da9;
+}
+
+
+/* Public secondary pages share a compact scale; home and admin keep their own layouts. */
+@media(min-width:1000px){
+ body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page){zoom:.8}
+}
+body.achievement-page :is(.achievement-intro h1 em,.achievement-home,.achievement-back){color:var(--wallet-deep)}
+body.achievement-page .achievement-card{padding:24px;border:1px solid var(--wallet-line)}
+body.achievement-page .achievement-form>.achievement-card:nth-of-type(2){padding:24px;border:1px solid var(--wallet-line)}
+body.achievement-page .achievement-section-heading h2{font-weight:700;font-size:20px}
+body.achievement-page .public-prestasi-tabs button[aria-selected="true"]{background:var(--wallet-deep);color:#fff}
+body.achievement-page .participation-option:has(input:checked){background:#edf9fc;border-color:#58afc9}
+body.achievement-page .subsidy-result{background:#eaf7fb}
+body.achievement-page .subsidy-result strong{color:var(--wallet-deep)}
+body.achievement-page .achievement-form{column-gap:20px}
+body.achievement-page .achievement-section-heading{align-items:flex-start}
+body.achievement-page :is(.participation-option,.return-agreement){min-width:0}
+body.achievement-page :is(.participation-option,.return-agreement)>span{min-width:0;overflow-wrap:anywhere}
+body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(input,select,textarea){min-width:0;max-width:100%}
+body:is(.wallet-home,.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page){scroll-padding-bottom:110px}
+@media(max-width:780px){
+ body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page){padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+ .wallet-bottom-nav{height:calc(76px + env(safe-area-inset-bottom,0px));padding-bottom:calc(7px + env(safe-area-inset-bottom,0px))}
+ .wallet-bottom-nav>a{min-height:44px}
+ body.wallet-home .wallet-section-top{flex-wrap:wrap}
+ body.wallet-home .wallet-quick-grid{gap:6px}
+ body.wallet-home .wallet-more-link{white-space:normal;min-height:44px}
+ body.achievement-page .achievement-card,
+ body.achievement-page .achievement-form>.achievement-card:nth-of-type(2){padding:18px}
+ body:is(.catalog-page,.agenda-page,.achievement-page,.checkin-page,.admin-page) :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){font-size:16px;min-height:44px}
+ body.admin-page :is(.form-two>div,.admin-topbar-leading,.admin-topbar-user){min-width:0}
+ body.admin-page .admin-topbar-user{overflow-wrap:anywhere}
+}
+@media(prefers-reduced-motion:reduce){
+ html,html.wallet-document{scroll-behavior:auto}
+ body.admin-page .admin-sidebar .admin-tab{transition:none}
+ body.admin-page .admin-sidebar .admin-tab:hover{transform:none}
+}
+
+
+/* Keep the original short card; cover crops the supplied photo in the UI. */
+body.wallet-home .wallet-campus-section .wallet-campus-card{
+  background-image:url('./assets/cssmora-active-together-wide-v3.jpg');
+  background-position:center 82%;
+  background-size:cover;
+  min-height:305px;
+}
+body.wallet-home .wallet-campus-section .wallet-campus-card .wallet-campus-shade{
+  opacity:.72;
+}
+@media(max-width:900px){
+  body.wallet-home .wallet-campus-section .wallet-campus-card{min-height:260px}
+}
+@media(max-width:680px){
+  body.wallet-home .wallet-campus-section .wallet-campus-card{
+    background-image:url('./assets/cssmora-active-together-mobile-v3.jpg');
+    background-position:center 78%;
+    min-height:230px;
+  }
+}
+@media(max-width:420px){
+  body.wallet-home .wallet-campus-section .wallet-campus-card{
+    background-position:center 88%;
+    min-height:210px;
+  }
+}
+
+/* Admin workspace refinement: softer wallet-style panels with clear contrast. */
+.admin-page .admin-workspace-shell{
+  --admin-canvas:#eceef2;
+  --admin-surface:#fff;
+  --admin-line:#e2e7ee;
+  --admin-ink:#1d2935;
+  --admin-muted:#687582;
+  --admin-blue:#0786b9;
+  --admin-blue-deep:#075b86;
+  --admin-teal:#14b8c4;
+  --admin-blue-soft:#e4f7fa;
+  --admin-card-shadow:0 7px 24px rgba(35,55,78,.055);
+}
+.admin-page .admin-workspace-content,
+.admin-page .admin-content-area{background:var(--admin-canvas)}
+.admin-page .admin-topbar{
+  border-bottom-color:var(--admin-line);
+  box-shadow:0 2px 12px rgba(35,55,78,.035);
+}
+.admin-page .admin-topbar-leading h2{
+  color:var(--admin-ink);
+  font:750 20px/1.25 var(--wallet-font);
+  letter-spacing:-.04em;
+}
+.admin-page .admin-topbar-user,
+.admin-page .admin-user-copy strong{color:#425569}
+.admin-page .admin-user-avatar{background:#dff5f8;color:#075b86;border:1px solid #bce8ef}
+.admin-page .sidebar-toggle{border-color:#dce5ec;background:#f5f8fb;color:#31566e}
+.admin-page .sidebar-toggle:hover{border-color:#a9dbe5;background:#eaf8fa}
+.admin-page .admin-sidebar,
+.admin-page .admin-sidebar::before{
+  background:linear-gradient(180deg,#0879a8 0%,#06658f 54%,#07547b 100%);
+}
+body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active{
+  border-color:#b8e7ef;
+  background:#dff6f9;
+  color:#075b86;
+  box-shadow:inset 4px 0 var(--admin-teal),0 4px 12px rgba(0,35,60,.12);
+}
+body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active :is(strong,small,.module-state){
+  color:#075b86;
+}
+.admin-page .admin-sidebar .admin-tab.is-active .module-icon{
+  background:#b8eef4;
+  color:#056b91;
+}
+.admin-page .admin-sidebar .module-copy strong{line-height:1.35}
+.admin-page .admin-content-area :is(
+  .editor-card,.records-card,.member-table-card,.member-editor-card,
+  .access-form-card,.access-list-card,.finance-launch-card,.secretariat-options-card,
+  .attendance-events-card,.letter-register-card,.attendance-editor-card,
+  .letter-editor-card,.attendance-recap-card,.attendance-roster-panel,
+  .module-placeholder-card,.achievement-application-card,.achievement-reviewer-aside .records-card
+){
+  border-color:var(--admin-line);
+  border-radius:21px;
+  background:var(--admin-surface);
+  box-shadow:var(--admin-card-shadow);
+}
+.admin-page .admin-content-area :is(.editor-heading h3,.workflow-heading h3,.achievement-admin-heading h3,.member-table-heading h3,.secretariat-intro h3,.program-library-heading h3,.module-placeholder-card h3){
+  color:var(--admin-ink);
+  font-family:var(--wallet-font);
+  font-size:18px;
+  font-weight:750;
+  line-height:1.35;
+  letter-spacing:-.035em;
+}
+.admin-page .admin-content-area :is(.admin-muted,.editor-heading p,.workflow-heading p,.secretariat-intro p,.access-heading p){
+  color:var(--admin-muted);
+  font-size:12px;
+  line-height:1.6;
+}
+.admin-page .admin-content-area :is(.agenda-admin-tabs,.secretariat-tabs,.achievement-admin-tabs,.letter-work-tabs){
+  max-width:100%;
+  border:1px solid #e0e7ed;
+  border-radius:16px;
+  background:#e6ebf1;
+  box-shadow:inset 0 1px 2px rgba(30,50,70,.025);
+}
+.admin-page .admin-content-area :is(.agenda-admin-tab,.secretariat-tab,.achievement-admin-tab,.letter-work-tab){
+  border:1px solid transparent;
+  border-radius:12px;
+  color:#596c7e;
+  line-height:1.35;
+  transition:background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.admin-page .admin-content-area :is(.agenda-admin-tab:hover,.secretariat-tab:hover,.achievement-admin-tab:hover,.letter-work-tab:hover){
+  background:#f2fbfc;
+  color:#075b86;
+}
+.admin-page .admin-content-area :is(.agenda-admin-tab.is-active,.secretariat-tab.is-active,.achievement-admin-tab.is-active,.letter-work-tab.is-active){
+  border-color:#d8e8ed;
+  background:#fff;
+  color:#075b86;
+  box-shadow:0 2px 8px rgba(23,61,84,.09);
+}
+.admin-page .admin-content-area :is(.editor-card input,.editor-card select,.editor-card textarea,.member-tools input[type=search],.member-column-filter,.member-status-filter,.letter-archive-form input,.letter-archive-form select,.access-form input,.access-form select,.table-search,.attendance-open-dialog input,.agenda-announcement-tools textarea){
+  border-color:#d8e1e9;
+  border-radius:12px;
+  background:#fbfcfe;
+  color:var(--admin-ink);
+}
+.admin-page .admin-content-area :is(.editor-card input,.editor-card select,.editor-card textarea,.member-tools input[type=search],.member-column-filter,.member-status-filter,.letter-archive-form input,.letter-archive-form select,.access-form input,.access-form select,.table-search,.attendance-open-dialog input,.agenda-announcement-tools textarea):focus{
+  border-color:#35adc5;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(20,184,196,.15);
+}
+.admin-page .admin-content-area .admin-button,
+.admin-page .admin-content-area .attendance-save{
+  border-radius:13px;
+  background:linear-gradient(135deg,#0a98bd,#0878b1);
+  box-shadow:0 4px 12px rgba(4,112,157,.16);
+  color:#fff;
+  font-weight:750;
+}
+.admin-page .admin-content-area :is(.admin-button,.attendance-save):hover:not(:disabled){
+  background:linear-gradient(135deg,#0787af,#066da3);
+  box-shadow:0 6px 16px rgba(4,112,157,.2);
+}
+.admin-page .admin-content-area :is(.member-option-button,.member-data-button,.file-import-button,.access-toggle){
+  border-color:#d9e6ec;
+  border-radius:12px;
+  background:#fff;
+  color:#176d8e;
+}
+.admin-page .admin-content-area :is(.member-option-button,.member-data-button,.file-import-button,.access-toggle):hover:not(:disabled){
+  border-color:#a9dce6;
+  background:#effafd;
+  color:#075b86;
+}
+.admin-page .admin-content-area :is(.secretariat-table-wrap,.access-table-wrap){
+  border-color:#e0e7ed;
+  border-radius:15px;
+}
+.admin-page .admin-content-area :is(.secretariat-table th,.access-table th){
+  background:#eef7fa;
+  color:#4e677a;
+}
+.admin-page .admin-content-area :is(.secretariat-table td,.access-table td){border-color:#edf1f5}
+.admin-page .admin-content-area :is(.secretariat-table tbody tr:hover,.access-table tbody tr:hover){background:#f5fbfc}
+.admin-page .admin-content-area :is(.record-row,.program-record,.attendance-event-card,.letter-record,.member-card,.achievement-application-card){
+  border-color:#e4e9ef;
+  border-radius:15px;
+  background:#fff;
+}
+.admin-page .admin-content-area :is(.record-row,.program-record,.attendance-event-card,.letter-record,.member-card):hover{
+  border-color:#c4e5eb;
+  background:#fbfeff;
+}
+.admin-page .admin-content-area :is(.record-row h4,.program-record-copy>strong,.achievement-application-head h4){color:#20384a}
+.admin-page .admin-content-area .records-empty{border-color:#d5e3eb;border-radius:15px;background:#f7fafc;color:#687b89}
+.admin-page .admin-content-area .record-count,
+.admin-page .admin-content-area .member-table-count{border-radius:999px;background:#e3f6f8;color:#086b8d}
+.admin-page .admin-content-area :is(.admin-button,.attendance-save,.member-option-button,.member-data-button,.file-import-button,.access-toggle):focus-visible{
+  outline:3px solid rgba(20,184,196,.38);
+  outline-offset:2px;
+}
+@media(max-width:700px){
+  .admin-page .admin-content-area :is(.editor-card,.records-card,.member-table-card,.member-editor-card,.access-form-card,.access-list-card,.finance-launch-card,.secretariat-options-card,.attendance-events-card,.letter-register-card,.attendance-editor-card,.letter-editor-card,.attendance-recap-card,.attendance-roster-panel,.module-placeholder-card){
+    border-radius:18px;
+  }
+  .admin-page .admin-content-area :is(.agenda-admin-tabs,.secretariat-tabs,.achievement-admin-tabs,.letter-work-tabs){
+    border-radius:14px;
+  }
+  .admin-page .admin-content-area :is(.agenda-admin-tab,.secretariat-tab,.achievement-admin-tab,.letter-work-tab){
+    min-height:40px;
+  }
+}
+
+/* Five bespoke 3D illustrations for the public service shortcuts. */
+body.wallet-home .wallet-quick-icon .wallet-quick-art{
+  display:block;
+  width:86%;
+  height:86%;
+  object-fit:contain;
+  filter:drop-shadow(0 3px 4px rgba(24,54,76,.12));
+}
+
+
+/* Partner identity beside CSSMoRA on the public home hero. */
+body.wallet-home .wallet-brand{gap:10px}
+body.wallet-home .wallet-brand-main{display:flex;align-items:center;gap:8px;min-width:0}
+body.wallet-home .wallet-brand-logo{
+  position:relative;isolation:isolate;display:grid;place-items:center;flex:none;width:48px;height:48px;
+  border-radius:0;background:transparent;box-shadow:none;
+}
+body.wallet-home .wallet-brand-logo::before{
+  content:"";position:absolute;z-index:0;left:50%;top:50%;width:64%;aspect-ratio:1;
+  transform:translate(-50%,-50%);border-radius:50%;background:#fff;
+}
+body.wallet-home .wallet-brand-logo img{position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:contain}
+body.wallet-home .wallet-brand-copy{display:flex;flex-direction:column;justify-content:center;min-height:48px}
+body.wallet-home .wallet-brand strong{font-size:18px;line-height:1.14;letter-spacing:-.045em}
+body.wallet-home .wallet-brand small{font-size:9px;line-height:1.2;letter-spacing:.14em}
+body.wallet-home .wallet-brand-partners{
+  display:flex;align-items:center;justify-content:center;flex:none;
+  min-height:54px;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+body.wallet-home .wallet-brand-partners::before{content:none;display:none}
+body.wallet-home .wallet-brand-partners img{
+  display:block;width:128px;height:52px;object-fit:contain;object-position:center;background:transparent;
+}
+@media(max-width:570px){
+  body.wallet-home .wallet-brand{gap:10px}
+  body.wallet-home .wallet-brand-main{gap:11px}
+  body.wallet-home .wallet-brand-logo,
+  body.wallet-home .wallet-brand-logo img{width:46px;height:46px}
+  body.wallet-home .wallet-brand-copy{min-height:46px}
+  body.wallet-home .wallet-brand strong{font-size:18px}
+  body.wallet-home .wallet-brand small{font-size:8px}
+  body.wallet-home .wallet-brand-partners{min-height:48px}
+  body.wallet-home .wallet-brand-partners img{width:108px;height:46px}
+}
+@media(max-width:360px){
+  body.wallet-home .wallet-hero-top{gap:6px}
+  body.wallet-home .wallet-brand{gap:7px}
+  body.wallet-home .wallet-brand-main{gap:7px}
+  body.wallet-home .wallet-brand-logo,
+  body.wallet-home .wallet-brand-logo img{width:40px;height:40px}
+  body.wallet-home .wallet-brand-copy{min-height:40px}
+  body.wallet-home .wallet-brand strong{font-size:15px}
+  body.wallet-home .wallet-brand small{font-size:8px}
+  body.wallet-home .wallet-brand-partners{min-height:34px}
+  body.wallet-home .wallet-brand-partners img{width:78px;height:32px}
+  body.wallet-home .wallet-hero-login{padding:8px}
+}
+
+/* Keep agenda copy inside each card and align paragraph edges cleanly. */
+.agenda-page .agenda-event-card{
+  overflow:hidden;
+  border-radius:19px;
+  background:#fff;
+}
+.agenda-page .agenda-card-photo{overflow:hidden}
+.agenda-page .agenda-card-body{
+  box-sizing:border-box;
+  padding:15px 16px 16px;
+}
+.agenda-page .agenda-card-top{gap:8px;margin-bottom:10px}
+.agenda-page .agenda-card-body h3{
+  line-height:1.32;
+  overflow-wrap:break-word;
+  text-wrap:pretty;
+}
+.agenda-page .agenda-program-name{
+  line-height:1.5;
+  overflow-wrap:break-word;
+}
+.agenda-page .agenda-event-description,
+.agenda-page .calendar-event-description,
+.agenda-page .calendar-empty p{
+  text-align:justify;
+  text-justify:inter-word;
+  hyphens:auto;
+  overflow-wrap:break-word;
+  line-height:1.62;
+}
+.agenda-page .agenda-event-description{margin-top:8px}
+.agenda-page .agenda-event-meta{
+  margin-top:14px;
+  padding-top:10px;
+  line-height:1.55;
+}
+.agenda-page .agenda-today-card{
+  box-sizing:border-box;
+  max-width:100%;
+  min-width:0;
+  gap:10px;
+  padding:11px 14px;
+}
+.agenda-page .agenda-today-card>div{min-width:0}
+.agenda-page .agenda-today-card strong{
+  line-height:1.4;
+  overflow-wrap:break-word;
+}
+.agenda-page .month-switcher{
+  box-sizing:border-box;
+  max-width:100%;
+  gap:8px;
+}
+.agenda-page .month-switcher strong{
+  min-width:0;
+  flex:1 1 auto;
+  line-height:1.35;
+  white-space:nowrap;
+}
+.agenda-page .month-switcher button{flex:0 0 34px}
+@media(max-width:760px){
+  .agenda-page .agenda-card-body{padding:14px 15px 15px}
+  .agenda-page .agenda-today-card{align-self:flex-end}
+  .agenda-page .month-switcher{width:100%}
+}
+@media(max-width:420px){
+  .agenda-page .agenda-card-body{padding:13px 14px 14px}
+  .agenda-page .month-switcher{gap:5px;padding:4px}
+  .agenda-page .month-switcher button{flex-basis:32px;width:32px;height:32px}
+}
+
+/* Mobile polish: keep scrolling available without drawing scrollbar rails. */
+@media(max-width:780px){
+  html,body,*{
+    scrollbar-width:none!important;
+    -ms-overflow-style:none!important;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar{
+    display:none!important;
+    width:0!important;
+    height:0!important;
+  }
+  .wallet-bottom-nav .wallet-bottom-center{
+    position:relative;
+    justify-content:center;
+    gap:0;
+    overflow:visible;
+  }
+  .wallet-bottom-nav .wallet-bottom-center-icon{
+    flex:none;
+    width:52px;
+    height:52px;
+    margin-top:-18px;
+    border:4px solid #fff;
+    border-radius:16px;
+  }
+  .wallet-bottom-nav .wallet-bottom-center-icon svg{width:27px;height:27px}
+}
