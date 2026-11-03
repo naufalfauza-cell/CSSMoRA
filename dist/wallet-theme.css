@@ -682,3 +682,172 @@ body.wallet-home .wallet-campus-section .wallet-campus-card .wallet-campus-shade
     min-height:210px;
   }
 }
+
+/* Admin workspace refinement: softer wallet-style panels with clear contrast. */
+.admin-page .admin-workspace-shell{
+  --admin-canvas:#eceef2;
+  --admin-surface:#fff;
+  --admin-line:#e2e7ee;
+  --admin-ink:#1d2935;
+  --admin-muted:#687582;
+  --admin-blue:#0786b9;
+  --admin-blue-deep:#075b86;
+  --admin-teal:#14b8c4;
+  --admin-blue-soft:#e4f7fa;
+  --admin-card-shadow:0 7px 24px rgba(35,55,78,.055);
+}
+.admin-page .admin-workspace-content,
+.admin-page .admin-content-area{background:var(--admin-canvas)}
+.admin-page .admin-topbar{
+  border-bottom-color:var(--admin-line);
+  box-shadow:0 2px 12px rgba(35,55,78,.035);
+}
+.admin-page .admin-topbar-leading h2{
+  color:var(--admin-ink);
+  font:750 20px/1.25 var(--wallet-font);
+  letter-spacing:-.04em;
+}
+.admin-page .admin-topbar-user,
+.admin-page .admin-user-copy strong{color:#425569}
+.admin-page .admin-user-avatar{background:#dff5f8;color:#075b86;border:1px solid #bce8ef}
+.admin-page .sidebar-toggle{border-color:#dce5ec;background:#f5f8fb;color:#31566e}
+.admin-page .sidebar-toggle:hover{border-color:#a9dbe5;background:#eaf8fa}
+.admin-page .admin-sidebar,
+.admin-page .admin-sidebar::before{
+  background:linear-gradient(180deg,#0879a8 0%,#06658f 54%,#07547b 100%);
+}
+.admin-page .admin-sidebar .admin-tab.is-active{
+  border-color:#b8e7ef;
+  background:#dff6f9;
+  color:#075b86;
+  box-shadow:inset 4px 0 var(--admin-teal),0 4px 12px rgba(0,35,60,.12);
+}
+.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active :is(strong,small,.module-state){
+  color:#075b86;
+}
+.admin-page .admin-sidebar .admin-tab.is-active .module-icon{
+  background:#b8eef4;
+  color:#056b91;
+}
+.admin-page .admin-sidebar .module-copy strong{line-height:1.35}
+.admin-page .admin-content-area :is(
+  .editor-card,.records-card,.member-table-card,.member-editor-card,
+  .access-form-card,.access-list-card,.finance-launch-card,.secretariat-options-card,
+  .attendance-events-card,.letter-register-card,.attendance-editor-card,
+  .letter-editor-card,.attendance-recap-card,.attendance-roster-panel,
+  .module-placeholder-card,.achievement-application-card,.achievement-reviewer-aside .records-card
+){
+  border-color:var(--admin-line);
+  border-radius:21px;
+  background:var(--admin-surface);
+  box-shadow:var(--admin-card-shadow);
+}
+.admin-page .admin-content-area :is(.editor-heading h3,.workflow-heading h3,.achievement-admin-heading h3,.member-table-heading h3,.secretariat-intro h3,.program-library-heading h3,.module-placeholder-card h3){
+  color:var(--admin-ink);
+  font-family:var(--wallet-font);
+  font-size:18px;
+  font-weight:750;
+  line-height:1.35;
+  letter-spacing:-.035em;
+}
+.admin-page .admin-content-area :is(.admin-muted,.editor-heading p,.workflow-heading p,.secretariat-intro p,.access-heading p){
+  color:var(--admin-muted);
+  font-size:12px;
+  line-height:1.6;
+}
+.admin-page .admin-content-area :is(.agenda-admin-tabs,.secretariat-tabs,.achievement-admin-tabs,.letter-work-tabs){
+  max-width:100%;
+  border:1px solid #e0e7ed;
+  border-radius:16px;
+  background:#e6ebf1;
+  box-shadow:inset 0 1px 2px rgba(30,50,70,.025);
+}
+.admin-page .admin-content-area :is(.agenda-admin-tab,.secretariat-tab,.achievement-admin-tab,.letter-work-tab){
+  border:1px solid transparent;
+  border-radius:12px;
+  color:#596c7e;
+  line-height:1.35;
+  transition:background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.admin-page .admin-content-area :is(.agenda-admin-tab:hover,.secretariat-tab:hover,.achievement-admin-tab:hover,.letter-work-tab:hover){
+  background:#f2fbfc;
+  color:#075b86;
+}
+.admin-page .admin-content-area :is(.agenda-admin-tab.is-active,.secretariat-tab.is-active,.achievement-admin-tab.is-active,.letter-work-tab.is-active){
+  border-color:#d8e8ed;
+  background:#fff;
+  color:#075b86;
+  box-shadow:0 2px 8px rgba(23,61,84,.09);
+}
+.admin-page .admin-content-area :is(.editor-card input,.editor-card select,.editor-card textarea,.member-tools input[type=search],.member-column-filter,.member-status-filter,.letter-archive-form input,.letter-archive-form select,.access-form input,.access-form select,.table-search,.attendance-open-dialog input,.agenda-announcement-tools textarea){
+  border-color:#d8e1e9;
+  border-radius:12px;
+  background:#fbfcfe;
+  color:var(--admin-ink);
+}
+.admin-page .admin-content-area :is(.editor-card input,.editor-card select,.editor-card textarea,.member-tools input[type=search],.member-column-filter,.member-status-filter,.letter-archive-form input,.letter-archive-form select,.access-form input,.access-form select,.table-search,.attendance-open-dialog input,.agenda-announcement-tools textarea):focus{
+  border-color:#35adc5;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(20,184,196,.15);
+}
+.admin-page .admin-content-area .admin-button,
+.admin-page .admin-content-area .attendance-save{
+  border-radius:13px;
+  background:linear-gradient(135deg,#0a98bd,#0878b1);
+  box-shadow:0 4px 12px rgba(4,112,157,.16);
+  color:#fff;
+  font-weight:750;
+}
+.admin-page .admin-content-area :is(.admin-button,.attendance-save):hover:not(:disabled){
+  background:linear-gradient(135deg,#0787af,#066da3);
+  box-shadow:0 6px 16px rgba(4,112,157,.2);
+}
+.admin-page .admin-content-area :is(.member-option-button,.member-data-button,.file-import-button,.access-toggle){
+  border-color:#d9e6ec;
+  border-radius:12px;
+  background:#fff;
+  color:#176d8e;
+}
+.admin-page .admin-content-area :is(.member-option-button,.member-data-button,.file-import-button,.access-toggle):hover:not(:disabled){
+  border-color:#a9dce6;
+  background:#effafd;
+  color:#075b86;
+}
+.admin-page .admin-content-area :is(.secretariat-table-wrap,.access-table-wrap){
+  border-color:#e0e7ed;
+  border-radius:15px;
+}
+.admin-page .admin-content-area :is(.secretariat-table th,.access-table th){
+  background:#eef7fa;
+  color:#4e677a;
+}
+.admin-page .admin-content-area :is(.secretariat-table td,.access-table td){border-color:#edf1f5}
+.admin-page .admin-content-area :is(.secretariat-table tbody tr:hover,.access-table tbody tr:hover){background:#f5fbfc}
+.admin-page .admin-content-area :is(.record-row,.program-record,.attendance-event-card,.letter-record,.member-card,.achievement-application-card){
+  border-color:#e4e9ef;
+  border-radius:15px;
+  background:#fff;
+}
+.admin-page .admin-content-area :is(.record-row,.program-record,.attendance-event-card,.letter-record,.member-card):hover{
+  border-color:#c4e5eb;
+  background:#fbfeff;
+}
+.admin-page .admin-content-area :is(.record-row h4,.program-record-copy>strong,.achievement-application-head h4){color:#20384a}
+.admin-page .admin-content-area .records-empty{border-color:#d5e3eb;border-radius:15px;background:#f7fafc;color:#687b89}
+.admin-page .admin-content-area .record-count,
+.admin-page .admin-content-area .member-table-count{border-radius:999px;background:#e3f6f8;color:#086b8d}
+.admin-page .admin-content-area :is(.admin-button,.attendance-save,.member-option-button,.member-data-button,.file-import-button,.access-toggle):focus-visible{
+  outline:3px solid rgba(20,184,196,.38);
+  outline-offset:2px;
+}
+@media(max-width:700px){
+  .admin-page .admin-content-area :is(.editor-card,.records-card,.member-table-card,.member-editor-card,.access-form-card,.access-list-card,.finance-launch-card,.secretariat-options-card,.attendance-events-card,.letter-register-card,.attendance-editor-card,.letter-editor-card,.attendance-recap-card,.attendance-roster-panel,.module-placeholder-card){
+    border-radius:18px;
+  }
+  .admin-page .admin-content-area :is(.agenda-admin-tabs,.secretariat-tabs,.achievement-admin-tabs,.letter-work-tabs){
+    border-radius:14px;
+  }
+  .admin-page .admin-content-area :is(.agenda-admin-tab,.secretariat-tab,.achievement-admin-tab,.letter-work-tab){
+    min-height:40px;
+  }
+}
