@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261029-proposal-lpj-v2" defer></script>
+  <script src="./admin.js?v=20261103-incoming-letters-v1" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261029-v5" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -36,6 +36,7 @@
   <script src="./program-documents.js?v=20261101-drive-archive-mobile-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
+  <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v1">
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -422,8 +423,9 @@
 
         <section class="secretariat-subpanel" id="letters-panel" role="tabpanel" aria-labelledby="tab-letters" hidden>
           <nav class="letter-work-tabs" role="tablist" aria-label="Persuratan">
-            <button class="letter-work-tab is-active" id="tab-letter-register" type="button" role="tab" aria-selected="true" aria-controls="letter-register-panel">Nomor Surat</button>
+            <button class="letter-work-tab is-active" id="tab-letter-register" type="button" role="tab" aria-selected="true" aria-controls="letter-register-panel">Surat Keluar</button>
             <button class="letter-work-tab" id="tab-letter-signatures" type="button" role="tab" aria-selected="false" aria-controls="letter-signature-panel">Pengajuan TTD</button>
+            <button class="letter-work-tab" id="tab-letter-incoming" type="button" role="tab" aria-selected="false" aria-controls="letter-incoming-panel">Surat Masuk</button>
           </nav>
           <section class="letter-work-panel" id="letter-register-panel" role="tabpanel" aria-labelledby="tab-letter-register">
           <div class="secretariat-intro"><div><span class="admin-kicker">SURAT KELUAR</span><h3>Nomor surat dan arsip</h3><p>Nomor surat berikutnya mengikuti buku agenda.</p></div></div>
@@ -495,6 +497,31 @@
               </div>
             </div>
           </dialog>
+          <section class="letter-work-panel" id="letter-incoming-panel" role="tabpanel" aria-labelledby="tab-letter-incoming" hidden>
+            <div class="incoming-letters-layout">
+              <section class="editor-card incoming-letter-uploader" aria-labelledby="incoming-letter-title">
+                <div class="editor-heading"><div><span class="admin-kicker">BUKU AGENDA SURAT MASUK</span><h3 id="incoming-letter-title">Catat surat masuk</h3></div></div>
+                <p class="field-hint">PDF asli tetap privat. Teks dibaca sementara dengan OCR Google Drive, lalu dianalisis AI; periksa hasilnya sebelum dipakai. Dokumen OCR sementara dihapus setelah dibaca.</p>
+                <form id="incoming-letter-upload-form">
+                  <label for="incoming-letter-received-on">Tanggal diterima</label>
+                  <input id="incoming-letter-received-on" type="date" required>
+                  <label for="incoming-letter-pdf">File surat (PDF, maks. 10 MB)</label>
+                  <input id="incoming-letter-pdf" type="file" accept="application/pdf,.pdf" required>
+                  <button class="admin-button" id="incoming-letter-upload" type="submit">Unggah dan baca surat <span aria-hidden="true">↗</span></button>
+                </form>
+                <p class="form-message" id="incoming-letter-message" role="status" aria-live="polite"></p>
+              </section>
+              <section class="records-card incoming-letter-register" aria-labelledby="incoming-letter-register-title">
+                <div class="incoming-letter-register-heading">
+                  <div><span class="admin-kicker">REKAP SEKRETARIAT</span><h3 id="incoming-letter-register-title">Daftar surat masuk</h3><p id="incoming-letter-drive-status" class="field-hint">Spreadsheet dan PDF tersinkron otomatis ke Drive.</p></div>
+                  <div class="incoming-letter-register-actions"><a id="incoming-letter-drive-folder" class="member-option-button" href="#" target="_blank" rel="noopener" hidden>Buka folder Drive</a><a id="incoming-letter-drive-sheet" class="member-option-button" href="#" target="_blank" rel="noopener" hidden>Buka spreadsheet</a><button class="member-option-button" id="incoming-letter-refresh" type="button">Muat ulang</button></div>
+                </div>
+                <label class="incoming-letter-search-label" for="incoming-letter-search">Cari surat</label>
+                <input id="incoming-letter-search" type="search" placeholder="Pengirim, nomor, perihal, atau tindak lanjut">
+                <div class="incoming-letter-table-wrap"><table class="incoming-letter-table"><thead><tr><th>Diterima</th><th>Pengirim dan nomor</th><th>Perihal dan ringkasan</th><th>Tindak lanjut</th><th>Status</th><th>PDF dan aksi</th></tr></thead><tbody id="incoming-letter-list"><tr><td colspan="6"><p class="records-empty">Memuat surat masuk…</p></td></tr></tbody></table></div>
+              </section>
+            </div>
+          </section>
         </section>
       </section>
       <section class="management-panel achievement-admin-panel" id="achievements-panel" role="tabpanel" aria-labelledby="tab-achievements" hidden>
