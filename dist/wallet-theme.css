@@ -867,19 +867,18 @@ body.wallet-home .wallet-brand{gap:10px}
 body.wallet-home .wallet-brand-main{display:flex;align-items:center;gap:11px;min-width:0}
 body.wallet-home .wallet-brand-partners{
   display:flex;align-items:center;justify-content:center;gap:8px;flex:none;
-  min-height:54px;padding:4px 10px;border:1px solid #ffffffa8;border-radius:17px;
-  background:#fffffff2;box-shadow:0 5px 18px #003a6220;
+  min-height:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;
 }
 body.wallet-home .wallet-brand-partners::before{
-  content:"";display:block;width:1px;height:32px;background:#d7e0e5;
+  content:"";display:block;width:1px;height:32px;background:rgba(255,255,255,.72);
 }
 body.wallet-home .wallet-brand-partners img{
-  display:block;width:118px;height:46px;object-fit:cover;object-position:center;
+  display:block;width:118px;height:46px;object-fit:contain;object-position:center;background:transparent;
 }
 @media(max-width:570px){
   body.wallet-home .wallet-brand{gap:8px}
   body.wallet-home .wallet-brand-main{gap:8px}
-  body.wallet-home .wallet-brand-partners{min-height:44px;padding:3px 7px;border-radius:14px;gap:6px}
+  body.wallet-home .wallet-brand-partners{min-height:0;padding:0;gap:6px}
   body.wallet-home .wallet-brand-partners::before{height:28px}
   body.wallet-home .wallet-brand-partners img{width:96px;height:38px}
 }
@@ -889,7 +888,7 @@ body.wallet-home .wallet-brand-partners img{
   body.wallet-home .wallet-brand-main{gap:7px}
   body.wallet-home .wallet-brand-logo{width:40px;height:40px}
   body.wallet-home .wallet-brand strong{font-size:16px}
-  body.wallet-home .wallet-brand-partners{min-height:38px;padding:2px 5px;gap:5px;border-radius:12px}
+  body.wallet-home .wallet-brand-partners{min-height:0;padding:0;gap:5px}
   body.wallet-home .wallet-brand-partners::before{height:24px}
   body.wallet-home .wallet-brand-partners img{width:72px;height:30px}
   body.wallet-home .wallet-hero-login{padding:8px}

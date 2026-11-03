@@ -228,8 +228,8 @@ body{font-size:14px}
   border-left:1px solid var(--line);
 }
 .brand-partners img{
-  display:block;width:112px;height:40px;object-fit:cover;object-position:center;
-  background:#fff;
+  display:block;width:112px;height:40px;object-fit:contain;object-position:center;
+  background:transparent;
 }
 @media(max-width:760px){
   .brand-partners{height:36px;margin-left:1px;padding-left:8px}
