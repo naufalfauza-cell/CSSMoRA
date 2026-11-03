@@ -851,3 +851,12 @@ body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active :is(
     min-height:40px;
   }
 }
+
+/* Five bespoke 3D illustrations for the public service shortcuts. */
+body.wallet-home .wallet-quick-icon .wallet-quick-art{
+  display:block;
+  width:86%;
+  height:86%;
+  object-fit:contain;
+  filter:drop-shadow(0 3px 4px rgba(24,54,76,.12));
+}
