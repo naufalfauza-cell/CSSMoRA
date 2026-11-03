@@ -865,10 +865,10 @@ body.wallet-home .wallet-quick-icon .wallet-quick-art{
 
 
 /* Partner identity beside CSSMoRA on the public home hero. */
-body.wallet-home .wallet-brand{gap:12px}
-body.wallet-home .wallet-brand-main{display:flex;align-items:center;gap:10px;min-width:0}
+body.wallet-home .wallet-brand{gap:10px}
+body.wallet-home .wallet-brand-main{display:flex;align-items:center;gap:8px;min-width:0}
 body.wallet-home .wallet-brand-logo{
-  position:relative;isolation:isolate;display:grid;place-items:center;flex:none;width:54px;height:54px;
+  position:relative;isolation:isolate;display:grid;place-items:center;flex:none;width:48px;height:48px;
   border-radius:0;background:transparent;box-shadow:none;
 }
 body.wallet-home .wallet-brand-logo::before{
@@ -876,9 +876,9 @@ body.wallet-home .wallet-brand-logo::before{
   transform:translate(-50%,-50%);border-radius:50%;background:#fff;
 }
 body.wallet-home .wallet-brand-logo img{position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:contain}
-body.wallet-home .wallet-brand-copy{display:flex;flex-direction:column;justify-content:center;min-height:54px}
-body.wallet-home .wallet-brand strong{font-size:21px;line-height:1.14;letter-spacing:-.045em}
-body.wallet-home .wallet-brand small{font-size:10px;line-height:1.2;letter-spacing:.14em}
+body.wallet-home .wallet-brand-copy{display:flex;flex-direction:column;justify-content:center;min-height:48px}
+body.wallet-home .wallet-brand strong{font-size:18px;line-height:1.14;letter-spacing:-.045em}
+body.wallet-home .wallet-brand small{font-size:9px;line-height:1.2;letter-spacing:.14em}
 body.wallet-home .wallet-brand-partners{
   display:flex;align-items:center;justify-content:center;flex:none;
   min-height:54px;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;
@@ -891,10 +891,10 @@ body.wallet-home .wallet-brand-partners img{
   body.wallet-home .wallet-brand{gap:10px}
   body.wallet-home .wallet-brand-main{gap:11px}
   body.wallet-home .wallet-brand-logo,
-  body.wallet-home .wallet-brand-logo img{width:52px;height:52px}
-  body.wallet-home .wallet-brand-copy{min-height:52px}
-  body.wallet-home .wallet-brand strong{font-size:20px}
-  body.wallet-home .wallet-brand small{font-size:9px}
+  body.wallet-home .wallet-brand-logo img{width:46px;height:46px}
+  body.wallet-home .wallet-brand-copy{min-height:46px}
+  body.wallet-home .wallet-brand strong{font-size:18px}
+  body.wallet-home .wallet-brand small{font-size:8px}
   body.wallet-home .wallet-brand-partners{min-height:48px}
   body.wallet-home .wallet-brand-partners img{width:108px;height:46px}
 }
@@ -903,9 +903,9 @@ body.wallet-home .wallet-brand-partners img{
   body.wallet-home .wallet-brand{gap:7px}
   body.wallet-home .wallet-brand-main{gap:7px}
   body.wallet-home .wallet-brand-logo,
-  body.wallet-home .wallet-brand-logo img{width:44px;height:44px}
-  body.wallet-home .wallet-brand-copy{min-height:44px}
-  body.wallet-home .wallet-brand strong{font-size:16px}
+  body.wallet-home .wallet-brand-logo img{width:40px;height:40px}
+  body.wallet-home .wallet-brand-copy{min-height:40px}
+  body.wallet-home .wallet-brand strong{font-size:15px}
   body.wallet-home .wallet-brand small{font-size:8px}
   body.wallet-home .wallet-brand-partners{min-height:34px}
   body.wallet-home .wallet-brand-partners img{width:78px;height:32px}
