@@ -2228,3 +2228,10 @@
 @media(max-width:680px){
  .letter-record-list .letter-upload-form button{width:100%;}
 }
+
+#outgoing-letter-composer { margin-block-end: 16px; min-width: 0; }
+#outgoing-letter-composer .editor-heading { flex-wrap: wrap; }
+#outgoing-draft-fields, #outgoing-template-fields { display: grid; gap: 8px; min-width: 0; }
+#outgoing-draft-list { max-height: 440px; overflow: auto; }
+#outgoing-draft-list .letter-record { overflow-wrap: anywhere; }
+#outgoing-draft-list .letter-record-heading { flex-wrap: wrap; }

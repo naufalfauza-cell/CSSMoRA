@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { letterTemplates } from "./letter-templates.ts";
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -2635,6 +2636,138 @@ function requireInternalServiceRole(request: Request) {
   }
 }
 
+const outgoingDrafts = "secretariat_outgoing_letter_drafts";
+const letterNumberToken = "{{nomor_surat}}";
+
+async function replaceLetterFields(token: string, documentId: string, fields: Record<string, string>) {
+  return (await googleJson(token, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, {
+    method: "POST",
+    body: { requests: Object.entries(fields).map(([key, value]) => ({
+      replaceAllText: { containsText: { text: "{{" + key + "}}", matchCase: true }, replaceText: value },
+    })) },
+  })).data?.replies ?? [];
+}
+
+async function outgoingLetterAction(request: Request, action: string, body: any) {
+  const actor = await requireUser(request);
+  if (!actor.roles.includes("sekretaris")) throw new AppError(403, "Pembuatan surat hanya tersedia untuk sekretaris.");
+  if (action === "outgoing_letter_templates") {
+    return { templates: letterTemplates.map(({ key, code, title, fields }) => ({ key, code, title, fields })) };
+  }
+
+  const id = String(body.draft_id || "");
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) throw new AppError(400, "ID draf surat tidak valid.");
+  const path = outgoingDrafts + "?id=eq." + id;
+  const existing = (await serviceRequest(path)).data?.[0];
+  if (action === "create_outgoing_letter" && existing?.document_id) {
+    if (existing.created_by !== actor.user.id) throw new AppError(409, "ID draf sudah dipakai.");
+    return { draft: existing };
+  }
+
+  const connection = await currentConnection();
+  if (!connection?.refresh_token_ciphertext || !connection?.drive_root_folder_id) {
+    throw new AppError(409, "Drive CSSMoRA belum tersambung.");
+  }
+  const token = await driveAccessToken(connection);
+
+  if (action === "create_outgoing_letter") {
+    const template = letterTemplates.find(item => item.key === body.template_key);
+    if (!template) throw new AppError(400, "Pilih jenis surat yang tersedia.");
+    const issuedOn = String(body.issued_on || "");
+    const date = new Date(issuedOn + "T00:00:00Z");
+    const subject = clean(body.subject, 240);
+    const hijri = clean(body.hijri, 70);
+    const attachments = Number(body.attachment_count ?? 0);
+    const department = String(body.department_code || "");
+    const scope = String(body.scope_code || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn) || !Number.isFinite(date.getTime()) ||
+        date.toISOString().slice(0, 10) !== issuedOn || subject.length < 3 || !hijri ||
+        !["i", "e"].includes(scope) || !["BPH", "PSDM", "P3M", "ADVO", "MEDINFO"].includes(department) ||
+        !Number.isInteger(attachments) || attachments < 0 || attachments > 99) {
+      throw new AppError(400, "Lengkapi tanggal, perihal, cakupan, divisi, dan jumlah lampiran.");
+    }
+    const fields: Record<string, string> = {};
+    for (const key of template.fields) {
+      const value = clean(body.fields?.[key], key === "uraian_tugas" ? 1000 : 240);
+      if (!value || /[{}]/.test(value)) throw new AppError(400, "Lengkapi isian " + key.replaceAll("_", " ") + ".");
+      fields[key] = value;
+    }
+    if (/[{}]/.test(hijri)) throw new AppError(400, "Tanggal Hijriah tidak valid.");
+    fields.tanggal_surat = new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" }).format(date);
+    fields.tanggal_hijriah = hijri.replace(/\s+H$/i, "");
+    if (template.key !== "tugas") fields.lampiran = attachments ? `${attachments} berkas` : "–";
+
+    const title = `${template.title} — ${subject} — ${issuedOn}`;
+    const draft = {
+      id, created_by: actor.user.id, template_key: template.key, title, subject, issued_on: issuedOn,
+      recipient: clean(body.recipient, 180) || clean(fields.nama_penerima || fields.gelar_dan_nama_penerima ||
+        fields.jabatan_penerima || fields.nama_penerima_tugas_1, 180) || null,
+      scope_code: scope, type_code: template.code, department_code: department, attachment_count: attachments,
+    };
+    const sourceId = Deno.env.get("LETTER_MASTER_" + template.key.toUpperCase().replaceAll("-", "_"));
+    if (!sourceId) throw new AppError(409, "Master Google Docs untuk jenis surat ini belum dikonfigurasi.");
+    const claim = (await serviceRequest(outgoingDrafts + "?on_conflict=id", {
+      method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=representation" }, body: draft,
+    })).data?.[0];
+    if (!claim) throw new AppError(409, "Pembuatan draf ini masih diproses. Muat ulang daftar draf.");
+
+    let documentId = "";
+    try {
+      try {
+        const copy = await googleJson(token, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(sourceId)}/copy?fields=id`, {
+          method: "POST", body: { name: title, parents: [connection.drive_root_folder_id], writersCanShare: false },
+        });
+        documentId = String(copy.data?.id || "");
+      } catch (error) {
+        if (error instanceof AppError && [403, 404].includes(error.status)) {
+          throw new AppError(409, "Master surat belum tersedia untuk integrasi Drive CSSMoRA. Hubungi pengelola aplikasi.");
+        }
+        throw error;
+      }
+      if (!documentId) throw new AppError(502, "Google Docs belum berhasil dibuat.");
+      const replies = await replaceLetterFields(token, documentId, fields);
+      if (Object.keys(fields).some((_, index) => !replies[index]?.replaceAllText?.occurrencesChanged)) {
+        throw new AppError(409, "Penanda isian di master surat berbeda dari formulir. Hubungi pengelola aplikasi.");
+      }
+      await shareDriveFile(token, documentId, [...await activeRoleEmails(["sekretaris"]), actor.email], "writer");
+      const saved = (await serviceRequest(path, {
+        method: "PATCH", headers: { Prefer: "return=representation" }, body: { document_id: documentId },
+      })).data?.[0];
+      if (!saved) throw new AppError(502, "Tautan draf belum tersimpan.");
+      return { draft: saved };
+    } catch (error) {
+      // A lost response can occur after the database has already stored the link.
+      const saved = (await serviceRequest(path)).data?.[0];
+      if (saved?.document_id) return { draft: saved };
+      if (documentId) {
+        await googleJson(token, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(documentId)}`, {
+          method: "PATCH", body: { trashed: true },
+        }).catch(() => null);
+      }
+      await serviceRequest(path + "&document_id=is.null", { method: "DELETE" });
+      throw error;
+    }
+  }
+
+  if (!existing?.document_id || !existing.letter_id) throw new AppError(409, "Terbitkan nomor surat terlebih dahulu.");
+  const letter = (await serviceRequest("secretariat_letters?select=letter_number,archive_status&id=eq." + existing.letter_id)).data?.[0];
+  if (!letter || letter.archive_status === "void") throw new AppError(409, "Surat ini sudah dibatalkan.");
+  const [reply] = await replaceLetterFields(token, existing.document_id, { nomor_surat: letter.letter_number });
+  if (!reply?.replaceAllText?.occurrencesChanged) {
+    const doc = (await googleJson(token, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(existing.document_id)}?includeTabsContent=true`)).data;
+    const content = JSON.stringify(doc);
+    if (content.includes(letterNumberToken) || !content.includes(letter.letter_number)) {
+      throw new AppError(409, "Nomor sudah tercatat. Pulihkan penanda {{nomor_surat}} di Docs lalu coba lagi.");
+    }
+  }
+  if (action === "outgoing_letter_pdf") {
+    const bytes = await exportProgramPdf(token, existing.document_id);
+    if (bytes.length > 10 * 1024 * 1024) throw new AppError(400, "PDF surat melebihi batas 10 MB untuk tanda tangan.");
+    return { letter_id: existing.letter_id, pdf_base64: base64(bytes) };
+  }
+  return { letter_number: letter.letter_number };
+}
+
 async function handleRequest(request: Request) {
   if (request.method === "OPTIONS") {
     const headers = corsHeaders(request);
@@ -2653,6 +2786,9 @@ async function handleRequest(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || "");
+    if (["outgoing_letter_templates", "create_outgoing_letter", "sync_outgoing_letter_number", "outgoing_letter_pdf"].includes(action)) {
+      return jsonResponse(request, 200, await outgoingLetterAction(request, action, body));
+    }
     if (action === "archive_attendance_photo") {
       requireInternalServiceRole(request);
       return jsonResponse(request, 200, { ok: true, action, ...(await archiveAttendancePhoto(body)) });

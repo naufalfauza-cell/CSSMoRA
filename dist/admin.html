@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261029-google-drive-v1">
+  <link rel="stylesheet" href="./admin.css?v=20261110-outgoing-drafts">
   <link rel="stylesheet" href="./workflows.css?v=20261030-responsive-proposal-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261103-incoming-letters-v2" defer></script>
+  <script src="./admin.js?v=20261110-outgoing-drafts" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261029-v5" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -430,6 +430,31 @@
           </nav>
           <section class="letter-work-panel" id="letter-register-panel" role="tabpanel" aria-labelledby="tab-letter-register">
           <div class="secretariat-intro"><div><span class="admin-kicker">SURAT KELUAR</span><h3>Nomor surat dan arsip</h3><p>Nomor surat berikutnya mengikuti buku agenda.</p></div></div>
+          <section id="outgoing-letter-composer" class="editor-card" aria-labelledby="outgoing-letter-title" hidden>
+            <div class="editor-heading"><div><span class="admin-kicker">MANAJEMEN PERSURATAN</span><h3 id="outgoing-letter-title">Buat surat dari template</h3></div><button id="outgoing-draft-refresh" type="button" class="member-option-button">Muat ulang</button></div>
+            <p class="field-hint">Buat Google Docs, tinjau isinya, terbitkan nomor, lalu siapkan tanda tangan.</p>
+            <form id="outgoing-draft-form">
+              <label for="outgoing-template">Jenis surat</label><select id="outgoing-template" name="template_key" required><option value="">Pilih jenis surat</option></select>
+              <div id="outgoing-draft-fields" hidden>
+                <label for="outgoing-subject">Perihal untuk nama dokumen dan buku agenda</label><input id="outgoing-subject" name="subject" minlength="3" maxlength="240" required>
+                <div class="form-two">
+                  <div><label for="outgoing-date">Tanggal surat</label><input id="outgoing-date" name="issued_on" type="date" required></div>
+                  <div><label for="outgoing-hijri">Tanggal Hijriah</label><input id="outgoing-hijri" name="hijri" placeholder="Contoh: 29 Jumadilawal 1448" maxlength="70" required></div>
+                </div>
+                <div class="form-two">
+                  <div><label for="outgoing-scope">Cakupan</label><select id="outgoing-scope" name="scope_code"><option value="i">Internal (i)</option><option value="e">Eksternal (e)</option></select></div>
+                  <div><label for="outgoing-department">Divisi penerbit</label><select id="outgoing-department" name="department_code"><option value="BPH">BPH</option><option value="PSDM">PSDM</option><option value="P3M">P3M</option><option value="ADVO">Advo</option><option value="MEDINFO">Medinfo</option></select></div>
+                </div>
+                <label for="outgoing-attachments">Jumlah lampiran</label><input id="outgoing-attachments" name="attachment_count" type="number" min="0" max="99" value="0" required>
+                <div id="outgoing-template-fields"></div>
+                <p class="field-hint">Jika template memuat tabel lampiran, lengkapi tabel tersebut di Google Docs sebelum menyiapkan tanda tangan.</p>
+                <button type="submit" class="admin-button">Buat Google Docs</button>
+              </div>
+            </form>
+            <p id="outgoing-draft-message" class="form-message" role="status" aria-live="polite"></p>
+            <h4>Draf dan surat dari template</h4>
+            <div id="outgoing-draft-list" class="secretariat-record-list"></div>
+          </section>
           <div class="secretariat-workspace letters-workspace">
             <aside class="secretariat-options-rail" aria-label="Opsi persuratan">
               <section class="records-card secretariat-options-card">
