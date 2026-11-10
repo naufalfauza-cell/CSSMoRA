@@ -1700,17 +1700,15 @@ function showOutgoingTemplateFields(){
   $('#outgoing-attachment-hint').textContent=template.appendix
     ? 'Master ini memuat lampiran '+template.appendix+'. Lengkapi tabelnya di Google Docs sebelum menyiapkan tanda tangan.'
     : 'Isi 0 jika surat tidak memiliki lampiran.';
-  if(template.identityFields?.length){
-    const label=document.createElement('label');
-    label.htmlFor='outgoing-identity-kind';
-    label.textContent='Jenis identitas';
-    const identity=document.createElement('select');
-    identity.id=label.htmlFor;
-    identity.name='identity_kind';
-    identity.required=true;
-    identity.append(new Option('Pilih jenis identitas',''),new Option('NIM · Surat ke kampus','NIM'),new Option('NIA · Surat ke luar kampus','NIA'));
-    controls.append(label,identity);
-  }
+  const label=document.createElement('label');
+  label.htmlFor='outgoing-identity-kind';
+  label.textContent='Jenis identitas';
+  const identity=document.createElement('select');
+  identity.id=label.htmlFor;
+  identity.name='identity_kind';
+  identity.required=true;
+  identity.append(new Option('Pilih jenis identitas',''),new Option('NIM · Surat ke kampus','NIM'),new Option('NIA · Surat ke luar kampus','NIA'));
+  controls.append(label,identity);
   for(const key of template.fields){
     const label=document.createElement('label');
     const input=document.createElement(key==='uraian_tugas' ? 'textarea' : 'input');
