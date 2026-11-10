@@ -215,7 +215,7 @@
     if(!current){
       $('#program-document-title').value=program.name;
       if(detail.period_label)$('#program-document-period').value=detail.period_label;
-      if(selectedType()==='proposal'){
+      if(selectedType()==='proposal'&&!usesArchive()){
         $('#proposal-description').value=detail.description||'';$('#proposal-goals').value=detail.goals||'';$('#proposal-target').value=detail.target||'';
         if(/^\d{4}-\d{2}-\d{2}$/.test(detail.planned_schedule||''))$('#program-document-start').value=detail.planned_schedule;
       }
