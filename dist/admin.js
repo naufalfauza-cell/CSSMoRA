@@ -1053,7 +1053,7 @@ function renderMembers(){
     const programMatches=program==='all'||String(member.study_program||'')===program;
     const studyStatus=member.study_status||'belum_ditentukan';
     const statusMatches=status==='all'||studyStatus===status;
-    const queryMatches=!query||[member.nia,member.full_name,member.cohort,member.faculty,member.study_program].some(value=>String(value||'').toLowerCase().includes(query));
+    const queryMatches=!query||[member.nia,member.nim,member.full_name,member.cohort,member.faculty,member.study_program].some(value=>String(value||'').toLowerCase().includes(query));
     return cohortMatches&&programMatches&&statusMatches&&queryMatches;
   });
   $('#member-visible-count').textContent=rows.length+' data';
@@ -1061,7 +1061,7 @@ function renderMembers(){
   memberList.innerHTML=rows.map(member=>{
     const status=member.study_status||'belum_ditentukan';
     const statusClass=status==='mahasiswa'?'published':status==='lulus'?'study-graduate':'study-unknown';
-    return '<tr><td><strong>'+escapeHTML(member.full_name)+'</strong><small>'+escapeHTML(member.nia)+'</small></td><td>'+escapeHTML(member.cohort)+'</td><td>'+escapeHTML(member.study_program||'—')+'</td><td><span class="record-status '+statusClass+'">'+escapeHTML(memberStudyStatusLabel(status))+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(member.id)+'">Edit</button></div></td></tr>';
+    return '<tr><td><strong>'+escapeHTML(member.full_name)+'</strong><small>NIA '+escapeHTML(member.nia)+'</small>'+(member.nim?'<small>NIM '+escapeHTML(member.nim)+'</small>':'')+'</td><td>'+escapeHTML(member.cohort)+'</td><td>'+escapeHTML(member.study_program||'—')+'</td><td><span class="record-status '+statusClass+'">'+escapeHTML(memberStudyStatusLabel(status))+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(member.id)+'">Edit</button></div></td></tr>';
   }).join('');
 }
 function resetMemberForm(){
@@ -1078,7 +1078,7 @@ $('#member-program-filter').addEventListener('change',renderMembers);
 $('#member-study-status-filter').addEventListener('change',renderMembers);
 $('#member-export').addEventListener('click',()=>downloadCSV('cssmora-anggota.csv',[
   ['NIA','Nama','Angkatan','Fakultas','Program Studi','Status Studi'],
-  ...members.map(member=>[member.nia,member.full_name,member.cohort,member.faculty,member.study_program,memberStudyStatusLabel(member.study_status||'belum_ditentukan')])
+  ...members.map(member=>[member.nia,member.nim,member.full_name,member.cohort,member.faculty,member.study_program,memberStudyStatusLabel(member.study_status||'belum_ditentukan')])
 ]));
 memberList.addEventListener('click',event=>{
   const retry=event.target.closest('[data-retry-members]');
