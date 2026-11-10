@@ -161,14 +161,16 @@
     $('#program-document-end').value=data.event_end_date||data.actual_end_date||current?.period_end||'';
     rundown=Array.isArray(data.rundown)?data.rundown.map(row=>({...row})):typeof data.rundown==='string'&&data.rundown.trim()?data.rundown.split(/\n+/).map(line=>({activity:line.replace(/^\s*\d{1,2}[.:]\d{2}\s*(?:-|–|—)\s*/,'').trim()})).filter(row=>row.activity):[];
     Object.entries(data).forEach(([name,value])=>{if(['event_date','event_end_date','actual_date','actual_end_date','rundown'].includes(name))return;const field=form.elements.namedItem(name);if(field&&field.type!=='checkbox')field.value=value??'';});
+    form.elements.namedItem('signer_identity_kind').value=data.signer_identity_kind==='NIM'?'NIM':'NIA';
+    for(const field of ['background','opening','closing'])form.elements.namedItem(field).value=data[field]||'';
     if(data.event_time&&!data.event_time_start)form.elements.namedItem('event_time_start').value=data.event_time;
     if(data.actual_time&&!data.actual_time_start)form.elements.namedItem('actual_time_start').value=data.actual_time;
   }
   function getFormData(){
     const form=$('#program-document-form');const names=selectedType()==='proposal'
-      ?['description','goals','materials','target','event_time_start','event_time_end','place','theme']
-      :['realization_summary','outcome_summary','realization_by_division','obstacles','evaluation_by_division','administration_summary','evaluation','recommendations','attendance_target','attendance_count','actual_time_start','actual_time_end','actual_place'];
-    const data=Object.fromEntries(names.map(name=>[name,form.elements.namedItem(name)?.value?.trim()||'']));
+      ?['background','description','goals','materials','target','event_time_start','event_time_end','place','theme']
+      :['opening','realization_summary','outcome_summary','realization_by_division','obstacles','evaluation_by_division','administration_summary','evaluation','recommendations','attendance_target','attendance_count','actual_time_start','actual_time_end','actual_place'];
+    const data=Object.fromEntries([...names,'closing','signer_identity_kind'].map(name=>[name,form.elements.namedItem(name)?.value?.trim()||'']));
     if(selectedType()==='proposal')Object.assign(data,{event_date:$('#program-document-start').value||'',event_end_date:$('#program-document-end').value||'',rundown:rundown.map(row=>({start_time:row.start_time||'',end_time:row.end_time||'',activity:String(row.activity||'').trim(),member_id:row.member_id||''})).filter(row=>row.activity)});
     else Object.assign(data,{actual_date:$('#program-document-start').value||'',actual_end_date:$('#program-document-end').value||''});
     return data;
