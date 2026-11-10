@@ -185,6 +185,7 @@ async function checkAdmin() {
   canManageProgramCycles=isLeadership||roleSet.has('bph_departemen');
   isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen')||roleSet.has('sekretaris')||roleSet.has('bendahara');
   isSecretariatAdmin=roleSet.has('sekretaris');
+  $('#outgoing-letter-composer').hidden=!isSecretariatAdmin;
   achievementRoles=isLeadership?['ketua']:(roleSet.has('bendahara')?['bendahara']:[]);
   canReviewAchievementApplications=isLeadership||roleSet.has('bendahara');
   canVerifyAchievementRecords=isLeadership||roleSet.has('bph_departemen')||roleSet.has('sekretaris')||roleSet.has('bendahara');
@@ -251,6 +252,11 @@ $('#logout').addEventListener('click',async()=>{
   try{if(session?.access_token)await fetchTimed(`${config.url}/auth/v1/logout`,{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${session.access_token}`}});}catch{}
   saveSession(null);
   window.CSSMoRALetterSignatures?.reset();
+  outgoingDraftRequestId=null;
+  preparedOutgoingLetterId=null;
+  outgoingDraftForm.reset();
+  showOutgoingTemplateFields();
+  $('#outgoing-draft-list').replaceChildren();
   adminView.hidden=true;
   authView.hidden=false;
   authForm.reset();
@@ -971,7 +977,7 @@ async function loadSecretarySection(tab){
       loadAttendanceEvents()
     ]);
   } else if(panel==='letters-panel') {
-    await Promise.all([ensureAdminData('letters',loadLetters),loadIncomingLetters()]);
+    await Promise.all([ensureAdminData('letters',loadLetters),loadIncomingLetters(),loadOutgoingDrafts()]);
   }
 }
 document.querySelectorAll('.letter-work-tab').forEach(tab=>tab.addEventListener('click',()=>{
@@ -1640,6 +1646,138 @@ $('#incoming-letter-list').addEventListener('submit',async event=>{
     await loadIncomingLetters();showMessage('#incoming-letter-message','Koreksi tersimpan dan spreadsheet Drive akan diperbarui otomatis.','success');
   }catch(error){showMessage('#incoming-letter-message',error.message,'error');button.disabled=false;}
 });
+const outgoingDraftForm=$('#outgoing-draft-form');
+const outgoingTemplateSelect=$('#outgoing-template');
+const outgoingSignatureSelect=$('#letter-sign-letter');
+let outgoingTemplates=[];
+let outgoingDraftRequestId=null;
+let preparedOutgoingLetterId=null;
+
+async function loadOutgoingDrafts() {
+  if(!isSecretariatAdmin)return;
+  const list=$('#outgoing-draft-list');
+  try{
+    const [catalog,drafts]=await Promise.all([
+      outgoingTemplates.length ? {templates:outgoingTemplates} : driveRequest('outgoing_letter_templates'),
+      api('secretariat_outgoing_letter_drafts?select=id,title,document_id,letter_id,secretariat_letters(letter_number,archive_status)&document_id=not.is.null&order=created_at.desc')
+    ]);
+    if(!outgoingTemplates.length){
+      outgoingTemplates=catalog.templates;
+      outgoingTemplateSelect.replaceChildren(new Option('Pilih jenis surat',''),
+        ...outgoingTemplates.map(item=>new Option(item.title+' ('+item.code+')',item.key)));
+    }
+    list.innerHTML=drafts.length ? drafts.map(draft=>{
+      const letter=draft.secretariat_letters;
+      const link='https://docs.google.com/document/d/'+encodeURIComponent(draft.document_id)+'/edit';
+      const action=letter?.archive_status==='void' ? '' : draft.letter_id ? 'sign' : 'number';
+      return `<article class="letter-record">
+        <p><strong>${escapeHTML(draft.title)}</strong></p>
+        <p>${escapeHTML(letter?.archive_status==='void' ? 'Dibatalkan' : letter?.letter_number || 'Belum diberi nomor')}</p>
+        <div class="letter-record-heading">
+          <a class="letter-drive-link" href="${escapeHTML(link)}" target="_blank" rel="noopener noreferrer">Buka Google Docs ↗</a>
+          ${action ? `<button type="button" data-draft-action="${action}" data-draft-id="${escapeHTML(draft.id)}">${action==='sign' ? 'Siapkan tanda tangan' : 'Terbitkan nomor'}</button>` : ''}
+        </div>
+      </article>`;
+    }).join('') : '<p class="records-empty">Belum ada draf surat.</p>';
+  }catch(error){
+    list.innerHTML='<p class="records-empty">'+escapeHTML(error.message)+'</p>';
+  }
+}
+
+function showOutgoingTemplateFields(){
+  const template=outgoingTemplates.find(item=>item.key===outgoingTemplateSelect.value);
+  const wrapper=$('#outgoing-draft-fields');
+  wrapper.hidden=!template;
+  const controls=$('#outgoing-template-fields');
+  controls.replaceChildren();
+  wrapper.querySelectorAll('input, select, button').forEach(input=>{input.disabled=!template;});
+  if(!template)return;
+  $('#outgoing-date').value||=localDateInput();
+  for(const key of template.fields){
+    const label=document.createElement('label');
+    const input=document.createElement(key==='uraian_tugas' ? 'textarea' : 'input');
+    const caption=key.replaceAll('_',' ').replace(/\b(cp|hp)\b/gi,part=>part.toUpperCase());
+    input.id='outgoing-field-'+key;
+    input.name='field:'+key;
+    input.maxLength=key==='uraian_tugas' ? 1000 : 240;
+    input.required=true;
+    if(key==='nomor_hp_cp')input.type='tel';
+    label.htmlFor=input.id;
+    label.textContent=caption[0].toUpperCase()+caption.slice(1);
+    controls.append(label,input);
+  }
+}
+outgoingTemplateSelect.addEventListener('change',showOutgoingTemplateFields);
+$('#outgoing-draft-refresh').addEventListener('click',loadOutgoingDrafts);
+outgoingSignatureSelect.addEventListener('change',()=>{
+  if(preparedOutgoingLetterId && outgoingSignatureSelect.value!==preparedOutgoingLetterId){
+    $('#letter-sign-pdf').value='';
+    preparedOutgoingLetterId=null;
+  }
+});
+$('#letter-sign-pdf').addEventListener('change',()=>{preparedOutgoingLetterId=null;});
+outgoingDraftForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const button=outgoingDraftForm.querySelector('[type=submit]');
+  const payload=Object.fromEntries(new FormData(outgoingDraftForm));
+  const fields={};
+  for(const key of Object.keys(payload)){
+    if(!key.startsWith('field:'))continue;
+    fields[key.slice(6)]=payload[key];
+    delete payload[key];
+  }
+  button.disabled=true;
+  outgoingDraftRequestId||=crypto.randomUUID();
+  showMessage('#outgoing-draft-message','Menyalin template dan mengisi Google Docs…');
+  try{
+    await driveRequest('create_outgoing_letter',{...payload,fields,draft_id:outgoingDraftRequestId});
+    outgoingDraftRequestId=null;
+    outgoingDraftForm.reset();
+    showOutgoingTemplateFields();
+    await loadOutgoingDrafts();
+    showMessage('#outgoing-draft-message','Google Docs siap ditinjau. Setelah selesai, pilih Terbitkan nomor.','success');
+  }catch(error){showMessage('#outgoing-draft-message',error.message,'error');}
+  finally{button.disabled=false;}
+});
+$('#outgoing-draft-list').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-draft-action]');
+  if(!button)return;
+  const draft_id=button.dataset.draftId;
+  button.disabled=true;
+  let issued;
+  try{
+    if(button.dataset.draftAction==='number'){
+      showMessage('#outgoing-draft-message','Menerbitkan nomor surat…');
+      issued=await api('rpc/issue_secretariat_outgoing_draft',{method:'POST',body:{p_draft_id:draft_id}});
+      await driveRequest('sync_outgoing_letter_number',{draft_id});
+      showMessage('#outgoing-draft-message','Nomor '+issued.letter_number+' tercatat dan sudah masuk ke Google Docs.','success');
+    }else{
+      showMessage('#outgoing-draft-message','Menyiapkan PDF dari Google Docs terbaru…');
+      const prepared=await driveRequest('outgoing_letter_pdf',{draft_id});
+      const bytes=Uint8Array.from(atob(prepared.pdf_base64),char=>char.charCodeAt(0));
+      await loadLetters();
+      const select=$('#letter-sign-letter');
+      if(!Array.from(select.options).some(option=>option.value===prepared.letter_id)){
+        throw new Error('Surat belum muncul pada pilihan tanda tangan. Muat ulang dan coba lagi.');
+      }
+      const transfer=new DataTransfer();
+      transfer.items.add(new File([bytes],'Surat CSSMoRA.pdf',{type:'application/pdf'}));
+      select.value=prepared.letter_id;
+      preparedOutgoingLetterId=prepared.letter_id;
+      $('#letter-sign-pdf').files=transfer.files;
+      $('#tab-letter-signatures').click();
+      $('#letter-sign-signer').focus();
+      showMessage('#outgoing-draft-message','');
+    }
+  }catch(error){
+    const detail=issued ? 'Nomor '+issued.letter_number+' sudah tercatat. Pilih Siapkan tanda tangan untuk mencoba sinkron ulang. ' : '';
+    showMessage('#outgoing-draft-message',detail+error.message,'error');
+  }finally{
+    button.disabled=false;
+    if(issued)await Promise.all([loadOutgoingDrafts(),loadLetters()]);
+  }
+});
+
 $('#letters-refresh').addEventListener('click',loadLetters);
 $('#letter-record-list').addEventListener('click',async event=>{
   const button=event.target.closest('[data-copy-letter]');if(!button)return;
@@ -1803,7 +1941,7 @@ async function driveRequest(action, payload={}) {
     method: 'POST',
     headers: { ...baseHeaders(), Authorization: 'Bearer ' + session.access_token },
     body: JSON.stringify({ action, ...payload }),
-    timeoutMs: ['backup','sync','archive_outgoing_letter'].includes(action) ? 120000 : 15000
+    timeoutMs: ['backup','sync','archive_outgoing_letter','create_outgoing_letter','sync_outgoing_letter_number','outgoing_letter_pdf'].includes(action) ? 120000 : 15000
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Permintaan Google Drive gagal.');

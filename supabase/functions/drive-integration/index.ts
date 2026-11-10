@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { letterTemplates } from "./letter-templates.ts";
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -391,7 +392,7 @@ async function syncIncomingLettersSpreadsheet(accessToken: string, connection: a
         method: "PUT", body: { majorDimension: "ROWS", values: chunk },
       });
     }
-    const clearRange = encodeURIComponent(`'Surat Masuk'!A${values.length + 1}:O`);
+    const clearRange = `'Surat Masuk'!A${values.length + 1}:O`;
     await googleJson(accessToken, apiBase + "/values:batchClear", { method: "POST", body: { ranges: [clearRange] } });
     await serviceRequest("cssmora_drive_incoming_letter_sync?singleton=eq.true&generation=eq." + encodeURIComponent(generation) + "&pending=eq.true", {
       method: "PATCH", body: { pending: false, attempts: 0, last_error: null, updated_at: new Date().toISOString() },
@@ -2243,6 +2244,97 @@ async function processSyncJob(accessToken: string, connection: any, job: any) {
   await removeClaimedQueueJob(job);
 }
 
+
+async function archiveOutgoingLetter(request: Request, body: Record<string, unknown>) {
+  const actor = await requireUser(request);
+  if (!actor.roles.includes("sekretaris")) throw new AppError(403, "Hanya Sekretaris dapat mengarsipkan surat keluar.");
+  const letterId = String(body.letter_id || "").trim();
+  if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(letterId))
+    throw new AppError(400, "ID surat keluar tidak valid.");
+  const filename = clean(body.file_name, 255);
+  if (!filename || !/\.pdf$/i.test(filename)) throw new AppError(400, "Pilih PDF final.");
+  const encoded = String(body.file_base64 || "");
+  if (!encoded || encoded.length > 14_000_000) throw new AppError(413, "Ukuran PDF maksimal 10 MB.");
+  let bytes: Uint8Array;
+  try { bytes = fromBase64(encoded); }
+  catch { throw new AppError(400, "PDF tidak dapat dibaca."); }
+  if (bytes.byteLength < 8 || bytes.byteLength > 10 * 1024 * 1024 ||
+      String.fromCharCode(...bytes.slice(0, 5)) !== "%PDF-")
+    throw new AppError(400, "Unggah PDF asli maksimal 10 MB.");
+
+  const found = (await serviceRequest(queryPath("secretariat_letters", {
+    select: "id,letter_number,issued_on,subject,archive_status",
+    id: "eq." + letterId, limit: "1",
+  }))).data;
+  const letter = Array.isArray(found) ? found[0] : null;
+  if (!letter) throw new AppError(404, "Nomor surat tidak ditemukan.");
+  if (letter.archive_status === "void") throw new AppError(409, "Surat dibatalkan dan tidak dapat diarsipkan.");
+
+  const connection = await currentConnection();
+  if (!connection?.refresh_token_ciphertext || !connection?.drive_uploads_folder_id)
+    throw new AppError(409, "Hubungkan Google Drive CSSMoRA terlebih dahulu.");
+  const accessToken = await driveAccessToken(connection);
+  let folderId = await findDriveFolder(accessToken,
+    "appProperties has { key='cssmoraArchiveType' and value='outgoing-letters' } and '" +
+    connection.drive_uploads_folder_id +
+    "' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  if (!folderId) {
+    const data = (await googleJson(accessToken,
+      "https://www.googleapis.com/drive/v3/files?fields=id,name", {
+        method: "POST", body: {
+          name: "Surat Keluar 2026-2027",
+          mimeType: "application/vnd.google-apps.folder",
+          parents: [connection.drive_uploads_folder_id],
+          appProperties: { cssmoraArchiveType: "outgoing-letters" },
+        }
+      })).data;
+    folderId = String(data?.id || "");
+    if (!folderId) throw new AppError(502, "Folder surat keluar gagal dibuat di Drive.");
+  }
+  const archiveRows = (await serviceRequest(queryPath("cssmora_outgoing_letter_archives", {
+    select: "drive_file_id,revision", letter_id: "eq." + letterId, limit: "1",
+  }))).data;
+  const previous = Array.isArray(archiveRows) ? archiveRows[0] : null;
+  let existingId = String(previous?.drive_file_id || "");
+  if (!existingId) existingId = await findDriveFolder(accessToken,
+    "appProperties has { key='cssmoraOutgoingLetterId' and value='" + letterId +
+    "' } and '" + folderId + "' in parents and trashed=false") || "";
+  const filePart = (v: unknown, max: number) =>
+    clean(v, max).replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+  const title = [letter.issued_on, filePart(letter.letter_number, 90),
+    filePart(letter.subject, 90), letterId.slice(0,8)].filter(Boolean).join(" - ").slice(0,210) + ".pdf";
+  const opts = {
+    parentId: folderId, name: title, mimeType: "application/pdf",
+    bytes, appProperties: { cssmoraOutgoingLetterId: letterId },
+  };
+  let driveFileId: string;
+  if (existingId) {
+    try { driveFileId = await uploadDriveFile(accessToken, { ...opts, fileId: existingId }); }
+    catch (err) {
+      if (!(err instanceof AppError) || err.status !== 404) throw err;
+      driveFileId = await uploadDriveFile(accessToken, opts);
+    }
+  } else driveFileId = await uploadDriveFile(accessToken, opts);
+  await moveDriveFile(accessToken, driveFileId, folderId);
+
+  const archiveUrl = "https://drive.google.com/file/d/" + encodeURIComponent(driveFileId) + "/view";
+  const revision = Number(previous?.revision || 0) + 1;
+  await serviceRequest("cssmora_outgoing_letter_archives?on_conflict=letter_id", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: {
+      letter_id: letterId, drive_file_id: driveFileId, drive_url: archiveUrl,
+      original_filename: filename, sha256_checksum: await sha256Bytes(bytes),
+      file_size_bytes: bytes.byteLength, revision, uploaded_by: actor.user.id,
+      uploaded_at: new Date().toISOString(),
+    },
+  });
+  await serviceRequest(queryPath("secretariat_letters", { id: "eq." + letterId }), {
+    method: "PATCH", body: { archive_url: archiveUrl, archive_status: "archived" },
+  });
+  return { archiveUrl, folderUrl: "https://drive.google.com/drive/folders/" + encodeURIComponent(folderId), revision };
+}
+
 async function extractIncomingLetterText(request: Request, letterId: string) {
   const actor = await requireUser(request);
   if (!actor.roles.includes("sekretaris")) throw new AppError(403, "Pembacaan surat masuk hanya tersedia untuk Sekretaris.");
@@ -2635,6 +2727,139 @@ function requireInternalServiceRole(request: Request) {
   }
 }
 
+const outgoingDrafts = "secretariat_outgoing_letter_drafts";
+const letterNumberToken = "{{nomor_surat}}";
+
+async function replaceLetterFields(token: string, documentId: string, fields: Record<string, string>) {
+  return (await googleJson(token, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, {
+    method: "POST",
+    body: { requests: Object.entries(fields).map(([key, value]) => ({
+      replaceAllText: { containsText: { text: "{{" + key + "}}", matchCase: true }, replaceText: value },
+    })) },
+  })).data?.replies ?? [];
+}
+
+async function outgoingLetterAction(request: Request, action: string, body: any) {
+  const actor = await requireUser(request);
+  if (!actor.roles.includes("sekretaris")) throw new AppError(403, "Pembuatan surat hanya tersedia untuk sekretaris.");
+  if (action === "outgoing_letter_templates") {
+    return { templates: letterTemplates.map(({ key, code, title, fields }) => ({ key, code, title, fields })) };
+  }
+
+  const id = String(body.draft_id || "");
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) throw new AppError(400, "ID draf surat tidak valid.");
+  const path = outgoingDrafts + "?id=eq." + id;
+  const existing = (await serviceRequest(path)).data?.[0];
+  if (action === "create_outgoing_letter" && existing?.document_id) {
+    if (existing.created_by !== actor.user.id) throw new AppError(409, "ID draf sudah dipakai.");
+    return { draft: existing };
+  }
+
+  const connection = await currentConnection();
+  if (!connection?.refresh_token_ciphertext || !connection?.drive_root_folder_id) {
+    throw new AppError(409, "Drive CSSMoRA belum tersambung.");
+  }
+  const token = await driveAccessToken(connection);
+
+  if (action === "create_outgoing_letter") {
+    const template = letterTemplates.find(item => item.key === body.template_key);
+    if (!template) throw new AppError(400, "Pilih jenis surat yang tersedia.");
+    const issuedOn = String(body.issued_on || "");
+    const date = new Date(issuedOn + "T00:00:00Z");
+    const subject = clean(body.subject, 240);
+    const hijri = clean(body.hijri, 70);
+    const attachments = Number(body.attachment_count ?? 0);
+    const department = String(body.department_code || "");
+    const scope = String(body.scope_code || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(issuedOn) || !Number.isFinite(date.getTime()) ||
+        date.toISOString().slice(0, 10) !== issuedOn || subject.length < 3 || !hijri ||
+        !["i", "e"].includes(scope) || !["BPH", "PSDM", "P3M", "ADVO", "MEDINFO"].includes(department) ||
+        !Number.isInteger(attachments) || attachments < 0 || attachments > 99) {
+      throw new AppError(400, "Lengkapi tanggal, perihal, cakupan, divisi, dan jumlah lampiran.");
+    }
+    const fields: Record<string, string> = {};
+    for (const key of template.fields) {
+      const value = clean(body.fields?.[key], key === "uraian_tugas" ? 1000 : 240);
+      if (!value || /[{}]/.test(value)) throw new AppError(400, "Lengkapi isian " + key.replaceAll("_", " ") + ".");
+      fields[key] = value;
+    }
+    if (/[{}]/.test(hijri)) throw new AppError(400, "Tanggal Hijriah tidak valid.");
+    fields.tanggal_surat = new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" }).format(date);
+    fields.tanggal_hijriah = hijri.replace(/\s+H$/i, "");
+    if (template.key !== "tugas") fields.lampiran = attachments ? `${attachments} berkas` : "–";
+
+    const title = `${template.title} — ${subject} — ${issuedOn}`;
+    const draft = {
+      id, created_by: actor.user.id, template_key: template.key, title, subject, issued_on: issuedOn,
+      recipient: clean(body.recipient, 180) || clean(fields.nama_penerima || fields.gelar_dan_nama_penerima ||
+        fields.jabatan_penerima || fields.nama_penerima_tugas_1, 180) || null,
+      scope_code: scope, type_code: template.code, department_code: department, attachment_count: attachments,
+    };
+    const configured = (await serviceRequest("secretariat_outgoing_letter_masters?select=document_id&template_key=eq." + template.key)).data?.[0];
+    const sourceId = configured?.document_id || Deno.env.get("LETTER_MASTER_" + template.key.toUpperCase().replaceAll("-", "_"));
+    if (!sourceId) throw new AppError(409, "Master Google Docs untuk jenis surat ini belum dikonfigurasi.");
+    const claim = (await serviceRequest(outgoingDrafts + "?on_conflict=id", {
+      method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=representation" }, body: draft,
+    })).data?.[0];
+    if (!claim) throw new AppError(409, "Pembuatan draf ini masih diproses. Muat ulang daftar draf.");
+
+    let documentId = "";
+    try {
+      try {
+        const copy = await googleJson(token, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(sourceId)}/copy?fields=id`, {
+          method: "POST", body: { name: title, parents: [connection.drive_root_folder_id], writersCanShare: false },
+        });
+        documentId = String(copy.data?.id || "");
+      } catch (error) {
+        if (error instanceof AppError && [403, 404].includes(error.status)) {
+          throw new AppError(409, "Master surat belum tersedia untuk integrasi Drive CSSMoRA. Hubungi pengelola aplikasi.");
+        }
+        throw error;
+      }
+      if (!documentId) throw new AppError(502, "Google Docs belum berhasil dibuat.");
+      const replies = await replaceLetterFields(token, documentId, fields);
+      if (Object.keys(fields).some((_, index) => !replies[index]?.replaceAllText?.occurrencesChanged)) {
+        throw new AppError(409, "Penanda isian di master surat berbeda dari formulir. Hubungi pengelola aplikasi.");
+      }
+      await shareDriveFile(token, documentId, [...await activeRoleEmails(["sekretaris"]), actor.email], "writer");
+      const saved = (await serviceRequest(path, {
+        method: "PATCH", headers: { Prefer: "return=representation" }, body: { document_id: documentId },
+      })).data?.[0];
+      if (!saved) throw new AppError(502, "Tautan draf belum tersimpan.");
+      return { draft: saved };
+    } catch (error) {
+      // A lost response can occur after the database has already stored the link.
+      const saved = (await serviceRequest(path)).data?.[0];
+      if (saved?.document_id) return { draft: saved };
+      if (documentId) {
+        await googleJson(token, `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(documentId)}`, {
+          method: "PATCH", body: { trashed: true },
+        }).catch(() => null);
+      }
+      await serviceRequest(path + "&document_id=is.null", { method: "DELETE" });
+      throw error;
+    }
+  }
+
+  if (!existing?.document_id || !existing.letter_id) throw new AppError(409, "Terbitkan nomor surat terlebih dahulu.");
+  const letter = (await serviceRequest("secretariat_letters?select=letter_number,archive_status&id=eq." + existing.letter_id)).data?.[0];
+  if (!letter || letter.archive_status === "void") throw new AppError(409, "Surat ini sudah dibatalkan.");
+  const [reply] = await replaceLetterFields(token, existing.document_id, { nomor_surat: letter.letter_number });
+  if (!reply?.replaceAllText?.occurrencesChanged) {
+    const doc = (await googleJson(token, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(existing.document_id)}?includeTabsContent=true`)).data;
+    const content = JSON.stringify(doc);
+    if (content.includes(letterNumberToken) || !content.includes(letter.letter_number)) {
+      throw new AppError(409, "Nomor sudah tercatat. Pulihkan penanda {{nomor_surat}} di Docs lalu coba lagi.");
+    }
+  }
+  if (action === "outgoing_letter_pdf") {
+    const bytes = await exportProgramPdf(token, existing.document_id);
+    if (bytes.length > 10 * 1024 * 1024) throw new AppError(400, "PDF surat melebihi batas 10 MB untuk tanda tangan.");
+    return { letter_id: existing.letter_id, pdf_base64: base64(bytes) };
+  }
+  return { letter_number: letter.letter_number };
+}
+
 async function handleRequest(request: Request) {
   if (request.method === "OPTIONS") {
     const headers = corsHeaders(request);
@@ -2653,6 +2878,9 @@ async function handleRequest(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || "");
+    if (["outgoing_letter_templates", "create_outgoing_letter", "sync_outgoing_letter_number", "outgoing_letter_pdf"].includes(action)) {
+      return jsonResponse(request, 200, await outgoingLetterAction(request, action, body));
+    }
     if (action === "archive_attendance_photo") {
       requireInternalServiceRole(request);
       return jsonResponse(request, 200, { ok: true, action, ...(await archiveAttendancePhoto(body)) });
@@ -2664,6 +2892,9 @@ async function handleRequest(request: Request) {
     if (action === "status") {
       const actor = await requireUser(request);
       return jsonResponse(request, 200, await integrationStatus());
+    }
+    if (action === "archive_outgoing_letter") {
+      return jsonResponse(request, 200, { ok: true, action, ...(await archiveOutgoingLetter(request, body)) });
     }
     if (action === "extract_incoming_letter_text") {
       const letterId = String(body.letter_id || "").trim();
