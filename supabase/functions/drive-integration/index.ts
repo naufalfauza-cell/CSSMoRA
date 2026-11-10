@@ -1496,7 +1496,23 @@ async function renderProgramDocumentTemplate(accessToken: string, documentId: st
   const eventTime = clean(data.event_time_text || data.actual_time_text, 100) || "Belum ditetapkan";
   const place = clean(data.place || data.actual_place, 300) || "Belum ditetapkan";
 
-  if (documentType === "proposal") {
+  if (documentType === "proposal" && data.archive_sections) {
+    const source = data.archive_sections;
+    const sections = [
+      ["Latar Belakang", "Tujuan Kegiatan", source.background],
+      ["Tujuan Kegiatan", "Nama Kegiatan", source.goals],
+      ["Nama Kegiatan", "Tema Kegiatan", source.name_section],
+      ["Tema Kegiatan", "Deskripsi Kegiatan", source.theme_section],
+      ["Deskripsi Kegiatan", "Sasaran Kegiatan", source.description],
+      ["Sasaran Kegiatan", "Waktu dan Tempat Pelaksanaan", source.target],
+      ["Waktu dan Tempat Pelaksanaan", "Penutup", source.schedule_section],
+      ["Penutup", "Lampiran 1", source.closing],
+    ];
+    for (const [start, end, value] of sections) {
+      const slots = sectionParagraphs(paragraphs, start, end);
+      slots.forEach((slot, index) => pushParagraphEdit(edits, slot, index === 0 ? clean(value, 12000) : ""));
+    }
+  } else if (documentType === "proposal") {
     setFollowingSlots("Latar Belakang", "Tujuan Kegiatan", [clean(data.background, 7000) || clean(data.description, 7000) || "Latar belakang kegiatan belum dilengkapi."]);
     const goals = splitTemplateList(data.goals);
     const goalSlots = sectionParagraphs(paragraphs, "Tujuan Kegiatan", "Nama Kegiatan");

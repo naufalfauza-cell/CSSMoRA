@@ -2,6 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { narrativePromptData, programNarrativePlan, resolveProgramNarrative } from "./narrative.ts";
 
+import { archiveBucket, archivePath, archivedProposalSections, validateProposalArchive } from "./archive.ts";
+
 const url = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
 const publishable = (() => { try { const values=JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS")||"{}");return values.default||""; } catch { return ""; } })() || Deno.env.get("SUPABASE_ANON_KEY") || "";
 const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -53,6 +55,28 @@ Deno.serve(async(req:Request)=>{
     if(!roleCheck(roles))return json({error:"Fitur ini hanya tersedia untuk pengurus CSSMoRA."},403,origin);
     const payload=await req.json().catch(()=>({}));
     const action=String(payload.action||"");
+    if (["list_proposal_archive", "read_proposal_archive", "install_proposal_archive"].includes(action)) {
+      const storage = admin.storage.from(archiveBucket);
+      if (action === "install_proposal_archive") {
+        if (!roles.includes("ketua")) return json({error:"Pemasangan arsip hanya tersedia untuk Ketua."},403,origin);
+        let data;
+        try { data = validateProposalArchive(payload.archive); }
+        catch (error) { return json({error:error instanceof Error ? error.message : "Arsip tidak valid."},400,origin); }
+        const bytes = new TextEncoder().encode(JSON.stringify(data));
+        if (bytes.length > 524288) return json({error:"Ukuran arsip maksimal 512 KB."},413,origin);
+        const {error} = await storage.upload(archivePath, bytes, {contentType:"application/json",upsert:true});
+        if (error) return json({error:"Arsip belum bisa dipasang. Periksa konfigurasi penyimpanan."},502,origin);
+        return json({count:data.length},200,origin);
+      }
+      const {data, error} = await storage.download(archivePath);
+      if (error || !data) return json({error:"Arsip proposal belum tersedia. Ketua dapat memasang katalog referensi."},503,origin);
+      const entries = validateProposalArchive(await data.json());
+      if (action === "list_proposal_archive") {
+        return json({entries:entries.map(({id,label,proposal,lpj})=>({id,label,proposal,lpj}))},200,origin);
+      }
+      const entry = entries.find(item => item.id === payload.reference_id);
+      return entry ? json({entry},200,origin) : json({error:"Referensi proposal tidak ditemukan."},404,origin);
+    }
     if(action==="analyze_incoming_letter"){
       if(!roles.includes("sekretaris"))return json({error:"Pembacaan surat masuk hanya tersedia untuk Sekretaris."},403,origin);
       const letterId=clean(payload.letter_id,50);
@@ -120,7 +144,9 @@ Deno.serve(async(req:Request)=>{
     const {data:detail}=await admin.from("cssmora_program_details").select("description,goals,target,planned_schedule,pic,budget_amount").eq("program_id",doc.program_id).maybeSingle();
     const form=(doc.form_data||{}) as Record<string,unknown>;
     const options=(doc.optional_sections||{}) as Record<string,boolean>;
+    const archiveSections = doc.document_type === "proposal" ? archivedProposalSections(form) : null;
     if(action==="generate_ai"){
+      if(archiveSections)return json({error:"Proposal referensi menggunakan teks draf yang diedit pengurus."},409,origin);
       if(!canGenerateDoc(doc,user.id,roles)||!["draft","revision"].includes(doc.status))return json({error:"Narasi AI hanya dapat dibuat pada draf yang dapat Anda kelola."},403,origin);
       const groqKey=Deno.env.get("GROQ_API_KEY");if(!groqKey)return json({error:"Kunci AI belum terpasang pada Secrets Edge Functions Supabase."},503,origin);
       const plan=programNarrativePlan(doc.document_type,form,detail||{});
@@ -151,10 +177,10 @@ Deno.serve(async(req:Request)=>{
     if(rundownInput.length){const ids=[...new Set(rundownInput.map(row=>clean(row.member_id,50)).filter(Boolean))];const {data:names}=ids.length?await admin.from("secretariat_members").select("id,full_name").in("id",ids):{data:[]};const nameMap=new Map((names||[]).map(row=>[row.id,row.full_name]));rundown=rundownInput.map(row=>({...row,person:nameMap.get(row.member_id)||""}));}
 
     if(!canGenerateDoc(doc,user.id,roles))return json({error:"Google Docs hanya dapat dibuat oleh pengelola draf atau Bendahara sebelum tanda tangan Sekretaris."},403,origin);
-    if(!doc.ai_content?.generated_at||!doc.ai_content?.sections)return json({error:"Buat narasi AI terlebih dahulu sebelum membuat Google Docs."},409,origin);
+    if(!archiveSections&&(!doc.ai_content?.generated_at||!doc.ai_content?.sections))return json({error:"Buat narasi AI terlebih dahulu sebelum membuat Google Docs."},409,origin);
     const financeAllowed=roles.includes("bendahara")||roles.includes("ketua")||roles.includes("wakil");
     if(doc.document_type==="lpj"&&options.finance&&["treasurer_review","chair_review","approved"].includes(doc.status)&&!financeAllowed)return json({error:"Bagian keuangan hanya dapat diterbitkan Bendahara atau pimpinan."},403,origin);
-    const ai=(doc.ai_content.sections||{}) as Record<string,string>;
+    const ai=(doc.ai_content?.sections||{}) as Record<string,string>;
     let financeData:any=null;
     const blocks:any[]=[];
     const push=(kind:string,text:string,extra:Record<string,unknown>={})=>blocks.push(block(kind,clean(text,8000),extra));
@@ -247,6 +273,7 @@ Deno.serve(async(req:Request)=>{
       event_date_start:form.event_date||"",event_date_end:form.event_end_date||"",event_date_text:dateRange(form.event_date,form.event_end_date),event_time_text:timeRange(form.event_time_start||form.event_time,form.event_time_end),place:clean(form.place),
       actual_date_start:form.actual_date||doc.period_start||"",actual_date_end:form.actual_end_date||doc.period_end||"",actual_date_text:dateRange(form.actual_date||doc.period_start,form.actual_end_date||doc.period_end),actual_time_text:timeRange(form.actual_time_start||form.actual_time,form.actual_time_end),actual_place:clean(form.actual_place),
       theme:clean(form.theme),goals:clean(form.goals)||clean(detail?.goals),description:clean(form.description)||clean(detail?.description),materials:clean(form.materials),target:clean(form.target)||clean(detail?.target),
+      archive_sections:archiveSections,
       background:ai.background,approach:ai.approach,closing:ai.closing,opening:ai.opening,implementation:ai.implementation,outcome:ai.outcome,evaluation:ai.evaluation,recommendations:ai.recommendations,
       realization_summary:clean(form.realization_summary),realization_by_division:clean(form.realization_by_division),outcome_summary:clean(form.outcome_summary),obstacles:clean(form.obstacles),evaluation_by_division:clean(form.evaluation_by_division),
       attendance_target:clean(form.attendance_target),attendance_count:clean(form.attendance_count),administration_summary:options.administration?clean(form.administration_summary):"",
@@ -258,9 +285,14 @@ Deno.serve(async(req:Request)=>{
     const driveResult=await driveResponse.json().catch(()=>({}));
     if(!driveResponse.ok||!driveResult.documentId||!driveResult.webViewLink)return json({error:driveResult.error||"Google Docs belum dapat dibuat. Pastikan Drive CSSMoRA telah tersambung."},driveResponse.status||502,origin);
     const generatedAt=new Date().toISOString();
-    const {error:updateError}=await admin.from("cssmora_program_documents").update({google_doc_id:driveResult.documentId,google_doc_url:driveResult.webViewLink,google_doc_generated_at:generatedAt,updated_at:generatedAt,updated_by:user.id}).eq("id",doc.id);
+    const archiveContent = archiveSections ? {generated_at:generatedAt, model:"archive", sections:archiveSections} : null;
+    const {data:savedDoc,error:updateError}=await admin.from("cssmora_program_documents").update({
+      google_doc_id:driveResult.documentId,google_doc_url:driveResult.webViewLink,google_doc_generated_at:generatedAt,
+      updated_at:generatedAt,updated_by:user.id,...(archiveContent?{ai_content:archiveContent}:{}),
+    }).eq("id",doc.id).eq("updated_at",doc.updated_at).select("id").maybeSingle();
     if(updateError)return json({error:"Google Docs sudah dibuat, tetapi tautannya belum tercatat. Muat ulang lalu buat ulang bila perlu."},500,origin);
-    return json({ok:true,google_doc_id:driveResult.documentId,google_doc_url:driveResult.webViewLink,google_doc_generated_at:generatedAt},200,origin);
+    if(!savedDoc)return json({error:"Draf berubah selama Google Docs dibuat. Muat ulang dan perbarui Docs."},409,origin);
+    return json({ok:true,google_doc_id:driveResult.documentId,google_doc_url:driveResult.webViewLink,google_doc_generated_at:generatedAt,archive_content:archiveContent},200,origin);
   }catch(error){
     console.error("Program document assistant request failed",error instanceof Error?error.name:"unknown");
     return json({error:error instanceof Error?clean(error.message,240):"Permintaan dokumen gagal. Coba lagi."},500,origin);
