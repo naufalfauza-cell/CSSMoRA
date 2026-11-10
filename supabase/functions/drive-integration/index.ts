@@ -1262,7 +1262,7 @@ function proposalParagraphFormatRequests(paragraphs: any[]) {
     const signerName = key === "nama ketua umum";
     const tableLabel = key === "pemasukan" || key === "pengeluaran";
     const bold = heading || appendix || tableLabel || (centered && !signatureLabel);
-    const paragraphStyle: Record<string, unknown> = {};
+    const paragraphStyle: Record<string, unknown> = { lineSpacing: 150 };
     if (heading || appendix || tableLabel) {
       Object.assign(paragraphStyle, { alignment: "START", keepWithNext: true, keepLinesTogether: true });
       if (appendix) paragraphStyle.pageBreakBefore = true;
@@ -1274,13 +1274,13 @@ function proposalParagraphFormatRequests(paragraphs: any[]) {
       });
     } else if (inNarrative && !centered) {
       Object.assign(paragraphStyle, {
-        alignment: "JUSTIFIED", lineSpacing: 115,
+        alignment: "JUSTIFIED", lineSpacing: 150,
         spaceAbove: { magnitude: 0, unit: "PT" },
         spaceBelow: { magnitude: 3, unit: "PT" },
       });
       if (!paragraph.bullet && !paragraph.elements?.[0]?.textRun?.content?.startsWith("\t")) {
         paragraphStyle.indentStart = { magnitude: 0, unit: "PT" };
-        paragraphStyle.indentFirstLine = { magnitude: 18, unit: "PT" };
+        paragraphStyle.indentFirstLine = { magnitude: 28.35, unit: "PT" };
       }
     } else if (centered) {
       paragraphStyle.alignment = "CENTER";
@@ -1496,23 +1496,42 @@ async function renderProgramDocumentTemplate(accessToken: string, documentId: st
   const eventTime = clean(data.event_time_text || data.actual_time_text, 100) || "Belum ditetapkan";
   const place = clean(data.place || data.actual_place, 300) || "Belum ditetapkan";
 
-  if (documentType === "proposal") {
+  if (documentType === "proposal" && data.archive_sections) {
+    const source = data.archive_sections;
+    const sections = [
+      ["Latar Belakang", "Tujuan Kegiatan", source.background],
+      ["Tujuan Kegiatan", "Nama Kegiatan", source.goals],
+      ["Nama Kegiatan", "Tema Kegiatan", source.name_section],
+      ["Tema Kegiatan", "Deskripsi Kegiatan", source.theme_section],
+      ["Deskripsi Kegiatan", "Sasaran Kegiatan", source.description],
+      ["Sasaran Kegiatan", "Waktu dan Tempat Pelaksanaan", source.target],
+      ["Waktu dan Tempat Pelaksanaan", "Penutup", source.schedule_section],
+      ["Penutup", "Lampiran 1", source.closing],
+    ];
+    for (const [start, end, value] of sections) {
+      const slots = sectionParagraphs(paragraphs, start, end);
+      slots.forEach((slot, index) => pushParagraphEdit(edits, slot, index === 0 ? clean(value, 12000) : ""));
+    }
+  } else if (documentType === "proposal") {
     setFollowingSlots("Latar Belakang", "Tujuan Kegiatan", [clean(data.background, 7000) || clean(data.description, 7000) || "Latar belakang kegiatan belum dilengkapi."]);
     const goals = splitTemplateList(data.goals);
     const goalSlots = sectionParagraphs(paragraphs, "Tujuan Kegiatan", "Nama Kegiatan");
-    const objectiveItems = goals.length > 4 ? [...goals.slice(0, 3), goals.slice(3).join("; ")] : goals;
-    pushParagraphEdit(edits, goalSlots[0], `Kegiatan ${title} CSSMoRA Universitas Airlangga bertujuan untuk:`);
-    for (let index = 1; index < goalSlots.length; index++) pushParagraphEdit(edits, goalSlots[index], objectiveItems[index - 1] || "");
+    pushParagraphEdit(edits, goalSlots[0], goals.length ? "Adapun tujuan kegiatan ini sebagai berikut." : "Tujuan kegiatan belum dilengkapi.");
+    for (let index = 1; index < goalSlots.length; index++) {
+      const items = index === goalSlots.length - 1 ? goals.slice(index - 1) : goals.slice(index - 1, index);
+      pushParagraphEdit(edits, goalSlots[index], items.join("\n"));
+    }
     setFollowingSlots("Nama Kegiatan", "Tema Kegiatan", [`Kegiatan ini bernama “${title}” CSSMoRA Universitas Airlangga${period ? ` Periode ${period}` : ""}.`]);
-    setFollowingSlots("Tema Kegiatan", "Deskripsi Kegiatan", [`Tema kegiatan ini adalah “${clean(data.theme, 600) || "Disesuaikan dengan arah dan tujuan kegiatan"}”.`]);
+    const theme = clean(data.theme, 600);
+    setFollowingSlots("Tema Kegiatan", "Deskripsi Kegiatan", [theme ? `Tema kegiatan ini adalah “${theme}”.` : "Tema kegiatan belum ditetapkan."]);
     const descriptionSlots = sectionParagraphs(paragraphs, "Deskripsi Kegiatan", "Sasaran Kegiatan");
     const materials = splitTemplateList(data.materials);
     const description = clean(data.approach, 7000) || clean(data.description, 7000) || "Deskripsi kegiatan belum dilengkapi.";
     pushParagraphEdit(edits, descriptionSlots[0], [description, materials.length ? `Materi kegiatan meliputi:\n${materials.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : ""].filter(Boolean).join("\n\n"));
-    setFollowingSlots("Sasaran Kegiatan", "Waktu dan Tempat Pelaksanaan", [clean(data.target, 1000) || "Seluruh pengurus dan anggota aktif CSSMoRA Universitas Airlangga"]);
+    setFollowingSlots("Sasaran Kegiatan", "Waktu dan Tempat Pelaksanaan", [clean(data.target, 1000) || "Sasaran kegiatan belum ditetapkan."]);
     const dateSlots = sectionParagraphs(paragraphs, "Waktu dan Tempat Pelaksanaan", "Penutup");
     pushParagraphEdit(edits, dateSlots[0], `${title} CSSMoRA Universitas Airlangga dilaksanakan pada:`);
-    pushParagraphEdit(edits, dateSlots[1], `\tHari/tanggal\t: ${eventDate} · Waktu: ${eventTime}`);
+    pushParagraphEdit(edits, dateSlots[1], `\tHari/tanggal\t: ${eventDate}\n\tWaktu\t: ${eventTime}`);
     pushParagraphEdit(edits, dateSlots[2], `\tTempat\t: ${place}`);
     setFollowingSlots("Penutup", "Lampiran 1", [clean(data.closing, 7000) || `Demikian proposal kegiatan ${title} ini kami susun sebagai acuan pelaksanaan kegiatan.`, ""]);
   } else {

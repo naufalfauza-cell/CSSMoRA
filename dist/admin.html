@@ -33,7 +33,7 @@
   <script src="./workflows.js?v=20261023-performance-v1" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
   <script src="./program-workflow.js?v=20261023-program-lpj-v1" defer></script>
-  <script src="./program-documents.js?v=20261110-proposal-archive-layout" defer></script>
+  <script src="./program-documents.js?v=20261110-proposal-reference-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
   <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v2">
@@ -245,13 +245,38 @@
                 <div class="form-two"><div><label for="program-document-period">Periode</label><input id="program-document-period" name="period_label" maxlength="24" placeholder="2026/2027" required></div><div><label for="program-document-title">Judul kegiatan</label><input id="program-document-title" name="title" maxlength="180" placeholder="Nama kegiatan" required></div></div>
                 <div class="form-two"><div><label for="program-document-start">Tanggal mulai / pelaksanaan <span class="required-mark">wajib untuk proposal</span></label><input id="program-document-start" name="period_start" type="date"></div><div><label for="program-document-end">Tanggal akhir <span class="admin-muted">opsional</span></label><input id="program-document-end" name="period_end" type="date"></div></div>
                 <div class="program-document-fields" data-document-type="proposal">
-                  <label for="proposal-description">Deskripsi singkat proker <span class="required-mark">wajib</span></label><textarea id="proposal-description" name="description" rows="3" maxlength="2000" required placeholder="Apa yang akan dilakukan, untuk siapa, dan kenapa?"></textarea>
-                  <label for="proposal-goals">Tujuan <span class="required-mark">wajib</span></label><textarea id="proposal-goals" name="goals" rows="2" maxlength="1200" required placeholder="Tujuan kegiatan"></textarea>
-                  <label for="proposal-materials">Materi / pokok kegiatan</label><textarea id="proposal-materials" name="materials" rows="2" maxlength="1600" placeholder="Pokok materi, rangkaian utama, atau isi kegiatan (opsional)"></textarea>
+                  <div class="program-document-subform">
+                    <label for="proposal-archive-picker">Referensi LPJ Avaraksa 2025/2026</label>
+                    <select id="proposal-archive-picker"><option value="">Pilih LPJ tahun lalu…</option></select>
+                    <button id="proposal-archive-apply" class="member-option-button" type="button">Salin isi proposal A–H</button>
+                    <p id="proposal-archive-message" class="admin-muted" role="status"></p>
+                    <p id="proposal-archive-links" hidden><a id="proposal-archive-lpj" target="_blank" rel="noopener noreferrer">Buka LPJ sumber</a> · <a id="proposal-archive-proposal" target="_blank" rel="noopener noreferrer">Buka proposal pasangan</a></p>
+                    <div id="proposal-archive-install" hidden>
+                      <label for="proposal-archive-file">Pasang katalog referensi (Ketua)</label>
+                      <input id="proposal-archive-file" type="file" accept=".json,application/json">
+                      <button id="proposal-archive-upload" class="member-option-button" type="button">Pasang katalog</button>
+                    </div>
+                  </div>
+                  <input type="hidden" name="archive_reference">
+                  <label for="proposal-background">A. Latar Belakang</label><textarea id="proposal-background" name="background" rows="5" maxlength="12000"></textarea>
+                  <label for="proposal-goals">B. Tujuan Kegiatan <span class="required-mark">wajib</span></label><textarea id="proposal-goals" name="goals" rows="2" maxlength="12000" required placeholder="Tujuan kegiatan"></textarea>
+                  <div data-archive-only hidden>
+                    <label for="proposal-name-section">C. Nama Kegiatan</label><textarea id="proposal-name-section" name="name_section" rows="2" maxlength="12000"></textarea>
+                    <label for="proposal-theme-section">D. Tema Kegiatan</label><textarea id="proposal-theme-section" name="theme_section" rows="2" maxlength="12000"></textarea>
+                  </div>
+                  <div data-proposal-manual><label for="proposal-theme">D. Tema Kegiatan</label><input id="proposal-theme" name="theme" maxlength="180" placeholder="Opsional"></div>
+                  <label for="proposal-description">E. Deskripsi Kegiatan <span class="required-mark">wajib</span></label><textarea id="proposal-description" name="description" rows="3" maxlength="12000" required placeholder="Apa yang akan dilakukan, untuk siapa, dan kenapa?"></textarea>
+                  <div data-proposal-manual><label for="proposal-materials">Materi / pokok kegiatan</label><textarea id="proposal-materials" name="materials" rows="2" maxlength="1600" placeholder="Pokok materi, rangkaian utama, atau isi kegiatan (opsional)"></textarea></div>
+                  <label for="proposal-target">F. Sasaran Kegiatan <span class="required-mark">wajib</span></label><textarea id="proposal-target" name="target" rows="2" maxlength="12000" required placeholder="Penerima manfaat atau peserta"></textarea>
+                  <div data-archive-only hidden>
+                    <label for="proposal-schedule-section">G. Waktu dan Tempat Pelaksanaan</label><textarea id="proposal-schedule-section" name="schedule_section" rows="4" maxlength="12000"></textarea>
+                    <small>Tinjau jadwal dari arsip. Isi juga tanggal pelaksanaan untuk periode sekarang di bagian atas.</small>
+                  </div>
+                  <div data-proposal-manual>
                   <div class="form-two"><div><label for="proposal-time-start">Jam mulai</label><input id="proposal-time-start" name="event_time_start" type="time"></div><div><label for="proposal-time-end">Jam selesai</label><input id="proposal-time-end" name="event_time_end" type="time"></div></div>
                   <label for="proposal-place">Tempat</label><input id="proposal-place" name="place" maxlength="180" placeholder="Gedung / lokasi kegiatan">
-                  <label for="proposal-target">Sasaran/peserta <span class="required-mark">wajib</span></label><textarea id="proposal-target" name="target" rows="2" maxlength="800" required placeholder="Penerima manfaat atau peserta"></textarea>
-                  <label for="proposal-theme">Tema kegiatan</label><input id="proposal-theme" name="theme" maxlength="180" placeholder="Opsional">
+                  </div>
+                  <label for="proposal-closing">H. Penutup</label><textarea id="proposal-closing" name="closing" rows="4" maxlength="12000"></textarea>
                 </div>
                 <div class="program-document-fields" data-document-type="lpj" hidden>
                   <label for="lpj-summary">Ringkasan pelaksanaan <span class="required-mark">wajib</span></label><textarea id="lpj-summary" name="realization_summary" rows="3" maxlength="5000" placeholder="Apa yang benar-benar terlaksana?" required></textarea>

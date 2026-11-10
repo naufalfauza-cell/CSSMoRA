@@ -10,6 +10,69 @@
   const activeBucket='cssmora-program-documentation';
   let programs=[],details=new Map(),members=[],documents=[],current=null,budget=[],committee=[],rundown=[],photos=[],pendingPhotos=[],finance={},subrecordsDirty=false,formDirty=false;
   let loading=null;
+  let archiveEntries=[], archiveLoading=false, archiveApplying=false, editorVersion=0;
+  const archiveFields=['background','goals','name_section','theme_section','description','target','schedule_section','closing'];
+  const archiveReference=()=>$('#program-document-form').elements.namedItem('archive_reference');
+  const usesArchive=()=>selectedType()==='proposal'&&Boolean(archiveReference().value);
+  function archiveMessage(text){$('#proposal-archive-message').textContent=text;}
+  async function archiveRequest(action,data={}){
+    const response=await window.CSSMoRAAdmin.request(`${cfg().url}/functions/v1/program-document-assistant`,{
+      method:'POST',headers:{apikey:cfg().publishableKey,'Content-Type':'application/json'},
+      body:JSON.stringify({action,...data}),timeoutMs:20000,
+    });
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error||'Referensi proposal belum dapat dibuka.');
+    return result;
+  }
+  async function loadArchive(){
+    if(archiveLoading)return;
+    archiveLoading=true;renderArchive();archiveMessage('Memuat referensi LPJ…');
+    try{
+      const result=await archiveRequest('list_proposal_archive');
+      archiveEntries=result.entries;
+      const picker=$('#proposal-archive-picker');
+      setSelectOptions(picker,archiveEntries,row=>row.label,picker.value||archiveReference().value);
+      archiveMessage('');
+    }catch(error){archiveMessage(error.message);}
+    finally{archiveLoading=false;renderArchive();}
+  }
+  function renderArchive(){
+    const picker=$('#proposal-archive-picker'), editable=isEditable();
+    const selected=archiveEntries.find(entry=>entry.id===picker.value);
+    picker.disabled=!editable||archiveLoading||archiveApplying||!archiveEntries.length;
+    $('#proposal-archive-apply').disabled=picker.disabled||!selected;
+    $('#proposal-archive-install').hidden=!context().roles?.includes('ketua');
+    const links=$('#proposal-archive-links');
+    links.hidden=!selected;
+    if(selected){
+      $('#proposal-archive-lpj').href=selected.lpj;
+      $('#proposal-archive-proposal').href=selected.proposal;
+    }
+    document.querySelectorAll('[data-archive-only]').forEach(node=>node.hidden=!usesArchive());
+    document.querySelectorAll('[data-proposal-manual]').forEach(node=>node.hidden=usesArchive());
+  }
+  async function applyArchive(){
+    const referenceId=$('#proposal-archive-picker').value;
+    if(!isEditable()||selectedType()!=='proposal'||!referenceId||archiveApplying)return;
+    const form=$('#program-document-form');
+    if(archiveFields.some(key=>form.elements.namedItem(key).value.trim())&&
+      !window.confirm('Ganti isian A–H saat ini dengan salinan dari proposal arsip?'))return;
+    const version=editorVersion;
+    archiveApplying=true;renderArchive();archiveMessage('Membaca isi proposal pasangan…');
+    try{
+      const {entry}=await archiveRequest('read_proposal_archive',{reference_id:referenceId});
+      if(version!==editorVersion||!isEditable()||selectedType()!=='proposal'||$('#proposal-archive-picker').value!==referenceId){
+        archiveMessage('Isian berubah selama arsip dimuat. Klik salin lagi untuk memakai referensi.');
+        return;
+      }
+      for(const key of archiveFields)form.elements.namedItem(key).value=entry.fields[key]||'';
+      archiveReference().value=entry.id;
+      formDirty=true;
+      archiveMessage('Salinan masuk ke formulir. Tinjau isi, lengkapi bagian kosong, dan perbarui jadwal sebelum menyimpan.');
+      renderActions();
+    }catch(error){archiveMessage(error.message);}
+    finally{archiveApplying=false;renderArchive();}
+  }
   const committeeRoles=['Ketua Pelaksana','Wakil Ketua Pelaksana','Sekretaris Pelaksana','Bendahara Pelaksana','Koordinator Acara','Staf Acara','Staf Humas','Staf Publikasi dan Dokumentasi','Staf Konsumsi','Staf Perlengkapan','Staf Transportasi','Staf Keamanan','Anggota'];
   const committeeDivisions=[['BPH','BPH'],['PSDM','PSDM'],['P3M','P3M'],['ADVO','Advokasi'],['MEDINFO','Medinfo'],['SEKRETARIAT','Sekretariat'],['BENDAHARA','Bendahara'],['LAINNYA','Lainnya']];
   const budgetCategories={income:['Dana CSSMoRA','Sponsor','Tiket peserta','Iuran peserta','Donasi','Umum','Lainnya'],expense:['Konsumsi','Perlengkapan','Publikasi','Transportasi','Akomodasi','Honorarium','Sewa tempat','Operasional','Umum','Lainnya']};
@@ -96,10 +159,11 @@
   }
   function renderAiPreview(){
     const root=$('#program-document-ai-preview');const content=$('#program-document-ai-preview-content');
-    const sections=current?.ai_content?.sections;
+    const sections=usesArchive()?null:current?.ai_content?.sections;
     if(!sections||!Object.keys(sections).length){root.hidden=true;content.innerHTML='';return;}
     root.hidden=false;
-    content.innerHTML=Object.entries(sections).filter(([,value])=>String(value||'').trim()).map(([key,value])=>`<section><strong>${esc(({background:'Latar belakang',approach:'Rencana pendekatan',opening:'Pendahuluan',implementation:'Pelaksanaan',outcome:'Luaran dan capaian',evaluation:'Evaluasi',recommendations:'Rekomendasi',closing:'Penutup'})[key]||key)}</strong><p>${esc(value)}</p></section>`).join('');
+    const order=current.document_type==='proposal'?['background','approach','closing']:['opening','implementation','outcome','evaluation','recommendations','closing'];
+    content.innerHTML=order.map(key=>[key,sections[key]]).filter(([,value])=>String(value||'').trim()).map(([key,value])=>`<section><strong>${esc(({background:'Latar belakang',approach:'Deskripsi kegiatan',opening:'Pendahuluan',implementation:'Pelaksanaan',outcome:'Luaran dan capaian',evaluation:'Evaluasi',recommendations:'Rekomendasi',closing:'Penutup'})[key]||key)}</strong><p>${esc(value)}</p></section>`).join('');
   }
   function renderReviewActions(){
     const root=$('#program-document-review-actions');
@@ -118,7 +182,7 @@
     const editable=isEditable();
     const roles=context().roles||[];
     const canRefreshDoc=editable||Boolean(current&&((current.status==='treasurer_review'&&roles.includes('bendahara'))||(current.status==='secretary_review'&&current.document_type==='lpj'&&current.optional_sections?.finance&&roles.includes('bendahara'))));
-    $('#program-document-save').disabled=!editable;$('#program-document-ai').disabled=!editable;$('#program-document-google').disabled=!canRefreshDoc;
+    $('#program-document-save').disabled=!editable;$('#program-document-ai').disabled=!editable||usesArchive();$('#program-document-ai').hidden=usesArchive();$('#program-document-google').disabled=!canRefreshDoc;
     $('#program-document-google').textContent=current?.google_doc_id?'Perbarui Google Docs':'Buat Google Docs';
     const submitReady=documentReadyForSubmission();
     const submitButton=$('#program-document-submit');
@@ -127,6 +191,7 @@
     submitButton.textContent=submitReady?'Ajukan saja':current?.google_doc_id?'Perbarui Docs dulu':'Buat Docs dulu';
     submitButton.title=submitReady?'Mengajukan Google Docs yang sudah dibuat tanpa membuat ulang isinya.':'Buat atau perbarui Google Docs, lalu ajukan dokumen tersebut.';
     document.querySelectorAll('.program-document-fields').forEach(section=>section.querySelectorAll('input,textarea,select').forEach(field=>field.disabled=!editable||section.hidden));
+    renderArchive();
     $('#program-document-type').disabled=!editable||Boolean(current);
     $('#program-document-program').disabled=!editable||Boolean(current);
     $('#program-document-period').disabled=!editable||Boolean(current);
@@ -150,7 +215,7 @@
     if(!current){
       $('#program-document-title').value=program.name;
       if(detail.period_label)$('#program-document-period').value=detail.period_label;
-      if(selectedType()==='proposal'){
+      if(selectedType()==='proposal'&&!usesArchive()){
         $('#proposal-description').value=detail.description||'';$('#proposal-goals').value=detail.goals||'';$('#proposal-target').value=detail.target||'';
         if(/^\d{4}-\d{2}-\d{2}$/.test(detail.planned_schedule||''))$('#program-document-start').value=detail.planned_schedule;
       }
@@ -167,7 +232,7 @@
   }
   function getFormData(){
     const form=$('#program-document-form');const names=selectedType()==='proposal'
-      ?['description','goals','materials','target','event_time_start','event_time_end','place','theme']
+      ?[...archiveFields,'archive_reference','materials','event_time_start','event_time_end','place','theme']
       :['realization_summary','outcome_summary','realization_by_division','obstacles','evaluation_by_division','administration_summary','evaluation','recommendations','attendance_target','attendance_count','actual_time_start','actual_time_end','actual_place'];
     const data=Object.fromEntries(names.map(name=>[name,form.elements.namedItem(name)?.value?.trim()||'']));
     if(selectedType()==='proposal')Object.assign(data,{event_date:$('#program-document-start').value||'',event_end_date:$('#program-document-end').value||'',rundown:rundown.map(row=>({start_time:row.start_time||'',end_time:row.end_time||'',activity:String(row.activity||'').trim(),member_id:row.member_id||''})).filter(row=>row.activity)});
@@ -175,6 +240,8 @@
     return data;
   }
   function clearEditor(){
+    editorVersion++;
+    archiveMessage('');
     current=null;budget=[];committee=[];rundown=[];photos=[];pendingPhotos.forEach(item=>URL.revokeObjectURL(item.preview));pendingPhotos=[];finance={};subrecordsDirty=false;formDirty=false;
     $('#program-document-form').reset();$('#program-document-id').value='';$('#program-document-type').value='proposal';
     $('#program-document-editor-title').textContent='Mulai proposal atau LPJ';
@@ -211,7 +278,12 @@
     pendingPhotos.forEach(item=>URL.revokeObjectURL(item.preview));pendingPhotos=[];finance={};
     $('#program-document-id').value=current.id;$('#program-document-type').value=current.document_type;$('#program-document-program').value=current.program_id;
     $('#program-document-period').value=current.period_label;$('#program-document-title').value=current.title;$('#program-document-start').value=current.period_start||'';$('#program-document-end').value=current.period_end||'';
+    editorVersion++;
+    const form=$('#program-document-form');
+    for(const key of [...archiveFields,'archive_reference'])form.elements.namedItem(key).value='';
     setFormData(current.form_data||{});
+    $('#proposal-archive-picker').value=archiveReference().value;
+    archiveMessage('');
     document.querySelectorAll(`.program-document-options [data-option-for="${current.document_type}"] input`).forEach(input=>input.checked=Boolean(current.optional_sections?.[input.name]));
     $('#program-document-editor-title').textContent=`${typeLabels[current.document_type]} · ${current.title}`;
     renderType();renderAiPreview();renderDocumentList();message('Memuat rincian dokumen…');
@@ -221,6 +293,7 @@
     if(!$('#program-documents-panel'))return;
     const roles=context().roles||[];
     if(!roles.some(role=>['ketua','wakil','sekretaris','bendahara','bph_departemen'].includes(role))){$('#program-document-list').innerHTML='<p class="records-empty">Akses dokumen proker diperlukan.</p>';return;}
+    if(!archiveEntries.length)void loadArchive();
     if(loading)return loading;
     loading=(async()=>{
       try{
@@ -337,12 +410,15 @@
     const response=await window.CSSMoRAAdmin.request(`${cfg().url}/functions/v1/program-document-assistant`,{method:'POST',headers:{apikey:cfg().publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action,document_id:document.id}),timeoutMs});
     const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Dokumen AI belum dapat dibuat.');
     if(result.ai_content){
-      await api()(`cssmora_program_documents?id=eq.${encodeURIComponent(document.id)}`,{method:'PATCH',body:{ai_content:result.ai_content},extraHeaders:{Prefer:'return=representation'}});
-      current={...current,ai_content:result.ai_content,google_doc_generated_at:null};documents=documents.map(row=>row.id===current.id?current:row);
-      renderAiPreview();
-      message('Narasi AI siap. Tinjau isinya, lalu buat Google Docs.','success');
+      const narrativeFields={ai_content:result.ai_content,google_doc_generated_at:null};
+      documents=documents.map(row=>row.id===document.id?{...row,...narrativeFields}:row);
+      if(current?.id===document.id){
+        current={...current,...narrativeFields};
+        renderAiPreview();
+        message('Narasi AI siap. Tinjau isinya, lalu buat Google Docs.','success');
+      }
     }else if(result.google_doc_url){
-      current={...current,google_doc_id:result.google_doc_id,google_doc_url:result.google_doc_url,google_doc_generated_at:result.google_doc_generated_at};documents=documents.map(row=>row.id===current.id?current:row);
+      current={...current,google_doc_id:result.google_doc_id,google_doc_url:result.google_doc_url,google_doc_generated_at:result.google_doc_generated_at,...(result.archive_content?{ai_content:result.archive_content}:{})};documents=documents.map(row=>row.id===current.id?current:row);
       formDirty=false;subrecordsDirty=false;
       message('Google Docs berhasil dibuat atau diperbarui.','success');
     }else if(result.status){
@@ -400,8 +476,23 @@
   }
   $('#program-document-type').addEventListener('change',()=>{renderType();if(!current)prefillProgram($('#program-document-program').value);});
   $('#program-document-program').addEventListener('change',event=>prefillProgram(event.target.value));
-  $('#program-document-form').addEventListener('input',()=>{formDirty=true;renderActions();});
-  $('#program-document-form').addEventListener('change',()=>{formDirty=true;renderActions();});
+  $('#program-document-form').addEventListener('input',event=>{if(event.target.closest('#proposal-archive-install')||event.target.id==='proposal-archive-picker')return;editorVersion++;formDirty=true;renderActions();});
+  $('#program-document-form').addEventListener('change',event=>{if(event.target.closest('#proposal-archive-install')||event.target.id==='proposal-archive-picker')return;editorVersion++;formDirty=true;renderActions();});
+  $('#proposal-archive-picker').addEventListener('change',renderArchive);
+  $('#proposal-archive-apply').addEventListener('click',applyArchive);
+  $('#proposal-archive-upload').addEventListener('click',async event=>{
+    const button=event.currentTarget, input=$('#proposal-archive-file'), file=input.files[0];
+    if(!file||file.size>524288){archiveMessage('Pilih katalog JSON maksimal 512 KB.');return;}
+    if(!window.confirm('Pasang katalog referensi untuk semua pengurus? Katalog sebelumnya akan diganti.'))return;
+    button.disabled=true;
+    try{
+      const result=await archiveRequest('install_proposal_archive',{archive:JSON.parse(await file.text())});
+      input.value='';
+      await loadArchive();
+      archiveMessage(`${result.count} referensi dipasang.`);
+    }catch(error){archiveMessage(error.message);}
+    finally{button.disabled=false;}
+  });
   document.querySelectorAll('.program-document-options input').forEach(input=>input.addEventListener('change',()=>{formDirty=true;renderType();}));
   $('#program-document-reset').addEventListener('click',clearEditor);
   $('#program-documents-refresh').addEventListener('click',()=>void load());
