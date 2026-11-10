@@ -1189,6 +1189,147 @@ function approvalTableEditRequests(document: any, data: any) {
   return { objectRequests: [], edits };
 }
 
+function proposalCommitteeSignatures(document: any, committee: any[]) {
+  const table = templateTables(document).find((element: any) => {
+    const cells = templateTableRows(element)[0]?.tableCells || [];
+    return cells.length === 2 &&
+      templateTextKey(templateTableCellText(cells[0])).includes("sekretaris umum cssmora universitas airlangga") &&
+      templateTextKey(templateTableCellText(cells[1])).startsWith("ketua panitia");
+  });
+  if (!table) throw new AppError(502, "Tabel lembar pengesahan proposal tidak ditemukan.");
+  const roles = [
+    { label: "Sekretaris Panitia,", alias: "Sekretaris Pelaksana", nameMarker: "Nama Sekretaris Umum" },
+    { label: "Ketua Panitia,", alias: "Ketua Pelaksana", nameMarker: "Nama Ketua Panitia" },
+  ];
+  return templateTableRows(table)[0].tableCells.flatMap((cell: any, index: number) => {
+    const role = roles[index];
+    const signer = findProgramSignatory(committee, role.alias) || findProgramSignatory(committee, role.label.slice(0, -1));
+    const paragraphs = cell.content.filter((item: any) => item.paragraph);
+    const edits = [];
+    const label = templateParagraphRange(paragraphs[0].paragraph);
+    if (label) edits.push({ ...label, text: role.label, textStyle: PROGRAM_BODY_TEXT_STYLE });
+    for (const item of paragraphs.slice(1)) {
+      const text = templateParagraphText(item.paragraph);
+      const range = templateParagraphRange(item.paragraph);
+      if (!range) continue;
+      if (text === "Menunggu tanda tangan Sekretaris") edits.push({ ...range, text: "" });
+      if (text === role.nameMarker || text === "Belum ditentukan") {
+        edits.push({
+          ...range,
+          text: clean(signer?.name, 180).toLocaleUpperCase("id-ID") || role.label.replace(",", " belum ditentukan"),
+          textStyle: { ...PROGRAM_BODY_TEXT_STYLE, bold: true, underline: true },
+        });
+        const next = paragraphs[paragraphs.indexOf(item) + 1];
+        const identity = clean(signer?.nia, 40);
+        const identityRange = next && !templateParagraphText(next.paragraph) && templateParagraphRange(next.paragraph);
+        if (identity && identityRange) edits.push({ ...identityRange, text: "NIA. " + identity, textStyle: PROGRAM_BODY_TEXT_STYLE });
+      }
+    }
+    return edits;
+  });
+}
+
+function proposalParagraphFormatRequests(paragraphs: any[]) {
+  const headings = [
+    "latar belakang", "tujuan kegiatan", "nama kegiatan", "tema kegiatan", "deskripsi kegiatan",
+    "sasaran kegiatan", "waktu dan tempat pelaksanaan", "penutup",
+  ];
+  const requests: any[] = [];
+  const textEdits: Array<{ range: { startIndex: number; endIndex: number }; text: string }> = [];
+  let inNarrative = false;
+  let bodyTitlePending = false;
+  for (const item of paragraphs) {
+    const paragraph = item.paragraph;
+    const text = templateParagraphText(paragraph);
+    const key = templateTextKey(text);
+    if (!key) {
+      if (inNarrative && !paragraph.paragraphStyle?.pageBreakBefore &&
+        paragraph.elements?.length && paragraph.elements.every((element: any) => element.textRun && !element.textRun.content.trim())) {
+        textEdits.push({ range: { startIndex: item.startIndex, endIndex: item.endIndex }, text: "" });
+      }
+      continue;
+    }
+    const bodyTitle = bodyTitlePending && key === "proposal";
+    if (bodyTitle) bodyTitlePending = false;
+    if (key === "nama ketua umum") bodyTitlePending = true;
+    const headingIndex = headings.indexOf(key);
+    const heading = headingIndex >= 0;
+    const appendix = /^lampiran [123]$/.test(key);
+    if (heading) inNarrative = true;
+    if (appendix) inNarrative = false;
+    const centered = paragraph.paragraphStyle?.alignment === "CENTER";
+    const signatureLabel = /^(mengetahui|ketua umum|menunggu tanda tangan|nia\.|nim\.)/.test(key);
+    const signerName = key === "nama ketua umum";
+    const tableLabel = key === "pemasukan" || key === "pengeluaran";
+    const bold = heading || appendix || tableLabel || (centered && !signatureLabel);
+    const paragraphStyle: Record<string, unknown> = {};
+    if (heading || appendix || tableLabel) {
+      Object.assign(paragraphStyle, { alignment: "START", keepWithNext: true, keepLinesTogether: true });
+      if (appendix) paragraphStyle.pageBreakBefore = true;
+      if (heading) Object.assign(paragraphStyle, {
+        indentStart: { magnitude: 0, unit: "PT" },
+        indentFirstLine: { magnitude: 0, unit: "PT" },
+        spaceAbove: { magnitude: 6, unit: "PT" },
+        spaceBelow: { magnitude: 3, unit: "PT" },
+      });
+    } else if (inNarrative && !centered) {
+      Object.assign(paragraphStyle, {
+        alignment: "JUSTIFIED", lineSpacing: 115,
+        spaceAbove: { magnitude: 0, unit: "PT" },
+        spaceBelow: { magnitude: 3, unit: "PT" },
+      });
+      if (!paragraph.bullet && !paragraph.elements?.[0]?.textRun?.content?.startsWith("\t")) {
+        paragraphStyle.indentStart = { magnitude: 0, unit: "PT" };
+        paragraphStyle.indentFirstLine = { magnitude: 18, unit: "PT" };
+      }
+    } else if (centered) {
+      paragraphStyle.alignment = "CENTER";
+      if (bodyTitle) paragraphStyle.pageBreakBefore = true;
+      if (bold && !signerName) paragraphStyle.keepWithNext = true;
+    } else if (key.startsWith("surabaya,")) {
+      paragraphStyle.alignment = "END";
+    }
+    if (heading && paragraph.bullet) requests.push({ deleteParagraphBullets: { range: { startIndex: item.startIndex, endIndex: item.endIndex } } });
+    if (Object.keys(paragraphStyle).length) requests.push({
+      updateParagraphStyle: {
+        range: { startIndex: item.startIndex, endIndex: item.endIndex },
+        paragraphStyle, fields: Object.keys(paragraphStyle).join(","),
+      },
+    });
+    const range = templateParagraphRange(paragraph);
+    if (range && range.endIndex > range.startIndex) {
+      if (heading) {
+        const prefix = /^[a-h][.)]\s*/i.exec(text)?.[0] || "";
+        textEdits.push({
+          range: { startIndex: range.startIndex, endIndex: range.startIndex + prefix.length },
+          text: String.fromCharCode(65 + headingIndex) + ". ",
+        });
+      }
+      const textStyle = { weightedFontFamily: PROGRAM_BODY_TEXT_STYLE.weightedFontFamily, bold, underline: signerName };
+      requests.push({ updateTextStyle: { range, textStyle, fields: textStyleFieldMask(textStyle) } });
+      if (inNarrative && !heading && !centered && /^(kegiatan ini bernama|tema kegiatan ini adalah)/.test(key)) {
+        const quote = /“[^”]+”/.exec(text);
+        if (quote) requests.push({
+          updateTextStyle: {
+            range: { startIndex: range.startIndex + quote.index, endIndex: range.startIndex + quote.index + quote[0].length },
+            textStyle: { bold: true }, fields: "bold",
+          },
+        });
+      }
+    }
+  }
+  for (const { range, text } of textEdits.reverse()) {
+    if (range.endIndex > range.startIndex) requests.push({ deleteContentRange: { range } });
+    if (!text) continue;
+    requests.push({ insertText: { location: { index: range.startIndex }, text } });
+    requests.push({ updateTextStyle: {
+      range: { startIndex: range.startIndex, endIndex: range.startIndex + text.length },
+      textStyle: { bold: true }, fields: "bold",
+    } });
+  }
+  return requests;
+}
+
 function committeeAppendixText(committee: any[], enabled: boolean) {
   if (!enabled) return "Susunan kepanitiaan tidak disertakan.";
   const rows = committee.filter((row) => clean(row.name, 180));
@@ -1326,45 +1467,12 @@ async function normalizeProgramDocumentTypography(accessToken: string, documentI
   });
 
   if (documentType === "proposal") {
-    const signerIndex = paragraphs.findIndex((item: any) => templateTextKey(templateParagraphText(item.paragraph)) === "nama ketua umum");
-    const bodyTitleIndex = signerIndex < 0
-      ? -1
-      : paragraphs.findIndex((item: any, index: number) => index > signerIndex && templateTextKey(templateParagraphText(item.paragraph)) === "proposal");
-    const backgroundIndex = paragraphs.findIndex((item: any, index: number) => index > bodyTitleIndex && templateTextKey(templateParagraphText(item.paragraph)) === "latar belakang");
-    if (bodyTitleIndex >= 0) {
-      const titleBlockEnd = backgroundIndex > bodyTitleIndex ? backgroundIndex : bodyTitleIndex + 1;
-      for (let index = bodyTitleIndex; index < titleBlockEnd; index++) {
-        const isFirstBodyTitle = index === bodyTitleIndex;
-        formatParagraph(paragraphs[index], {
-          ...(isFirstBodyTitle ? { pageBreakBefore: true } : {}),
-          keepWithNext: true,
-          keepLinesTogether: true,
-        });
-      }
-    }
-  }
-
-  const keepTogetherHeadings = new Set([
-    "latar belakang", "tujuan kegiatan", "nama kegiatan", "tema kegiatan", "deskripsi kegiatan",
-    "sasaran kegiatan", "waktu dan tempat pelaksanaan", "penutup", "lampiran 1", "susunan panitia",
-    "lampiran 2", "susunan acara", "lampiran 3", "rencana anggaran dana", "pemasukan", "pengeluaran",
-  ]);
-  for (const item of paragraphs) {
-    const key = templateTextKey(templateParagraphText(item.paragraph));
-    if (!keepTogetherHeadings.has(key)) continue;
-    formatParagraph(item, {
-      keepWithNext: true,
-      keepLinesTogether: true,
-      ...(key === "lampiran 3" ? { pageBreakBefore: true } : {}),
-    });
-  }
-
-  if (documentType === "proposal") {
     for (const headers of [
       ["No", "Kegiatan", "Waktu", "Durasi", "Keterangan"],
       ["No", "Sumber Dana", "Jumlah Total"],
       ["No", "Nama", "Harga", "Pack", "Total"],
     ]) requests.push(...programTableFormatRequests(document, headers));
+    requests.push(...proposalParagraphFormatRequests(paragraphs));
   }
   if (requests.length) await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: "POST", body: { requests } });
 }
@@ -1454,7 +1562,9 @@ async function renderProgramDocumentTemplate(accessToken: string, documentId: st
     if (archiveText) setAll(archiveLabel, `Arsip kegiatan: ${archiveText}`);
   }
 
-  const approval = approvalTableEditRequests(document, { committee });
+  const approval = documentType === "proposal"
+    ? { objectRequests: [], edits: proposalCommitteeSignatures(document, committee) }
+    : approvalTableEditRequests(document, { committee });
   const requests = [...approval.objectRequests];
   const styledBodyEdits = documentType === "proposal"
     ? edits.map((edit) => ({ ...edit, textStyle: PROGRAM_BODY_TEXT_STYLE }))
@@ -1665,16 +1775,22 @@ async function signProgramGoogleDoc(accessToken: string, connection: any, input:
   }
   const document = await googleJson(accessToken, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`);
   const marker = stage === "sekretaris" ? "Menunggu tanda tangan Sekretaris" : "Menunggu tanda tangan Ketua";
-  const ranges = findGoogleDocMarkerRanges(document.data, marker);
+  const committeeProposal = stage === "sekretaris" && programDocument.document_type === "proposal" &&
+    templateTables(document.data).some((table: any) => {
+      const cells = templateTableRows(table)[0]?.tableCells || [];
+      return cells.length === 2 && templateTextKey(templateTableCellText(cells[0])).startsWith("sekretaris panitia") &&
+        templateTextKey(templateTableCellText(cells[1])).startsWith("ketua panitia");
+    });
+  const ranges = committeeProposal ? [] : findGoogleDocMarkerRanges(document.data, marker);
   if (ranges.length > 1) throw new AppError(409, "Penanda tanda tangan muncul lebih dari sekali pada Google Docs.");
   const signerMarker = stage === "sekretaris" ? "Nama Sekretaris Umum" : "Nama Ketua Umum";
-  const signerRanges = findGoogleDocMarkerRanges(document.data, signerMarker);
+  const signerRanges = committeeProposal ? [] : findGoogleDocMarkerRanges(document.data, signerMarker);
   if (signerRanges.length > 1) throw new AppError(409, "Nama penanda tangan muncul lebih dari sekali pada Google Docs.");
   const requests: any[] = [];
   if (ranges.length === 1) {
     const uri = await createSignerAssetUrl(String(actor.user.id));
     requests.push({ range: ranges[0], insert: { insertInlineImage: { location: { index: ranges[0].startIndex }, uri, objectSize: { width: { magnitude: 112, unit: "PT" }, height: { magnitude: 38, unit: "PT" } } } } });
-  } else if (!hasGoogleDocSignatureImage(document.data, stage)) {
+  } else if (!committeeProposal && !hasGoogleDocSignatureImage(document.data, stage)) {
     throw new AppError(409, "Penanda tanda tangan tidak ditemukan. Muat ulang Docs sebelum melanjutkan.");
   }
   if (signerRanges.length === 1) {
