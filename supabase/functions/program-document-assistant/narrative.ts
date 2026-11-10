@@ -14,13 +14,13 @@ export function programNarrativePlan(type: string, form: Form, detail: Form = {}
   if (type === "proposal") {
     const description = inputText(form.description) || inputText(detail.description);
     return {
-      background: section("Jelaskan konteks atau alasan kegiatan. Gunakan sudut pandang rencana. Jangan menyatakan masalah, kebutuhan, atau manfaat tambahan.", {
+      background: section("Susun latar belakang dari konteks yang relevan, lalu kaitkan dengan alasan CSSMoRA UNAIR merencanakan kegiatan. Jika sumber hanya memuat satu gagasan, tulis satu paragraf singkat. Hindari pembuka generik, masalah yang tidak tercatat, dan pengulangan deskripsi teknis.", {
         latar_belakang: inputText(form.background) || description,
       }),
-      approach: section("Uraikan bentuk kegiatan yang direncanakan. Jangan membuat urutan acara, metode, atau tugas panitia baru. Jangan menyisipkan rincian anggaran.", {
+      approach: section("Mulai dengan bentuk kegiatan yang akan diselenggarakan, lalu jelaskan mekanisme yang tercatat. Gunakan kalimat rencana dan istilah kegiatan dari sumber. Jangan mengulang latar belakang, menambah sesi atau metode, maupun memasukkan rincian jadwal dan anggaran.", {
         deskripsi: description,
       }),
-      closing: section("Rapikan penutup yang ditulis pengurus. Jangan menyatakan dukungan, persetujuan, atau hasil yang belum ada.", {
+      closing: section("Gunakan sudut pandang panitia dengan kata kami. Susun penutup resmi yang ringkas. Nyatakan harapan atau permohonan dukungan hanya jika dicatat pengurus dan jangan menyatakan kegiatan sudah disetujui atau terlaksana.", {
         penutup: form.closing,
       }, "Demikian proposal ini disusun sebagai acuan pelaksanaan kegiatan."),
     };
