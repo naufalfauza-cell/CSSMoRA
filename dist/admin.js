@@ -1053,7 +1053,7 @@ function renderMembers(){
     const programMatches=program==='all'||String(member.study_program||'')===program;
     const studyStatus=member.study_status||'belum_ditentukan';
     const statusMatches=status==='all'||studyStatus===status;
-    const queryMatches=!query||[member.nia,member.full_name,member.cohort,member.faculty,member.study_program].some(value=>String(value||'').toLowerCase().includes(query));
+    const queryMatches=!query||[member.nia,member.nim,member.full_name,member.cohort,member.faculty,member.study_program].some(value=>String(value||'').toLowerCase().includes(query));
     return cohortMatches&&programMatches&&statusMatches&&queryMatches;
   });
   $('#member-visible-count').textContent=rows.length+' data';
@@ -1061,7 +1061,7 @@ function renderMembers(){
   memberList.innerHTML=rows.map(member=>{
     const status=member.study_status||'belum_ditentukan';
     const statusClass=status==='mahasiswa'?'published':status==='lulus'?'study-graduate':'study-unknown';
-    return '<tr><td><strong>'+escapeHTML(member.full_name)+'</strong><small>'+escapeHTML(member.nia)+'</small></td><td>'+escapeHTML(member.cohort)+'</td><td>'+escapeHTML(member.study_program||'—')+'</td><td><span class="record-status '+statusClass+'">'+escapeHTML(memberStudyStatusLabel(status))+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(member.id)+'">Edit</button></div></td></tr>';
+    return '<tr><td><strong>'+escapeHTML(member.full_name)+'</strong><small>NIA '+escapeHTML(member.nia)+'</small>'+(member.nim?'<small>NIM '+escapeHTML(member.nim)+'</small>':'')+'</td><td>'+escapeHTML(member.cohort)+'</td><td>'+escapeHTML(member.study_program||'—')+'</td><td><span class="record-status '+statusClass+'">'+escapeHTML(memberStudyStatusLabel(status))+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(member.id)+'">Edit</button></div></td></tr>';
   }).join('');
 }
 function resetMemberForm(){
@@ -1078,7 +1078,7 @@ $('#member-program-filter').addEventListener('change',renderMembers);
 $('#member-study-status-filter').addEventListener('change',renderMembers);
 $('#member-export').addEventListener('click',()=>downloadCSV('cssmora-anggota.csv',[
   ['NIA','Nama','Angkatan','Fakultas','Program Studi','Status Studi'],
-  ...members.map(member=>[member.nia,member.full_name,member.cohort,member.faculty,member.study_program,memberStudyStatusLabel(member.study_status||'belum_ditentukan')])
+  ...members.map(member=>[member.nia,member.nim,member.full_name,member.cohort,member.faculty,member.study_program,memberStudyStatusLabel(member.study_status||'belum_ditentukan')])
 ]));
 memberList.addEventListener('click',event=>{
   const retry=event.target.closest('[data-retry-members]');
@@ -1684,6 +1684,57 @@ async function loadOutgoingDrafts() {
   }
 }
 
+async function connectOutgoingOrganizerFields(controls, identity){
+  const pairs=['ketua_pelaksana','sekretaris_pelaksana'].map(role=>({
+    name:controls.querySelector('#outgoing-field-nama_'+role),
+    number:controls.querySelector('#outgoing-field-identitas_'+role),
+  })).filter(pair=>pair.name&&pair.number);
+  if(!pairs.length)return;
+
+  const options=document.createElement('datalist');
+  options.id='outgoing-organizer-options';
+  const hint=document.createElement('small');
+  hint.id='outgoing-organizer-hint';
+  hint.className='field-hint';
+  hint.setAttribute('role','status');
+  hint.textContent='Memuat daftar anggota…';
+  controls.prepend(hint,options);
+  try{
+    const roster=await api('secretariat_members?select=full_name,nia,nim&order=full_name.asc');
+    if(!options.isConnected)return;
+    const choices=new Map(roster.map(member=>[member.full_name+' · '+member.nia,member]));
+    options.replaceChildren(...Array.from(choices.keys(),value=>new Option(value,value)));
+    hint.textContent='Ketik nama atau NIA, lalu pilih anggota. Identitas terisi mengikuti pilihan NIM atau NIA.';
+    for(const {name,number} of pairs){
+      name.setAttribute('list',options.id);
+      name.setAttribute('aria-describedby',hint.id);
+      let selected=null;
+      const fill=()=>{
+        const value=identity.value==='NIM' ? selected?.nim : identity.value==='NIA' ? selected?.nia : '';
+        number.value=value||'';
+        number.readOnly=Boolean(value);
+        number.placeholder=identity.value==='NIM' && selected && !value ? 'NIM belum tersedia · masukkan manual' : 'Masukkan nomor identitas';
+      };
+      const select=()=>{
+        const match=choices.get(name.value);
+        if(match){
+          selected=match;
+          name.value=match.full_name;
+          fill();
+        }else if(selected && name.value!==selected.full_name){
+          selected=null;
+          fill();
+        }
+      };
+      name.addEventListener('input',select);
+      name.addEventListener('change',select);
+      identity.addEventListener('change',fill);
+    }
+  }catch(error){
+    if(options.isConnected)hint.textContent='Daftar anggota gagal dimuat. Nama dan identitas bisa diisi manual.';
+  }
+}
+
 function showOutgoingTemplateFields(){
   const template=outgoingTemplates.find(item=>item.key===outgoingTemplateSelect.value);
   const wrapper=$('#outgoing-draft-fields');
@@ -1700,17 +1751,15 @@ function showOutgoingTemplateFields(){
   $('#outgoing-attachment-hint').textContent=template.appendix
     ? 'Master ini memuat lampiran '+template.appendix+'. Lengkapi tabelnya di Google Docs sebelum menyiapkan tanda tangan.'
     : 'Isi 0 jika surat tidak memiliki lampiran.';
-  if(template.identityFields?.length){
-    const label=document.createElement('label');
-    label.htmlFor='outgoing-identity-kind';
-    label.textContent='Jenis identitas';
-    const identity=document.createElement('select');
-    identity.id=label.htmlFor;
-    identity.name='identity_kind';
-    identity.required=true;
-    identity.append(new Option('Pilih jenis identitas',''),new Option('NIM · Surat ke kampus','NIM'),new Option('NIA · Surat ke luar kampus','NIA'));
-    controls.append(label,identity);
-  }
+  const label=document.createElement('label');
+  label.htmlFor='outgoing-identity-kind';
+  label.textContent='Jenis identitas';
+  const identity=document.createElement('select');
+  identity.id=label.htmlFor;
+  identity.name='identity_kind';
+  identity.required=true;
+  identity.append(new Option('Pilih jenis identitas',''),new Option('NIM · Surat ke kampus','NIM'),new Option('NIA · Surat ke luar kampus','NIA'));
+  controls.append(label,identity);
   for(const key of template.fields){
     const label=document.createElement('label');
     const input=document.createElement(key==='uraian_tugas' ? 'textarea' : 'input');
@@ -1725,6 +1774,7 @@ function showOutgoingTemplateFields(){
     if(template.identityFields?.includes(key))input.placeholder='Masukkan nomor identitas';
     controls.append(label,input);
   }
+  void connectOutgoingOrganizerFields(controls,identity);
 }
 outgoingTemplateSelect.addEventListener('change',showOutgoingTemplateFields);
 $('#outgoing-draft-refresh').addEventListener('click',loadOutgoingDrafts);

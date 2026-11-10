@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { letterTemplates, normalizeLetterIdentity, letterIdentityToken, letterLayoutRequests } from "./letter-templates.ts";
+import { letterTemplates, normalizeLetterIdentity, letterIdentityToken, letterLayoutRequests, chairIdentityReplacements } from "./letter-templates.ts";
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -2730,11 +2730,16 @@ function requireInternalServiceRole(request: Request) {
 const outgoingDrafts = "secretariat_outgoing_letter_drafts";
 const letterNumberToken = "{{nomor_surat}}";
 
-async function replaceLetterFields(token: string, documentId: string, fields: Record<string, string>, code = "") {
+async function replaceLetterFields(
+  token: string, documentId: string, fields: Record<string, string>, code = "", extra: string[][] = [],
+) {
+  const replacements = Object.entries(fields).map(([key, value]) => [
+    key.startsWith("identitas_") ? letterIdentityToken(code, key) : "{{" + key + "}}", value,
+  ]);
   return (await googleJson(token, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, {
     method: "POST",
-    body: { requests: Object.entries(fields).map(([key, value]) => ({
-      replaceAllText: { containsText: { text: key.startsWith("identitas_") ? letterIdentityToken(code, key) : "{{" + key + "}}", matchCase: true }, replaceText: value },
+    body: { requests: [...replacements, ...extra].map(([text, replaceText]) => ({
+      replaceAllText: { containsText: { text, matchCase: true }, replaceText },
     })) },
   })).data?.replies ?? [];
 }
@@ -2781,8 +2786,8 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
       throw new AppError(400, `Master ini memuat lampiran ${template.appendix}. Isi jumlah lampiran minimal 1.`);
     }
     const fields: Record<string, string> = {};
-    const identityKind = body.identity_kind;
-    if (template.identityFields.length && identityKind !== "NIM" && identityKind !== "NIA") {
+    const identityKind = body.identity_kind ?? (template.identityFields.length ? null : "NIA");
+    if (identityKind !== "NIM" && identityKind !== "NIA") {
       throw new AppError(400, "Pilih NIM untuk surat ke kampus atau NIA untuk surat ke luar kampus.");
     }
     for (const key of template.fields) {
@@ -2811,6 +2816,8 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
     const configured = (await serviceRequest("secretariat_outgoing_letter_masters?select=document_id&template_key=eq." + template.key)).data?.[0];
     const sourceId = configured?.document_id || Deno.env.get("LETTER_MASTER_" + template.key.toUpperCase().replaceAll("-", "_"));
     if (!sourceId) throw new AppError(409, "Master Google Docs untuk jenis surat ini belum dikonfigurasi.");
+    const chair = (await serviceRequest("secretariat_chair_identity?select=nim,nia&singleton=eq.true")).data?.[0];
+    if (!chair) throw new AppError(409, "Identitas Ketua belum dikonfigurasi. Hubungi pengelola aplikasi.");
     const claim = (await serviceRequest(outgoingDrafts + "?on_conflict=id", {
       method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=representation" }, body: draft,
     })).data?.[0];
@@ -2839,8 +2846,13 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
           body: { writeControl: { requiredRevisionId: document.revisionId }, requests: layout },
         });
       }
-      const replies = await replaceLetterFields(token, documentId, fields, template.code);
-      if (Object.keys(fields).some((_, index) => !replies[index]?.replaceAllText?.occurrencesChanged)) {
+      const chairReplacements = chairIdentityReplacements(identityKind, chair, template.key);
+      const replies = await replaceLetterFields(token, documentId, fields, template.code, chairReplacements);
+      const fieldCount = Object.keys(fields).length;
+      const chairMatches = replies.slice(fieldCount).reduce((count: number, reply: any) =>
+        count + (reply?.replaceAllText?.occurrencesChanged ?? 0), 0);
+      if (replies.slice(0, fieldCount).some((reply: any) => !reply?.replaceAllText?.occurrencesChanged) ||
+          replies.length !== fieldCount + chairReplacements.length || chairMatches !== chairReplacements.length) {
         throw new AppError(409, "Penanda isian di master surat berbeda dari formulir. Hubungi pengelola aplikasi.");
       }
       await shareDriveFile(token, documentId, [...await activeRoleEmails(["sekretaris"]), actor.email], "writer");

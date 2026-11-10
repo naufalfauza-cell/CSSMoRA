@@ -73,3 +73,12 @@ export function letterLayoutRequests(content: LetterParagraph[]) {
   }
   return requests;
 }
+
+
+export function chairIdentityReplacements(kind: "NIM" | "NIA", chair: { nim: string; nia: string }, templateKey: string) {
+  const number = kind === "NIM" ? chair.nim : chair.nia;
+  const signatureLabel = templateKey.startsWith("undangan-") || templateKey === "pengantar-lpj" ? "NIA. " : "NIM/NIA. ";
+  const replacements = [[signatureLabel + chair.nia, kind + ". " + number]];
+  if (templateKey === "tugas") replacements.push(["NIA/NIM : " + chair.nia, kind + " : " + number]);
+  return replacements;
+}
