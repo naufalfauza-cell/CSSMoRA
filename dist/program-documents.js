@@ -99,7 +99,8 @@
     const sections=current?.ai_content?.sections;
     if(!sections||!Object.keys(sections).length){root.hidden=true;content.innerHTML='';return;}
     root.hidden=false;
-    content.innerHTML=Object.entries(sections).filter(([,value])=>String(value||'').trim()).map(([key,value])=>`<section><strong>${esc(({background:'Latar belakang',approach:'Rencana pendekatan',opening:'Pendahuluan',implementation:'Pelaksanaan',outcome:'Luaran dan capaian',evaluation:'Evaluasi',recommendations:'Rekomendasi',closing:'Penutup'})[key]||key)}</strong><p>${esc(value)}</p></section>`).join('');
+    const order=current.document_type==='proposal'?['background','approach','closing']:['opening','implementation','outcome','evaluation','recommendations','closing'];
+    content.innerHTML=order.map(key=>[key,sections[key]]).filter(([,value])=>String(value||'').trim()).map(([key,value])=>`<section><strong>${esc(({background:'Latar belakang',approach:'Deskripsi kegiatan',opening:'Pendahuluan',implementation:'Pelaksanaan',outcome:'Luaran dan capaian',evaluation:'Evaluasi',recommendations:'Rekomendasi',closing:'Penutup'})[key]||key)}</strong><p>${esc(value)}</p></section>`).join('');
   }
   function renderReviewActions(){
     const root=$('#program-document-review-actions');
@@ -337,10 +338,13 @@
     const response=await window.CSSMoRAAdmin.request(`${cfg().url}/functions/v1/program-document-assistant`,{method:'POST',headers:{apikey:cfg().publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action,document_id:document.id}),timeoutMs});
     const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Dokumen AI belum dapat dibuat.');
     if(result.ai_content){
-      await api()(`cssmora_program_documents?id=eq.${encodeURIComponent(document.id)}`,{method:'PATCH',body:{ai_content:result.ai_content},extraHeaders:{Prefer:'return=representation'}});
-      current={...current,ai_content:result.ai_content,google_doc_generated_at:null};documents=documents.map(row=>row.id===current.id?current:row);
-      renderAiPreview();
-      message('Narasi AI siap. Tinjau isinya, lalu buat Google Docs.','success');
+      const narrativeFields={ai_content:result.ai_content,google_doc_generated_at:null};
+      documents=documents.map(row=>row.id===document.id?{...row,...narrativeFields}:row);
+      if(current?.id===document.id){
+        current={...current,...narrativeFields};
+        renderAiPreview();
+        message('Narasi AI siap. Tinjau isinya, lalu buat Google Docs.','success');
+      }
     }else if(result.google_doc_url){
       current={...current,google_doc_id:result.google_doc_id,google_doc_url:result.google_doc_url,google_doc_generated_at:result.google_doc_generated_at};documents=documents.map(row=>row.id===current.id?current:row);
       formDirty=false;subrecordsDirty=false;
