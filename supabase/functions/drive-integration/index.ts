@@ -568,7 +568,7 @@ async function createProgramGoogleDoc(accessToken: string, connection: any, inpu
   if (title.length < 3 || (!blocks.length && !input.template_data)) throw new AppError(400, "Judul dan isi dokumen wajib tersedia.");
   const folderId = await findOrCreateProgramDocumentsFolder(accessToken, String(connection.drive_root_folder_id || ""));
   if (input.template_data) {
-    const template = await importProgramTemplate(accessToken, folderId, String(input.template_data.document_type || "proposal"), title, String(input.document_id || ""));
+    const template = await importProgramTemplate(accessToken, folderId, String(input.template_data.document_type || "proposal"), title, String(input.document_id || ""), String(input.program_document_id));
     await renderProgramDocumentTemplate(accessToken, template.documentId, input.template_data);
     const documentRoles = Array.isArray(input.share_roles)
       ? input.share_roles.map((role: unknown) => String(role)).filter((role: string) => ["sekretaris", "bendahara", "ketua"].includes(role))
@@ -670,7 +670,17 @@ async function shareProgramDocument(accessToken: string, documentId: string, ext
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const GOOGLE_DOC_MIME = "application/vnd.google-apps.document";
 
-async function importProgramTemplate(accessToken: string, folderId: string, documentType: string, title: string, existingDocumentId = "") {
+async function importProgramTemplate(accessToken: string, folderId: string, documentType: string, title: string, existingDocumentId: string, programDocumentId: string) {
+  if (!existingDocumentId) {
+    const query = new URLSearchParams({
+      q: `'${folderId}' in parents and trashed=false and mimeType='${GOOGLE_DOC_MIME}' and appProperties has { key='cssmoraProgramDocumentId' and value='${programDocumentId}' }`,
+      fields: "files(id)",
+      orderBy: "createdTime desc",
+      pageSize: "1",
+    });
+    const found = await googleJson(accessToken, "https://www.googleapis.com/drive/v3/files?" + query);
+    existingDocumentId = String(found.data?.files?.[0]?.id || "");
+  }
   const templateName = documentType === "lpj" ? "cssmora-lpj.docx.b64" : "cssmora-proposal.docx.b64";
   let bytes: Uint8Array;
   try {
@@ -701,6 +711,7 @@ async function importProgramTemplate(accessToken: string, folderId: string, docu
   if (!existingDocumentId) {
     metadata.mimeType = GOOGLE_DOC_MIME;
     metadata.parents = [folderId];
+    metadata.appProperties = { cssmoraProgramDocumentId: programDocumentId };
   }
   const initialize = await fetch(`https://www.googleapis.com/upload/drive/v3/${filePath}?${query}`, {
     method: existingDocumentId ? "PATCH" : "POST",
@@ -981,35 +992,29 @@ function programTableFormatRequests(document: any, headers: string[]) {
   if (headerRowIndex < 0) return [];
   const requests: any[] = [];
   const tableStartIndex = Number(table.startIndex);
-  const headerCells = rows[headerRowIndex]?.tableCells || [];
-  const columnCount = headerCells.reduce((count: number, cell: any) => count + Math.max(1, Number(cell?.tableCellStyle?.columnSpan || 1)), 0);
-  if (Number.isInteger(tableStartIndex) && tableStartIndex > 0 && rows.length && columnCount) {
+  if (Number.isInteger(tableStartIndex) && tableStartIndex > 0 && rows.length) {
     requests.push({
       updateTableCellStyle: {
-        tableRange: {
-          tableCellLocation: { tableStartLocation: { index: tableStartIndex }, rowIndex: 0, columnIndex: 0 },
-          rowSpan: rows.length,
-          columnSpan: columnCount,
-        },
+        tableStartLocation: { index: tableStartIndex },
         tableCellStyle: {
           paddingTop: { magnitude: 3, unit: "PT" },
           paddingBottom: { magnitude: 3, unit: "PT" },
           paddingLeft: { magnitude: 4, unit: "PT" },
           paddingRight: { magnitude: 4, unit: "PT" },
-          verticalAlignment: "MIDDLE",
+          contentAlignment: "MIDDLE",
         },
-        fields: "paddingTop,paddingBottom,paddingLeft,paddingRight,verticalAlignment",
+        fields: "paddingTop,paddingBottom,paddingLeft,paddingRight,contentAlignment",
       },
     });
   }
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
     const cells = rows[rowIndex]?.tableCells || [];
-    const rowText = cells.map(templateCellText).join(" ").toLocaleLowerCase("id-ID");
+    const rowText = cells.map(templateTableCellText).join(" ").toLocaleLowerCase("id-ID");
     const isHeader = rowIndex === headerRowIndex;
     const isTotal = rowText.includes("total pemasukan") || rowText.includes("total pengeluaran");
     let logicalColumn = 0;
     for (const cell of cells) {
-      const cellText = templateCellText(cell);
+      const cellText = templateTableCellText(cell);
       const isTableTitle = rowIndex < headerRowIndex && Boolean(cellText);
       const range = templateCellRange(cell);
       const cellSpan = Math.max(1, Number(cell?.tableCellStyle?.columnSpan || 1));
@@ -2968,7 +2973,7 @@ async function handleRequest(request: Request) {
       const accessToken = await driveAccessToken(connection);
       const shareRoles = ["sekretaris", "ketua"];
       if (programDocument.document_type === "lpj" && programDocument.optional_sections?.finance) shareRoles.push("bendahara");
-      const document = await createProgramGoogleDoc(accessToken, connection, { ...body, actor_email: actor.email, share_roles: shareRoles });
+      const document = await createProgramGoogleDoc(accessToken, connection, { ...body, program_document_id: programDocumentId, document_id: programDocument.google_doc_id || "", actor_email: actor.email, share_roles: shareRoles });
       return jsonResponse(request, 200, { ok: true, action, ...document });
     }
     if (action === "sync" || action === "backup") {
