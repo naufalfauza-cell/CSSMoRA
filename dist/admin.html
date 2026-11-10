@@ -33,7 +33,7 @@
   <script src="./workflows.js?v=20261023-performance-v1" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
   <script src="./program-workflow.js?v=20261023-program-lpj-v1" defer></script>
-  <script src="./program-documents.js?v=20261101-drive-archive-mobile-v1" defer></script>
+  <script src="./program-documents.js?v=20261110-master-fields-v1" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
   <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v2">
@@ -244,7 +244,10 @@
                 <div class="form-two"><div><label for="program-document-type">Jenis dokumen</label><select id="program-document-type" name="document_type"><option value="proposal">Proposal</option><option value="lpj">LPJ</option></select></div><div><label for="program-document-program">Proker</label><select id="program-document-program" name="program_id" required><option value="">Pilih proker…</option></select></div></div>
                 <div class="form-two"><div><label for="program-document-period">Periode</label><input id="program-document-period" name="period_label" maxlength="24" placeholder="2026/2027" required></div><div><label for="program-document-title">Judul kegiatan</label><input id="program-document-title" name="title" maxlength="180" placeholder="Nama kegiatan" required></div></div>
                 <div class="form-two"><div><label for="program-document-start">Tanggal mulai / pelaksanaan <span class="required-mark">wajib untuk proposal</span></label><input id="program-document-start" name="period_start" type="date"></div><div><label for="program-document-end">Tanggal akhir <span class="admin-muted">opsional</span></label><input id="program-document-end" name="period_end" type="date"></div></div>
+                <label for="program-signer-identity">Identitas penanda tangan organisasi</label>
+                <select id="program-signer-identity" name="signer_identity_kind"><option value="NIA">NIA · Dokumen organisasi / luar kampus</option><option value="NIM">NIM · Dokumen ke kampus</option></select>
                 <div class="program-document-fields" data-document-type="proposal">
+                  <label for="proposal-background">Latar belakang</label><textarea id="proposal-background" name="background" rows="3" maxlength="5000" placeholder="Alasan kegiatan diadakan. Kosongkan untuk memakai narasi AI."></textarea>
                   <label for="proposal-description">Deskripsi singkat proker <span class="required-mark">wajib</span></label><textarea id="proposal-description" name="description" rows="3" maxlength="2000" required placeholder="Apa yang akan dilakukan, untuk siapa, dan kenapa?"></textarea>
                   <label for="proposal-goals">Tujuan <span class="required-mark">wajib</span></label><textarea id="proposal-goals" name="goals" rows="2" maxlength="1200" required placeholder="Tujuan kegiatan"></textarea>
                   <label for="proposal-materials">Materi / pokok kegiatan</label><textarea id="proposal-materials" name="materials" rows="2" maxlength="1600" placeholder="Pokok materi, rangkaian utama, atau isi kegiatan (opsional)"></textarea>
@@ -254,6 +257,7 @@
                   <label for="proposal-theme">Tema kegiatan</label><input id="proposal-theme" name="theme" maxlength="180" placeholder="Opsional">
                 </div>
                 <div class="program-document-fields" data-document-type="lpj" hidden>
+                  <label for="lpj-opening">Pendahuluan</label><textarea id="lpj-opening" name="opening" rows="3" maxlength="5000" placeholder="Konteks dan tujuan kegiatan. Kosongkan untuk memakai narasi AI."></textarea>
                   <label for="lpj-summary">Ringkasan pelaksanaan <span class="required-mark">wajib</span></label><textarea id="lpj-summary" name="realization_summary" rows="3" maxlength="5000" placeholder="Apa yang benar-benar terlaksana?" required></textarea>
                   <label for="lpj-outcomes">Luaran, capaian, dan indikator keberhasilan</label><textarea id="lpj-outcomes" name="outcome_summary" rows="2" maxlength="2000" placeholder="Capaian dan indikator berdasarkan data aktual"></textarea>
                   <label for="lpj-realization-by-division">Realisasi tiap seksi / divisi</label><textarea id="lpj-realization-by-division" name="realization_by_division" rows="3" maxlength="3000" placeholder="Opsional: tulis ringkasan realisasi per seksi atau divisi"></textarea>
@@ -266,6 +270,7 @@
                   <div class="form-two"><div><label for="lpj-actual-time-start">Jam mulai</label><input id="lpj-actual-time-start" name="actual_time_start" type="time"></div><div><label for="lpj-actual-time-end">Jam selesai</label><input id="lpj-actual-time-end" name="actual_time_end" type="time"></div></div>
                   <label for="lpj-actual-place">Tempat pelaksanaan</label><input id="lpj-actual-place" name="actual_place" maxlength="180">
                 </div>
+                <label for="program-closing">Penutup</label><textarea id="program-closing" name="closing" rows="2" maxlength="3000" placeholder="Opsional. Kosongkan untuk memakai narasi AI."></textarea>
                 <fieldset class="program-document-options"><legend>Bagian opsional</legend><p>Bagian yang tidak dicentang tidak dimasukkan ke dokumen.</p>
                   <label data-option-for="proposal"><input type="checkbox" name="committee" checked><span>Kepanitiaan</span></label>
                   <label data-option-for="proposal"><input type="checkbox" name="rundown_section" checked><span>Rundown</span></label>
