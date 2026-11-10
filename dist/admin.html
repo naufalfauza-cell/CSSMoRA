@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261110-outgoing-drafts">
+  <link rel="stylesheet" href="./admin.css?v=20261110-letter-layout">
   <link rel="stylesheet" href="./workflows.css?v=20261030-responsive-proposal-v1">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
   <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v2">
-  <link rel="stylesheet" href="./wallet-theme.css?v=20261103-mobile-nav-scroll-video-v1">
+  <link rel="stylesheet" href="./wallet-theme.css?v=20261110-letter-layout">
 </head>
 <body class="admin-page">
   <header class="site-header">
@@ -430,8 +430,9 @@
           </nav>
           <section class="letter-work-panel" id="letter-register-panel" role="tabpanel" aria-labelledby="tab-letter-register">
           <div class="secretariat-intro"><div><span class="admin-kicker">SURAT KELUAR</span><h3>Nomor surat dan arsip</h3><p>Nomor surat berikutnya mengikuti buku agenda.</p></div></div>
-          <section id="outgoing-letter-composer" class="editor-card" aria-labelledby="outgoing-letter-title" hidden>
-            <div class="editor-heading"><div><span class="admin-kicker">MANAJEMEN PERSURATAN</span><h3 id="outgoing-letter-title">Buat surat dari template</h3></div><button id="outgoing-draft-refresh" type="button" class="member-option-button">Muat ulang</button></div>
+          <div id="outgoing-letter-composer" hidden>
+          <section class="editor-card" aria-labelledby="outgoing-letter-title">
+            <div class="editor-heading"><div><span class="admin-kicker">MANAJEMEN PERSURATAN</span><h3 id="outgoing-letter-title">Buat surat dari template</h3></div></div>
             <p class="field-hint">Buat Google Docs, tinjau isinya, terbitkan nomor, lalu siapkan tanda tangan.</p>
             <form id="outgoing-draft-form">
               <label for="outgoing-template">Jenis surat</label><select id="outgoing-template" name="template_key" required><option value="">Pilih jenis surat</option></select>
@@ -452,27 +453,29 @@
               </div>
             </form>
             <p id="outgoing-draft-message" class="form-message" role="status" aria-live="polite"></p>
-            <h4>Draf dan surat dari template</h4>
+          </section>
+          <section class="records-card" aria-labelledby="outgoing-drafts-title">
+            <div class="editor-heading letter-card-heading">
+              <h3 id="outgoing-drafts-title">Draf dan surat dari template</h3>
+              <button id="outgoing-draft-refresh" type="button" class="member-option-button">Muat ulang</button>
+            </div>
             <div id="outgoing-draft-list" class="secretariat-record-list"></div>
           </section>
-          <div class="secretariat-workspace letters-workspace">
-            <aside class="secretariat-options-rail" aria-label="Opsi persuratan">
-              <section class="records-card secretariat-options-card">
-                <div class="editor-heading"><div><span class="admin-kicker">PENGATURAN</span><h3>Opsi surat</h3></div></div>
-                <span class="member-option-label">Jumlah surat</span>
-                <strong class="letter-total" id="letter-count">0 surat</strong>
+          </div>
+          <section class="records-card letter-register-card" aria-labelledby="letter-register-title">
+            <div class="editor-heading letter-card-heading">
+              <div><span class="admin-kicker">BUKU AGENDA SURAT KELUAR</span><h3 id="letter-register-title">Surat tersimpan</h3></div>
+              <div class="letter-register-actions">
+                <span id="letter-count" class="record-status">0 surat</span>
                 <button class="member-option-button" id="letters-refresh" type="button"><span aria-hidden="true">↻</span> Muat ulang</button>
-                <div class="member-options-divider"></div>
-                <span class="member-option-label">Arsip surat</span>
-                <p class="field-hint">Tambahkan tautan Drive pada baris surat, lalu pilih status arsipnya.</p>
-              </section>
-            </aside>
-            <section class="records-card letter-register-card" aria-labelledby="letter-register-title">
-              <div class="editor-heading"><div><span class="admin-kicker">BUKU AGENDA SURAT KELUAR</span><h3 id="letter-register-title">Surat tersimpan</h3></div></div>
-              <div class="secretariat-record-list" id="letter-record-list"><p class="records-empty">Memuat data…</p></div>
-            </section>
-            <section class="editor-card letter-editor-card" aria-labelledby="letter-editor-title">
-              <div class="editor-heading"><div><span class="admin-kicker">PENOMORAN OTOMATIS · PERIODE 2026/2027</span><h3 id="letter-editor-title">Terbitkan nomor surat</h3></div></div>
+              </div>
+            </div>
+            <p class="field-hint">Kelola PDF, tautan Drive, dan status arsip pada masing-masing surat.</p>
+            <div class="secretariat-record-list letter-record-list" id="letter-record-list"><p class="records-empty">Memuat data…</p></div>
+          </section>
+          <details class="editor-card letter-editor-card" aria-labelledby="letter-editor-title">
+            <summary id="letter-editor-title">Terbitkan nomor untuk surat yang sudah dibuat di luar aplikasi</summary>
+            <p class="field-hint">Penomoran otomatis · periode 2026/2027</p>
               <form id="letter-form">
                 <label for="letter-subject">Perihal surat</label><input id="letter-subject" maxlength="240" required>
                 <div class="form-two"><div><label for="letter-issued-on">Tanggal surat</label><input id="letter-issued-on" type="date" required></div><div><label for="letter-scope">Cakupan</label><select id="letter-scope"><option value="i">Internal (i)</option><option value="e">Eksternal (e)</option></select></div></div>
@@ -482,8 +485,7 @@
                 <button class="admin-button" id="issue-letter" type="submit">Terbitkan nomor <span aria-hidden="true">↗</span></button>
                 <p class="form-message" id="letter-message" role="status" aria-live="polite"></p>
               </form>
-            </section>
-          </div>
+          </details>
           </section>
           <section class="letter-work-panel" id="letter-signature-panel" role="tabpanel" aria-labelledby="tab-letter-signatures" hidden>
           <section class="letter-signatures" aria-labelledby="letter-signatures-title">

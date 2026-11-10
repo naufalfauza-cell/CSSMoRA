@@ -727,9 +727,11 @@ body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active{
 body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active :is(strong,small,.module-state){
   color:#075b86;
 }
-.admin-page .admin-sidebar .admin-tab.is-active .module-icon{
+body.admin-page .admin-sidebar .admin-tabs.module-grid .admin-tab.is-active .module-icon{
   background:#b8eef4;
   color:#056b91;
+  border-color:#9fdae8;
+  box-shadow:none;
 }
 .admin-page .admin-sidebar .module-copy strong{line-height:1.35}
 .admin-page .admin-content-area :is(
@@ -1011,4 +1013,26 @@ body.wallet-home .wallet-brand-partners img{
     border-radius:16px;
   }
   .wallet-bottom-nav .wallet-bottom-center-icon svg{width:27px;height:27px}
+}
+
+/* Surat Keluar uses the same controls as the wallet dashboard. */
+body.admin-page #letter-register-panel :is(.letter-archive-form button,[data-copy-letter],[data-draft-action]) {
+  padding: 8px 12px;
+  border: 1px solid #b9e4ed;
+  border-radius: 10px;
+  background: #eaf8fb;
+  color: #075b86;
+  box-shadow: none;
+  font: 700 12px/1.35 var(--wallet-font);
+}
+body.admin-page #letter-register-panel :is(.letter-archive-form button,[data-copy-letter],[data-draft-action]):hover {
+  background: #d6f0f6;
+}
+body.admin-page #letter-register-panel :is(button,summary,a):focus-visible {
+  outline: 2px solid #047da4;
+  outline-offset: 2px;
+}
+body.admin-page #letter-register-panel .letter-upload-form input[type=file] {
+  min-width: 0;
+  max-width: 100%;
 }

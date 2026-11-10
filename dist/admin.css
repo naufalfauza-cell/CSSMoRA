@@ -2229,9 +2229,26 @@
  .letter-record-list .letter-upload-form button{width:100%;}
 }
 
-#outgoing-letter-composer { margin-block-end: 16px; min-width: 0; }
-#outgoing-letter-composer .editor-heading { flex-wrap: wrap; }
+#outgoing-letter-composer { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; gap: 16px; margin-block-end: 16px; }
+#outgoing-letter-composer > section { min-width: 0; }
 #outgoing-draft-fields, #outgoing-template-fields { display: grid; gap: 8px; min-width: 0; }
 #outgoing-draft-list { max-height: 440px; overflow: auto; }
+#outgoing-draft-message:empty { display: none; }
 #outgoing-draft-list .letter-record { overflow-wrap: anywhere; }
 #outgoing-draft-list .letter-record-heading { flex-wrap: wrap; }
+
+
+#letter-register-panel { max-width: 1220px; margin-inline: auto; min-width: 0; }
+#letter-register-panel .letter-card-heading,
+#letter-register-panel .letter-register-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+#letter-register-panel .letter-register-actions .record-status { margin: 0; }
+#letter-register-panel .letter-register-card { grid-column: auto; }
+#letter-register-panel #letter-record-list { max-height: none; overflow: visible; }
+#letter-register-panel .letter-record-heading { justify-content: flex-start; flex-wrap: wrap; }
+#letter-register-panel .letter-record-heading .record-status { margin: 0 0 0 auto; }
+#letter-register-panel .letter-editor-card { max-width: 680px; margin: 16px auto 0; }
+#letter-register-panel .letter-editor-card summary { cursor: pointer; font-weight: 700; }
+#secretariat-panel.secretariat-readonly #letter-register-panel .letter-editor-card { display: none; }
+@media (max-width: 920px) {
+  #outgoing-letter-composer { grid-template-columns: minmax(0, 1fr); }
+}
