@@ -110,7 +110,8 @@
     const isTreasuryStage=stage==='bendahara';
     const financeGate=current.document_type==='lpj'&&current.optional_sections?.finance&&stage==='sekretaris';
     const canSign=stage==='sekretaris'?context().roles?.includes('sekretaris'):stage==='ketua'&&context().roles?.includes('ketua');
-    const actionButton=isTreasuryStage?'<button type="button" class="admin-button" data-document-review="approved">Selesaikan verifikasi Bendahara ✓</button>':canSign?`<button type="button" class="admin-button" data-document-sign="${stage}">Tanda tangani &amp; ${stage==='sekretaris'?'teruskan ke Ketua':'selesaikan'} ✓</button>`:'';
+    const committeeProposal=stage==='sekretaris'&&current.document_type==='proposal';
+    const actionButton=isTreasuryStage?'<button type="button" class="admin-button" data-document-review="approved">Selesaikan verifikasi Bendahara ✓</button>':canSign?`<button type="button" class="admin-button" data-document-sign="${stage}">${committeeProposal?'Setujui &amp; teruskan ke Ketua':stage==='sekretaris'?'Tanda tangani &amp; teruskan ke Ketua':'Tanda tangani &amp; selesaikan'} ✓</button>`:'';
     root.innerHTML=`${current.google_doc_url?`<a class="program-document-review-doc-link" href="${esc(current.google_doc_url)}" target="_blank" rel="noopener">Tinjau Google Docs ↗</a>`:''}${financeGate?'<p class="admin-muted">LPJ dengan realisasi keuangan harus diverifikasi Bendahara dan Docs diperbarui sebelum Sekretaris dapat menandatangani.</p>':''}<label for="program-document-review-note">Catatan peninjauan (wajib jika meminta revisi)</label><textarea id="program-document-review-note" rows="2" maxlength="2000" placeholder="Catatan untuk PIC"></textarea><div class="program-review-buttons"><button type="button" class="member-option-button" data-document-review="revision_requested">Minta revisi</button>${actionButton}</div>`;
   }
   function renderActions(){
@@ -377,9 +378,11 @@
     if(!current)return;
     const title=stage==='sekretaris'?'Sekretaris':'Ketua';
     const destination=stage==='sekretaris'?'meneruskan dokumen dan PDF ke Ketua':'menyelesaikan dokumen';
-    if(!window.confirm(`Gunakan tanda tangan ${title} yang tersimpan untuk dokumen ini dan ${destination}?`))return;
+    const committeeProposal=stage==='sekretaris'&&current.document_type==='proposal';
+    const confirmation=committeeProposal?'Setujui proposal ini dan teruskan PDF ke Ketua?':`Gunakan tanda tangan ${title} yang tersimpan untuk dokumen ini dan ${destination}?`;
+    if(!window.confirm(confirmation))return;
     const button=$(`[data-document-sign="${stage}"]`);if(button)button.disabled=true;
-    message(`Membubuhkan tanda tangan ${title} dan menyiapkan PDF di Drive…`);
+    message(committeeProposal?'Menyimpan persetujuan dan menyiapkan PDF di Drive…':`Membubuhkan tanda tangan ${title} dan menyiapkan PDF di Drive…`);
     try{
       const result=await assistant('sign_document');
       const id=current.id;await load();selectDocument(id);
