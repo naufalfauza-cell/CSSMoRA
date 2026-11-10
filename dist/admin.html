@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261110-outgoing-drafts" defer></script>
+  <script src="./admin.js?v=20261110-letter-format-v2" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261029-v5" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -446,9 +446,9 @@
                   <div><label for="outgoing-scope">Cakupan</label><select id="outgoing-scope" name="scope_code"><option value="i">Internal (i)</option><option value="e">Eksternal (e)</option></select></div>
                   <div><label for="outgoing-department">Divisi penerbit</label><select id="outgoing-department" name="department_code"><option value="BPH">BPH</option><option value="PSDM">PSDM</option><option value="P3M">P3M</option><option value="ADVO">Advo</option><option value="MEDINFO">Medinfo</option></select></div>
                 </div>
-                <label for="outgoing-attachments">Jumlah lampiran</label><input id="outgoing-attachments" name="attachment_count" type="number" min="0" max="99" value="0" required>
+                <label for="outgoing-attachments">Jumlah lampiran</label><input id="outgoing-attachments" name="attachment_count" type="number" min="0" max="99" value="0" aria-describedby="outgoing-attachment-hint" required>
+                <p id="outgoing-attachment-hint" class="field-hint"></p>
                 <div id="outgoing-template-fields"></div>
-                <p class="field-hint">Jika template memuat tabel lampiran, lengkapi tabel tersebut di Google Docs sebelum menyiapkan tanda tangan.</p>
                 <button type="submit" class="admin-button">Buat Google Docs</button>
               </div>
             </form>
@@ -495,6 +495,8 @@
                 <h4>Surat untuk ditandatangani</h4>
                 <label for="letter-sign-letter">Nomor surat</label><select id="letter-sign-letter" required><option value="">Pilih surat</option></select>
                 <label for="letter-sign-signer">Penandatangan</label><select id="letter-sign-signer" required><option value="">Pilih penandatangan</option></select>
+                <button type="button" id="letter-sign-use-docs" class="member-option-button">Ambil PDF dari Google Docs</button>
+                <p class="field-hint">Untuk surat dari template, ambil PDF langsung dari Docs. Untuk surat lain, pilih berkas PDF.</p>
                 <label for="letter-sign-pdf">Surat PDF</label><input id="letter-sign-pdf" type="file" accept="application/pdf,.pdf" required>
                 <button type="submit" class="admin-button">Kirim untuk ditandatangani <span aria-hidden="true">↗</span></button>
               </form>

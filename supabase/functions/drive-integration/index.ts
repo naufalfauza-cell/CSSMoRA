@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { letterTemplates } from "./letter-templates.ts";
+import { letterTemplates, normalizeLetterIdentity, letterIdentityToken, letterLayoutRequests } from "./letter-templates.ts";
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -2730,11 +2730,11 @@ function requireInternalServiceRole(request: Request) {
 const outgoingDrafts = "secretariat_outgoing_letter_drafts";
 const letterNumberToken = "{{nomor_surat}}";
 
-async function replaceLetterFields(token: string, documentId: string, fields: Record<string, string>) {
+async function replaceLetterFields(token: string, documentId: string, fields: Record<string, string>, code = "") {
   return (await googleJson(token, `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, {
     method: "POST",
     body: { requests: Object.entries(fields).map(([key, value]) => ({
-      replaceAllText: { containsText: { text: "{{" + key + "}}", matchCase: true }, replaceText: value },
+      replaceAllText: { containsText: { text: key.startsWith("identitas_") ? letterIdentityToken(code, key) : "{{" + key + "}}", matchCase: true }, replaceText: value },
     })) },
   })).data?.replies ?? [];
 }
@@ -2743,7 +2743,7 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
   const actor = await requireUser(request);
   if (!actor.roles.includes("sekretaris")) throw new AppError(403, "Pembuatan surat hanya tersedia untuk sekretaris.");
   if (action === "outgoing_letter_templates") {
-    return { templates: letterTemplates.map(({ key, code, title, fields }) => ({ key, code, title, fields })) };
+    return { templates: letterTemplates };
   }
 
   const id = String(body.draft_id || "");
@@ -2777,11 +2777,24 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
         !Number.isInteger(attachments) || attachments < 0 || attachments > 99) {
       throw new AppError(400, "Lengkapi tanggal, perihal, cakupan, divisi, dan jumlah lampiran.");
     }
+    if (attachments < template.minimumAttachments) {
+      throw new AppError(400, `Master ini memuat lampiran ${template.appendix}. Isi jumlah lampiran minimal 1.`);
+    }
     const fields: Record<string, string> = {};
+    const identityKind = body.identity_kind;
+    if (template.identityFields.length && identityKind !== "NIM" && identityKind !== "NIA") {
+      throw new AppError(400, "Pilih NIM untuk surat ke kampus atau NIA untuk surat ke luar kampus.");
+    }
     for (const key of template.fields) {
       const value = clean(body.fields?.[key], key === "uraian_tugas" ? 1000 : 240);
       if (!value || /[{}]/.test(value)) throw new AppError(400, "Lengkapi isian " + key.replaceAll("_", " ") + ".");
-      fields[key] = value;
+      if (template.identityFields.includes(key)) {
+        const identity = normalizeLetterIdentity(value, identityKind);
+        if (!identity) throw new AppError(400, "Masukkan nomor " + identityKind + " sesuai jenis identitas yang dipilih.");
+        fields[key] = identityKind + (key === "identitas_peserta" ? " : " : ". ") + identity;
+      } else {
+        fields[key] = value;
+      }
     }
     if (/[{}]/.test(hijri)) throw new AppError(400, "Tanggal Hijriah tidak valid.");
     fields.tanggal_surat = new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeZone: "UTC" }).format(date);
@@ -2817,7 +2830,16 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
         throw error;
       }
       if (!documentId) throw new AppError(502, "Google Docs belum berhasil dibuat.");
-      const replies = await replaceLetterFields(token, documentId, fields);
+      const docsUrl = `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`;
+      const { data: document } = await googleJson(token, docsUrl);
+      const layout = letterLayoutRequests(document?.body?.content ?? []);
+      if (layout.length) {
+        await googleJson(token, docsUrl + ":batchUpdate", {
+          method: "POST",
+          body: { writeControl: { requiredRevisionId: document.revisionId }, requests: layout },
+        });
+      }
+      const replies = await replaceLetterFields(token, documentId, fields, template.code);
       if (Object.keys(fields).some((_, index) => !replies[index]?.replaceAllText?.occurrencesChanged)) {
         throw new AppError(409, "Penanda isian di master surat berbeda dari formulir. Hubungi pengelola aplikasi.");
       }

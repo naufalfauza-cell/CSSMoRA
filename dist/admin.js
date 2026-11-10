@@ -1675,7 +1675,7 @@ async function loadOutgoingDrafts() {
         <p>${escapeHTML(letter?.archive_status==='void' ? 'Dibatalkan' : letter?.letter_number || 'Belum diberi nomor')}</p>
         <div class="letter-record-heading">
           <a class="letter-drive-link" href="${escapeHTML(link)}" target="_blank" rel="noopener noreferrer">Buka Google Docs ↗</a>
-          ${action ? `<button type="button" data-draft-action="${action}" data-draft-id="${escapeHTML(draft.id)}">${action==='sign' ? 'Siapkan tanda tangan' : 'Terbitkan nomor'}</button>` : ''}
+          ${action ? `<button type="button" data-draft-action="${action}" data-draft-id="${escapeHTML(draft.id)}">${action==='sign' ? 'Pakai Google Docs untuk TTD' : 'Terbitkan nomor'}</button>` : ''}
         </div>
       </article>`;
     }).join('') : '<p class="records-empty">Belum ada draf surat.</p>';
@@ -1693,6 +1693,24 @@ function showOutgoingTemplateFields(){
   wrapper.querySelectorAll('input, select, button').forEach(input=>{input.disabled=!template;});
   if(!template)return;
   $('#outgoing-date').value||=localDateInput();
+  const attachments=$('#outgoing-attachments');
+  const minimum=template.minimumAttachments||0;
+  attachments.min=String(minimum);
+  attachments.value=String(minimum);
+  $('#outgoing-attachment-hint').textContent=template.appendix
+    ? 'Master ini memuat lampiran '+template.appendix+'. Lengkapi tabelnya di Google Docs sebelum menyiapkan tanda tangan.'
+    : 'Isi 0 jika surat tidak memiliki lampiran.';
+  if(template.identityFields?.length){
+    const label=document.createElement('label');
+    label.htmlFor='outgoing-identity-kind';
+    label.textContent='Jenis identitas';
+    const identity=document.createElement('select');
+    identity.id=label.htmlFor;
+    identity.name='identity_kind';
+    identity.required=true;
+    identity.append(new Option('Pilih jenis identitas',''),new Option('NIM · Surat ke kampus','NIM'),new Option('NIA · Surat ke luar kampus','NIA'));
+    controls.append(label,identity);
+  }
   for(const key of template.fields){
     const label=document.createElement('label');
     const input=document.createElement(key==='uraian_tugas' ? 'textarea' : 'input');
@@ -1704,6 +1722,7 @@ function showOutgoingTemplateFields(){
     if(key==='nomor_hp_cp')input.type='tel';
     label.htmlFor=input.id;
     label.textContent=caption[0].toUpperCase()+caption.slice(1);
+    if(template.identityFields?.includes(key))input.placeholder='Masukkan nomor identitas';
     controls.append(label,input);
   }
 }
@@ -1739,6 +1758,40 @@ outgoingDraftForm.addEventListener('submit',async event=>{
   }catch(error){showMessage('#outgoing-draft-message',error.message,'error');}
   finally{button.disabled=false;}
 });
+async function prepareOutgoingLetterPdf(draftId){
+  const prepared=await driveRequest('outgoing_letter_pdf',{draft_id:draftId});
+  const bytes=Uint8Array.from(atob(prepared.pdf_base64),char=>char.charCodeAt(0));
+  if(!Array.from(outgoingSignatureSelect.options).some(option=>option.value===prepared.letter_id))await loadLetters();
+  if(!Array.from(outgoingSignatureSelect.options).some(option=>option.value===prepared.letter_id)){
+    throw new Error('Surat belum muncul pada pilihan tanda tangan. Muat ulang dan coba lagi.');
+  }
+  const transfer=new DataTransfer();
+  transfer.items.add(new File([bytes],'Surat CSSMoRA.pdf',{type:'application/pdf'}));
+  outgoingSignatureSelect.value=prepared.letter_id;
+  preparedOutgoingLetterId=prepared.letter_id;
+  $('#letter-sign-pdf').files=transfer.files;
+}
+$('#letter-sign-use-docs').addEventListener('click',async event=>{
+  const button=event.currentTarget;
+  const letterId=outgoingSignatureSelect.value;
+  if(!letterId){
+    showMessage('#letter-sign-message','Pilih nomor surat terlebih dahulu.','error');
+    return;
+  }
+  button.disabled=true;
+  outgoingSignatureSelect.disabled=true;
+  showMessage('#letter-sign-message','Mengambil PDF dari Google Docs…');
+  try{
+    const drafts=await api('secretariat_outgoing_letter_drafts?select=id&letter_id=eq.'+encodeURIComponent(letterId)+'&limit=1');
+    if(!drafts?.length)throw new Error('Surat ini tidak memiliki Google Docs dari template aplikasi. Pilih berkas PDF.');
+    await prepareOutgoingLetterPdf(drafts[0].id);
+    showMessage('#letter-sign-message','PDF dari Google Docs siap diajukan.','success');
+  }catch(error){showMessage('#letter-sign-message',error.message,'error');}
+  finally{
+    button.disabled=false;
+    outgoingSignatureSelect.disabled=false;
+  }
+});
 $('#outgoing-draft-list').addEventListener('click',async event=>{
   const button=event.target.closest('[data-draft-action]');
   if(!button)return;
@@ -1753,24 +1806,13 @@ $('#outgoing-draft-list').addEventListener('click',async event=>{
       showMessage('#outgoing-draft-message','Nomor '+issued.letter_number+' tercatat dan sudah masuk ke Google Docs.','success');
     }else{
       showMessage('#outgoing-draft-message','Menyiapkan PDF dari Google Docs terbaru…');
-      const prepared=await driveRequest('outgoing_letter_pdf',{draft_id});
-      const bytes=Uint8Array.from(atob(prepared.pdf_base64),char=>char.charCodeAt(0));
-      await loadLetters();
-      const select=$('#letter-sign-letter');
-      if(!Array.from(select.options).some(option=>option.value===prepared.letter_id)){
-        throw new Error('Surat belum muncul pada pilihan tanda tangan. Muat ulang dan coba lagi.');
-      }
-      const transfer=new DataTransfer();
-      transfer.items.add(new File([bytes],'Surat CSSMoRA.pdf',{type:'application/pdf'}));
-      select.value=prepared.letter_id;
-      preparedOutgoingLetterId=prepared.letter_id;
-      $('#letter-sign-pdf').files=transfer.files;
+      await prepareOutgoingLetterPdf(draft_id);
       $('#tab-letter-signatures').click();
       $('#letter-sign-signer').focus();
       showMessage('#outgoing-draft-message','');
     }
   }catch(error){
-    const detail=issued ? 'Nomor '+issued.letter_number+' sudah tercatat. Pilih Siapkan tanda tangan untuk mencoba sinkron ulang. ' : '';
+    const detail=issued ? 'Nomor '+issued.letter_number+' sudah tercatat. Pilih Pakai Google Docs untuk TTD untuk mencoba sinkron ulang. ' : '';
     showMessage('#outgoing-draft-message',detail+error.message,'error');
   }finally{
     button.disabled=false;
