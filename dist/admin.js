@@ -1684,6 +1684,57 @@ async function loadOutgoingDrafts() {
   }
 }
 
+async function connectOutgoingOrganizerFields(controls, identity){
+  const pairs=['ketua_pelaksana','sekretaris_pelaksana'].map(role=>({
+    name:controls.querySelector('#outgoing-field-nama_'+role),
+    number:controls.querySelector('#outgoing-field-identitas_'+role),
+  })).filter(pair=>pair.name&&pair.number);
+  if(!pairs.length)return;
+
+  const options=document.createElement('datalist');
+  options.id='outgoing-organizer-options';
+  const hint=document.createElement('small');
+  hint.id='outgoing-organizer-hint';
+  hint.className='field-hint';
+  hint.setAttribute('role','status');
+  hint.textContent='Memuat daftar anggota…';
+  controls.prepend(hint,options);
+  try{
+    const roster=await api('secretariat_members?select=full_name,nia,nim&order=full_name.asc');
+    if(!options.isConnected)return;
+    const choices=new Map(roster.map(member=>[member.full_name+' · '+member.nia,member]));
+    options.replaceChildren(...Array.from(choices.keys(),value=>new Option(value,value)));
+    hint.textContent='Ketik nama atau NIA, lalu pilih anggota. Identitas terisi mengikuti pilihan NIM atau NIA.';
+    for(const {name,number} of pairs){
+      name.setAttribute('list',options.id);
+      name.setAttribute('aria-describedby',hint.id);
+      let selected=null;
+      const fill=()=>{
+        const value=identity.value==='NIM' ? selected?.nim : identity.value==='NIA' ? selected?.nia : '';
+        number.value=value||'';
+        number.readOnly=Boolean(value);
+        number.placeholder=identity.value==='NIM' && selected && !value ? 'NIM belum tersedia · masukkan manual' : 'Masukkan nomor identitas';
+      };
+      const select=()=>{
+        const match=choices.get(name.value);
+        if(match){
+          selected=match;
+          name.value=match.full_name;
+          fill();
+        }else if(selected && name.value!==selected.full_name){
+          selected=null;
+          fill();
+        }
+      };
+      name.addEventListener('input',select);
+      name.addEventListener('change',select);
+      identity.addEventListener('change',fill);
+    }
+  }catch(error){
+    if(options.isConnected)hint.textContent='Daftar anggota gagal dimuat. Nama dan identitas bisa diisi manual.';
+  }
+}
+
 function showOutgoingTemplateFields(){
   const template=outgoingTemplates.find(item=>item.key===outgoingTemplateSelect.value);
   const wrapper=$('#outgoing-draft-fields');
@@ -1723,6 +1774,7 @@ function showOutgoingTemplateFields(){
     if(template.identityFields?.includes(key))input.placeholder='Masukkan nomor identitas';
     controls.append(label,input);
   }
+  void connectOutgoingOrganizerFields(controls,identity);
 }
 outgoingTemplateSelect.addEventListener('change',showOutgoingTemplateFields);
 $('#outgoing-draft-refresh').addEventListener('click',loadOutgoingDrafts);
