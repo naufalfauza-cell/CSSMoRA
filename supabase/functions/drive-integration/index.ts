@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { letterTemplates } from "./letter-templates.ts";
+import { letterTemplates, normalizeLetterIdentity } from "./letter-templates.ts";
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -2743,7 +2743,7 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
   const actor = await requireUser(request);
   if (!actor.roles.includes("sekretaris")) throw new AppError(403, "Pembuatan surat hanya tersedia untuk sekretaris.");
   if (action === "outgoing_letter_templates") {
-    return { templates: letterTemplates.map(({ key, code, title, fields }) => ({ key, code, title, fields })) };
+    return { templates: letterTemplates };
   }
 
   const id = String(body.draft_id || "");
@@ -2777,9 +2777,20 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
         !Number.isInteger(attachments) || attachments < 0 || attachments > 99) {
       throw new AppError(400, "Lengkapi tanggal, perihal, cakupan, divisi, dan jumlah lampiran.");
     }
+    if (attachments < template.minimumAttachments) {
+      throw new AppError(400, `Master ini memuat lampiran ${template.appendix}. Isi jumlah lampiran minimal 1.`);
+    }
     const fields: Record<string, string> = {};
     for (const key of template.fields) {
-      const value = clean(body.fields?.[key], key === "uraian_tugas" ? 1000 : 240);
+      let value = clean(body.fields?.[key], key === "uraian_tugas" ? 1000 : 240);
+      const niaOnly = template.niaFields.includes(key);
+      const hasIdentityPrefix = niaOnly || key === "identitas_peserta" ||
+        (template.code === "SP" && key === "identitas_ketua_pelaksana");
+      if (hasIdentityPrefix) {
+        const identity = normalizeLetterIdentity(value, niaOnly);
+        if (identity === null) throw new AppError(400, "Undangan memakai NIA panitia. Masukkan NIA, bukan NIM.");
+        value = identity;
+      }
       if (!value || /[{}]/.test(value)) throw new AppError(400, "Lengkapi isian " + key.replaceAll("_", " ") + ".");
       fields[key] = value;
     }

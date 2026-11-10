@@ -1693,6 +1693,13 @@ function showOutgoingTemplateFields(){
   wrapper.querySelectorAll('input, select, button').forEach(input=>{input.disabled=!template;});
   if(!template)return;
   $('#outgoing-date').value||=localDateInput();
+  const attachments=$('#outgoing-attachments');
+  const minimum=template.minimumAttachments||0;
+  attachments.min=String(minimum);
+  attachments.value=String(minimum);
+  $('#outgoing-attachment-hint').textContent=template.appendix
+    ? 'Master ini memuat lampiran '+template.appendix+'. Lengkapi tabelnya di Google Docs sebelum menyiapkan tanda tangan.'
+    : 'Isi 0 jika surat tidak memiliki lampiran.';
   for(const key of template.fields){
     const label=document.createElement('label');
     const input=document.createElement(key==='uraian_tugas' ? 'textarea' : 'input');
@@ -1704,6 +1711,10 @@ function showOutgoingTemplateFields(){
     if(key==='nomor_hp_cp')input.type='tel';
     label.htmlFor=input.id;
     label.textContent=caption[0].toUpperCase()+caption.slice(1);
+    if(template.niaFields?.includes(key)){
+      label.textContent=key==='identitas_ketua_pelaksana' ? 'NIA Ketua Pelaksana' : 'NIA Sekretaris Pelaksana';
+      input.placeholder='Contoh: C0924001';
+    }
     controls.append(label,input);
   }
 }
