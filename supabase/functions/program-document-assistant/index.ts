@@ -70,7 +70,7 @@ Deno.serve(async(req:Request)=>{
       }
       const {data, error} = await storage.download(archivePath);
       if (error || !data) return json({error:"Arsip proposal belum tersedia. Ketua dapat memasang katalog referensi."},503,origin);
-      const entries = validateProposalArchive(await data.json());
+      const entries = validateProposalArchive(JSON.parse(await data.text()));
       if (action === "list_proposal_archive") {
         return json({entries:entries.map(({id,label,proposal,lpj})=>({id,label,proposal,lpj}))},200,origin);
       }
