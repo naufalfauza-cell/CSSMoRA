@@ -127,9 +127,10 @@
     }).join('');
     links.hidden = !links.innerHTML;
     const create = $('#program-prep-create');
-    create.hidden = !currentCycle || ['lpj_review', 'completed'].includes(currentCycle.status) ||
-      Boolean(currentCycle.prep_document_url && currentCycle.prep_budget_url);
-    create.disabled = creatingPreparation;
+    create.hidden = Boolean(currentCycle && (['lpj_review', 'completed'].includes(currentCycle.status) ||
+      (currentCycle.prep_document_url && currentCycle.prep_budget_url)));
+    create.disabled = !currentCycle || creatingPreparation;
+    $('#program-prep-create-hint').hidden = Boolean(currentCycle);
 
   }
 
