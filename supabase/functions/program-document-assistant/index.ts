@@ -78,13 +78,22 @@ Deno.serve(async(req:Request)=>{
       return entry ? json({entry},200,origin) : json({error:"Referensi proposal tidak ditemukan."},404,origin);
     }
     if(action==="analyze_incoming_letter"){
-      if(!roles.includes("sekretaris"))return json({error:"Pembacaan surat masuk hanya tersedia untuk Sekretaris."},403,origin);
+      const secretary = roles.includes("sekretaris");
+      const leadership = roles.includes("ketua") || roles.includes("wakil");
+      if(!secretary&&!leadership)return json({error:"Akun ini tidak berwenang membaca surat masuk."},403,origin);
       const letterId=clean(payload.letter_id,50);
       if(!/^[0-9a-f-]{36}$/i.test(letterId))return json({error:"ID surat masuk tidak valid."},400,origin);
-      const {data:letter,error:letterError}=await admin.from("secretariat_incoming_letters").select("id,storage_path,created_by").eq("id",letterId).maybeSingle();
+      const {data:letter,error:letterError}=await admin.from("secretariat_incoming_letters").select("id,storage_path,created_by,ai_status").eq("id",letterId).maybeSingle();
       if(letterError||!letter)return json({error:"Surat masuk tidak ditemukan."},404,origin);
+      if(!secretary&&(letter.created_by!==user.id||!["pending","failed"].includes(letter.ai_status)))
+        return json({error:"Ketua dan Wakil hanya dapat membaca surat unggahan sendiri yang belum berhasil diproses."},403,origin);
+      if(letter.ai_status==="processing")return json({error:"Surat sedang dibaca."},409,origin);
       const startedAt=new Date().toISOString();
-      await admin.from("secretariat_incoming_letters").update({ai_status:"processing",ai_error:null,updated_at:startedAt}).eq("id",letter.id);
+      const {data:claimed,error:claimError}=await admin.from("secretariat_incoming_letters")
+        .update({ai_status:"processing",ai_error:null,updated_at:startedAt})
+        .eq("id",letter.id).eq("ai_status",letter.ai_status).select("id").maybeSingle();
+      if(claimError)return json({error:"Status pembacaan surat belum dapat diperbarui."},502,origin);
+      if(!claimed)return json({error:"Status pembacaan surat sudah berubah. Muat ulang daftar surat."},409,origin);
       try{
         const driveResponse=await fetch(`${url}/functions/v1/drive-integration`,{method:"POST",headers:{"Authorization":authorization,"apikey":publishable,"Content-Type":"application/json"},body:JSON.stringify({action:"extract_incoming_letter_text",letter_id:letter.id}),signal:AbortSignal.timeout(75_000)});
         const driveResult=await driveResponse.json().catch(()=>({}));

@@ -199,7 +199,6 @@ async function checkAdmin() {
   isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen')||roleSet.has('sekretaris')||roleSet.has('bendahara');
   isSecretariatAdmin=roleSet.has('sekretaris');
   $('#incoming-letter-upload-form').hidden=!(isLeadership||isSecretariatAdmin);
-  $('#incoming-letter-upload-label').textContent=isSecretariatAdmin?'Unggah dan baca surat':'Unggah PDF surat';
   $('#outgoing-letter-composer').hidden=!isSecretariatAdmin;
   achievementRoles=isLeadership?['ketua']:(roleSet.has('bendahara')?['bendahara']:[]);
   canReviewAchievementApplications=isLeadership||roleSet.has('bendahara');
@@ -1517,7 +1516,10 @@ function renderIncomingLetters(){
   list.innerHTML=rows.map(letter=>{
     const driveUrl=letter.drive_url?'https://accounts.google.com/AccountChooser?hd=cssmora.org&continue='+encodeURIComponent(letter.drive_url):'';
     const priorityClass=letter.priority==='segera'?' is-urgent':letter.status==='selesai'?' is-complete':'';
-    const editControls=isSecretariatAdmin?'<button type="button" data-incoming-analyze="'+escapeHTML(letter.id)+'">'+(letter.ai_status==='failed'?'Coba baca lagi':'Baca ulang AI')+'</button><button type="button" data-action="delete" data-incoming-delete="'+escapeHTML(letter.id)+'">Hapus</button>':'';
+    const canAnalyze=isSecretariatAdmin||(isLeadership&&letter.created_by===session?.user?.id&&['pending','failed'].includes(letter.ai_status));
+    const analyzeLabel=letter.ai_status==='pending'?'Baca dengan AI':letter.ai_status==='failed'?'Coba baca lagi':'Baca ulang AI';
+    const analyzeControl=canAnalyze&&letter.ai_status!=='processing'?'<button type="button" data-incoming-analyze="'+escapeHTML(letter.id)+'">'+analyzeLabel+'</button>':'';
+    const editControls=isSecretariatAdmin?'<button type="button" data-action="delete" data-incoming-delete="'+escapeHTML(letter.id)+'">Hapus</button>':'';
     const editForm=isSecretariatAdmin?'<details><summary class="incoming-letter-ai">Periksa atau koreksi data</summary><form class="incoming-letter-edit" data-incoming-edit="'+escapeHTML(letter.id)+'">'+
       '<label>Nomor surat<input name="incoming_number" maxlength="120" value="'+escapeHTML(letter.incoming_number||'')+'"></label><label>Pengirim<input name="sender_name" maxlength="180" value="'+escapeHTML(letter.sender_name||'')+'"></label><label>Tanggal surat<input name="letter_date" type="date" value="'+escapeHTML(letter.letter_date||'')+'"></label><label>Jenis surat<input name="category" maxlength="80" value="'+escapeHTML(letter.category||'')+'"></label><label class="wide">Perihal<input name="subject" maxlength="240" value="'+escapeHTML(letter.subject||'')+'"></label><label class="wide">Ringkasan<textarea name="summary" maxlength="5000">'+escapeHTML(letter.summary||'')+'</textarea></label><label class="wide">Tindak lanjut<textarea name="action_required" maxlength="2500">'+escapeHTML(letter.action_required||'')+'</textarea></label><label>Batas waktu<input name="deadline" type="date" value="'+escapeHTML(letter.deadline||'')+'"></label><label>Prioritas<select name="priority"><option value="normal" '+(letter.priority==='normal'?'selected':'')+'>Normal</option><option value="penting" '+(letter.priority==='penting'?'selected':'')+'>Penting</option><option value="segera" '+(letter.priority==='segera'?'selected':'')+'>Segera</option></select></label><label>Status tindak lanjut<select name="status"><option value="baru" '+(letter.status==='baru'?'selected':'')+'>Baru</option><option value="diproses" '+(letter.status==='diproses'?'selected':'')+'>Diproses</option><option value="selesai" '+(letter.status==='selesai'?'selected':'')+'>Selesai</option><option value="arsip" '+(letter.status==='arsip'?'selected':'')+'>Arsip</option></select></label><label class="wide">Catatan sekretariat<textarea name="notes" maxlength="5000">'+escapeHTML(letter.notes||'')+'</textarea></label><button class="member-option-button wide" type="submit">Simpan koreksi</button></form></details>':'';
     return '<tr data-incoming-row="'+escapeHTML(letter.id)+'">'+
@@ -1527,7 +1529,7 @@ function renderIncomingLetters(){
       '<td data-label="Perihal dan ringkasan"><strong>'+escapeHTML(letter.subject||'Perihal belum dikenali')+'</strong><p>'+escapeHTML(letter.summary||letter.ai_error||'Ringkasan belum tersedia.')+'</p><small>'+escapeHTML(letter.category||'Jenis surat belum dicatat')+'</small></td>'+
       '<td data-label="Tindak lanjut"><p>'+escapeHTML(letter.action_required||'Belum ada tindak lanjut yang dicatat.')+'</p><small>Batas waktu: '+escapeHTML(incomingDateLabel(letter.deadline))+'</small></td>'+
       '<td data-label="Status"><span class="incoming-letter-status'+priorityClass+'">'+escapeHTML(statusLabel[letter.status]||letter.status||'Baru')+'</span><small>Prioritas: '+escapeHTML(priorityLabel[letter.priority]||'Normal')+'</small><span class="incoming-letter-ai">'+escapeHTML(aiLabel[letter.ai_status]||'Status AI belum diketahui')+'</span></td>'+
-      '<td data-label="PDF dan aksi"><div class="incoming-letter-actions">'+(driveUrl?'<a href="'+escapeHTML(driveUrl)+'" target="_blank" rel="noopener">Buka PDF di Drive</a>':'<span class="incoming-letter-ai">PDF sedang disalin ke Drive…</span>')+editControls+'</div>'+editForm+'</td></tr>';
+      '<td data-label="PDF dan aksi"><div class="incoming-letter-actions">'+(driveUrl?'<a href="'+escapeHTML(driveUrl)+'" target="_blank" rel="noopener">Buka PDF di Drive</a>':'<span class="incoming-letter-ai">PDF sedang disalin ke Drive…</span>')+analyzeControl+editControls+'</div>'+editForm+'</td></tr>';
   }).join('');
 }
 async function loadIncomingDriveStatus(){
@@ -1625,12 +1627,8 @@ $('#incoming-letter-upload-form').addEventListener('submit',async event=>{
     if(!upload.ok){const error=await upload.json().catch(()=>({}));throw new Error(error.message||error.error||'PDF gagal diunggah ke Supabase.');}
     pdfStored=true;
     await loadIncomingLetters();
-    if(isSecretariatAdmin){
-      showMessage('#incoming-letter-message','PDF tersimpan. AI sedang membaca isinya; salinan Drive dan spreadsheet menyusul otomatis.');
-      await analyzeIncomingLetter(id,null);
-    }else{
-      showMessage('#incoming-letter-message','PDF tersimpan. Sekretaris dapat membaca dan melengkapi rekap surat.','success');
-    }
+    showMessage('#incoming-letter-message','PDF tersimpan. AI sedang membaca isinya; salinan Drive dan spreadsheet menyusul otomatis.');
+    await analyzeIncomingLetter(id,null);
     event.target.reset();$('#incoming-letter-received-on').value=localDateInput();
   }catch(error){
     if(rowCreated&&!pdfStored){
