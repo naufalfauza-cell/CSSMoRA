@@ -198,6 +198,8 @@ async function checkAdmin() {
   canManageProgramCycles=isLeadership||roleSet.has('bph_departemen');
   isCompetitionAdmin=isLeadership||roleSet.has('bph_departemen')||roleSet.has('sekretaris')||roleSet.has('bendahara');
   isSecretariatAdmin=roleSet.has('sekretaris');
+  $('#incoming-letter-upload-form').hidden=!(isLeadership||isSecretariatAdmin);
+  $('#incoming-letter-upload-label').textContent=isSecretariatAdmin?'Unggah dan baca surat':'Unggah PDF surat';
   $('#outgoing-letter-composer').hidden=!isSecretariatAdmin;
   achievementRoles=isLeadership?['ketua']:(roleSet.has('bendahara')?['bendahara']:[]);
   canReviewAchievementApplications=isLeadership||roleSet.has('bendahara');
@@ -1608,29 +1610,33 @@ async function analyzeIncomingLetter(id,button){
 $('#incoming-letter-received-on').value=localDateInput();
 $('#incoming-letter-upload-form').addEventListener('submit',async event=>{
   event.preventDefault();
+  if(!(isLeadership||isSecretariatAdmin))return;
   const button=$('#incoming-letter-upload'),file=$('#incoming-letter-pdf').files[0],receivedOn=$('#incoming-letter-received-on').value;
   if(!file){showMessage('#incoming-letter-message','Pilih PDF surat terlebih dahulu.','error');return;}
   if((file.type&&file.type!=='application/pdf')||!file.name.toLowerCase().endsWith('.pdf')||file.size>10*1024*1024){showMessage('#incoming-letter-message','Gunakan PDF yang valid dengan ukuran maksimal 10 MB.','error');return;}
   button.disabled=true;showMessage('#incoming-letter-message','Menyimpan PDF surat…');
   const id=crypto.randomUUID(),path=`incoming/${id}/original.pdf`;
-  let rowCreated=false;
+  let rowCreated=false,pdfStored=false;
   try{
     await api('secretariat_incoming_letters',{method:'POST',body:{id,received_on:receivedOn,original_filename:file.name.slice(0,255),storage_path:path,ai_status:'pending'},extraHeaders:{Prefer:'return=minimal'}});
     rowCreated=true;
     const encoded=path.split('/').map(encodeURIComponent).join('/');
     const upload=await authenticatedFetch(`${config.url}/storage/v1/object/cssmora-letter-pdfs/${encoded}`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/pdf','x-upsert':'false'},body:file});
     if(!upload.ok){const error=await upload.json().catch(()=>({}));throw new Error(error.message||error.error||'PDF gagal diunggah ke Supabase.');}
+    pdfStored=true;
     await loadIncomingLetters();
-    showMessage('#incoming-letter-message','PDF tersimpan. AI sedang membaca isinya; salinan Drive dan spreadsheet menyusul otomatis.');
-    await analyzeIncomingLetter(id,null);
+    if(isSecretariatAdmin){
+      showMessage('#incoming-letter-message','PDF tersimpan. AI sedang membaca isinya; salinan Drive dan spreadsheet menyusul otomatis.');
+      await analyzeIncomingLetter(id,null);
+    }else{
+      showMessage('#incoming-letter-message','PDF tersimpan. Sekretaris dapat membaca dan melengkapi rekap surat.','success');
+    }
     event.target.reset();$('#incoming-letter-received-on').value=localDateInput();
   }catch(error){
-    if(rowCreated){
-      const encoded=path.split('/').map(encodeURIComponent).join('/');
-      await authenticatedFetch(`${config.url}/storage/v1/object/cssmora-letter-pdfs/${encoded}`,{method:'DELETE',headers:{apikey:config.publishableKey}}).catch(()=>null);
+    if(rowCreated&&!pdfStored){
       await api('secretariat_incoming_letters?id=eq.'+encodeURIComponent(id),{method:'DELETE'}).catch(()=>null);
     }
-    showMessage('#incoming-letter-message',error.message||'PDF surat belum dapat disimpan.','error');
+    showMessage('#incoming-letter-message',pdfStored?'PDF tersimpan. Muat ulang daftar surat untuk melihat hasilnya.':error.message||'PDF surat belum dapat disimpan.',pdfStored?'success':'error');
   }finally{button.disabled=false;}
 });
 $('#incoming-letter-refresh').addEventListener('click',loadIncomingLetters);

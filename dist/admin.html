@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261111-session-recovery" defer></script>
+  <script src="./admin.js?v=20261111-incoming-letter-upload" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261029-v5" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -568,7 +568,7 @@
                       <input id="incoming-letter-pdf" type="file" accept="application/pdf,.pdf" required>
                     </div>
                   </div>
-                  <button class="admin-button" id="incoming-letter-upload" type="submit">Unggah dan baca surat <span aria-hidden="true">↗</span></button>
+                  <button class="admin-button" id="incoming-letter-upload" type="submit"><span id="incoming-letter-upload-label">Unggah dan baca surat</span> <span aria-hidden="true">↗</span></button>
                 </form>
                 <p class="form-message" id="incoming-letter-message" role="status" aria-live="polite"></p>
               </section>
