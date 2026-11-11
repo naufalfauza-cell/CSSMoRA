@@ -97,9 +97,35 @@
     save.disabled=['lpj_review','completed'].includes(currentCycle.status);
     save.title=save.disabled?'Data dikunci selama peninjauan atau setelah LPJ disetujui.':'';
   }
+  const prepLinks = {
+    prep_document_url: 'Lembar kerja',
+    prep_budget_url: 'Spreadsheet anggaran',
+    prep_minutes_url: 'Notulen rapat',
+    prep_folder_url: 'Folder kerja',
+  };
+  const prepFields = [...Object.keys(prepLinks), 'prep_committee_count', 'prep_budget_amount', 'prep_notes'];
+
+  function preparationUrl(value) {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' && !url.username && !url.password ? url.href : '';
+    } catch { return ''; }
+  }
+
+  function renderPreparation(form) {
+    const links = $('#program-prep-links');
+    for (const field of prepFields) form.elements[field].value = currentCycle?.[field] ?? '';
+    links.innerHTML = Object.entries(prepLinks).map(([field, label]) => {
+      const url = preparationUrl(currentCycle?.[field]);
+      return url ? `<a class="member-option-button" href="${escape(url)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>` : '';
+    }).join('');
+    links.hidden = !links.innerHTML;
+  }
+
   function renderSelectedCycle() {
     const form=$('#program-cycle-form');
     downloadButton.hidden=!currentCycle;
+    renderPreparation(form);
     if(!currentCycle){
       form.querySelectorAll('input,textarea,select').forEach(input=>input.disabled=false);
       $('#program-cycle-status').innerHTML='<option value="planning">Rencana</option><option value="ongoing">Berjalan</option>';
@@ -144,15 +170,17 @@
   }
   async function refreshCycleDetails() {
     if(!currentCycle){milestones=[];history=[];recap=[];renderSelectedCycle();return;}
-    const cycleId=encodeURIComponent(currentCycle.id);
+    const selectedId=currentCycle.id;
+    const cycleId=encodeURIComponent(selectedId);
     const [milestoneRows,historyRows,recapRows]=await Promise.all([
       api()(`cssmora_program_milestones?select=*&cycle_id=eq.${cycleId}&order=due_date.asc,position.asc`),
       api()(`cssmora_program_cycle_history?select=*&cycle_id=eq.${cycleId}&order=created_at.desc&limit=50`),
       api()(`rpc/get_cssmora_program_cycle_attendance`,{method:'POST',body:{p_cycle_id:currentCycle.id}})
     ]);
-    milestones=[...milestones.filter(row=>row.cycle_id!==currentCycle.id),...(milestoneRows||[])];
+    if(currentCycle?.id!==selectedId)return;
+    milestones=[...milestones.filter(row=>row.cycle_id!==selectedId),...(milestoneRows||[])];
     history=historyRows||[];recap=recapRows||[];
-    renderCycles();renderSelectedCycle();
+    renderCycles();renderMilestones();renderRecap();renderHistory();
   }
   async function load({selectedId=currentCycle?.id}={}) {
     if(!$('#program-workflow-panel'))return;
@@ -199,6 +227,16 @@
     const payload={period_start:f.elements.period_start.value||null,period_end:f.elements.period_end.value||null,
       lpj_due_date:f.elements.lpj_due_date.value||null,akunpro_url:f.elements.akunpro_url.value.trim()||null,
       lpj_summary:f.elements.lpj_summary.value.trim(),output_summary:f.elements.output_summary.value.trim(),lesson_learned:f.elements.lesson_learned.value.trim()};
+    for (const [field, label] of Object.entries(prepLinks)) {
+      const value = f.elements[field].value.trim();
+      if (value && !preparationUrl(value)) throw new Error(`Tautan ${label.toLowerCase()} harus menggunakan HTTPS.`);
+      payload[field] = value || null;
+    }
+    for (const field of ['prep_committee_count', 'prep_budget_amount']) {
+      const value = f.elements[field].value;
+      payload[field] = value === '' ? null : Number(value);
+    }
+    payload.prep_notes = f.elements.prep_notes.value.trim();
     if(!currentCycle){payload.program_id=f.elements.program_id.value;payload.period_label=f.elements.period_label.value.trim();payload.status=f.elements.status.value;}
     else if(['planning','ongoing'].includes(currentCycle.status))payload.status=f.elements.status.value;
     if(payload.akunpro_url){let parsed;try{parsed=new URL(payload.akunpro_url);}catch{throw new Error('Tautan AkunPro tidak valid.');}if(parsed.protocol!=='https:')throw new Error('Tautan AkunPro harus menggunakan HTTPS.');}
