@@ -76,7 +76,7 @@ async function authRequest(path,body) {
     method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(body)
   });
   const data=await response.json().catch(()=>({}));
-  if(!response.ok){const error=new Error(data.msg||data.message||data.error_description||'Autentikasi gagal. Periksa email dan kata sandi.');error.status=response.status;error.authFailure=[400,401,403].includes(response.status);throw error;}
+  if(!response.ok){const error=new Error(data.msg||data.message||data.error_description||'Autentikasi gagal. Periksa email dan kata sandi.');error.status=response.status;error.code=data.error_code||data.code;error.authFailure=[400,401,403].includes(response.status);throw error;}
   return data;
 }
 
@@ -87,9 +87,22 @@ async function refreshSession() {
   return refreshingSession;
 }
 async function performRefreshSession() {
-  if(!session?.refresh_token)throw new Error('Sesi berakhir. Silakan login kembali.');
-  const refreshed=await authRequest('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
-  saveSession({...refreshed,expires_at:Date.now()+Number(refreshed.expires_in||3600)*1000});
+  const previousSession=session;
+  if(!previousSession?.refresh_token)throw new Error('Sesi berakhir. Silakan masuk kembali.');
+  try {
+    const refreshed=await authRequest('token?grant_type=refresh_token',{refresh_token:previousSession.refresh_token});
+    if(session===previousSession)saveSession({...refreshed,expires_at:Date.now()+Number(refreshed.expires_in||3600)*1000});
+  } catch(error) {
+    const invalidSession=['session_not_found','refresh_token_not_found','refresh_token_already_used'].includes(error.code);
+    if(!invalidSession)throw error;
+    if(session===previousSession){
+      saveSession(null);
+      adminView.hidden=true;
+      authView.hidden=false;
+      showMessage('#auth-message','Sesi berakhir. Masuk kembali, lalu buka draf untuk melanjutkan.','error');
+    }
+    throw new Error('Sesi berakhir. Silakan masuk kembali.');
+  }
 }
 
 async function authenticatedFetch(url,options={}) {
