@@ -2477,15 +2477,20 @@ async function archiveOutgoingLetter(request: Request, body: Record<string, unkn
 
 async function extractIncomingLetterText(request: Request, letterId: string) {
   const actor = await requireUser(request);
-  if (!actor.roles.includes("sekretaris")) throw new AppError(403, "Pembacaan surat masuk hanya tersedia untuk Sekretaris.");
+  const secretary = actor.roles.includes("sekretaris");
+  const leadership = actor.roles.includes("ketua") || actor.roles.includes("wakil");
+  if (!secretary && !leadership) throw new AppError(403, "Akun ini tidak berwenang membaca surat masuk.");
   if (!/^[0-9a-f-]{36}$/i.test(letterId)) throw new AppError(400, "ID surat masuk tidak valid.");
   const rows = (await serviceRequest(queryPath("secretariat_incoming_letters", {
-    select: "id,storage_path,original_filename",
+    select: "id,storage_path,original_filename,created_by,ai_status",
     id: "eq." + letterId,
     limit: "1",
   }))).data;
   const letter = Array.isArray(rows) ? rows[0] : null;
   if (!letter) throw new AppError(404, "Surat masuk tidak ditemukan.");
+  if (!secretary && (letter.created_by !== actor.user.id || letter.ai_status !== "processing")) {
+    throw new AppError(403, "Ketua dan Wakil hanya dapat membaca surat unggahan sendiri yang sedang diproses.");
+  }
   const connection = await currentConnection();
   if (!connection?.refresh_token_ciphertext || !connection?.drive_uploads_folder_id) throw new AppError(409, "Drive CSSMoRA belum tersambung.");
   const storageResponse = await fetch(SUPABASE_URL + "/storage/v1/object/cssmora-letter-pdfs/" + encodeStoragePath(String(letter.storage_path)), {
