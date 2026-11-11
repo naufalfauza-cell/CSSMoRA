@@ -32,7 +32,7 @@
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
   <script src="./workflows.js?v=20261023-performance-v1" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
-  <script src="./program-workflow.js?v=20261111-proker-preparation" defer></script>
+  <script src="./program-workflow.js?v=20261111-generate-preparation" defer></script>
   <script src="./program-documents.js?v=20261111-proposal-editor-reliability" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
@@ -218,8 +218,9 @@
                   <label for="program-prep-folder">Folder kerja proker</label><input id="program-prep-folder" name="prep_folder_url" type="url" maxlength="2048" placeholder="Tautan folder Drive">
                   <label for="program-prep-notes">Catatan persiapan</label><textarea id="program-prep-notes" name="prep_notes" rows="4" maxlength="4000" placeholder="Pembagian tugas dan PIC, peserta atau tamu, rundown, perizinan, perlengkapan, konsumsi, dan keputusan rapat."></textarea>
                   <div class="program-review-buttons" id="program-prep-links" hidden></div>
+                  <button id="program-prep-create" class="member-option-button" type="button" hidden>Buat Google Docs dan Sheets</button>
+                  <p id="program-prep-create-message" class="form-message" role="status"></p>
                 </fieldset>
-                <label for="program-cycle-akunpro">Tautan anggaran AkunPro (opsional)</label><input id="program-cycle-akunpro" name="akunpro_url" type="url" placeholder="https://akunpro-one.vercel.app/…">
                 <label for="program-cycle-summary">Ringkasan pelaksanaan / LPJ</label><textarea id="program-cycle-summary" name="lpj_summary" rows="3" maxlength="5000" placeholder="Kegiatan yang dilaksanakan dan hasil utamanya"></textarea>
                 <label for="program-cycle-outputs">Luaran dan capaian</label><textarea id="program-cycle-outputs" name="output_summary" rows="2" maxlength="2000" placeholder="Contoh: jumlah peserta, produk, atau target tercapai"></textarea>
                 <label for="program-cycle-lessons">Evaluasi dan tindak lanjut</label><textarea id="program-cycle-lessons" name="lesson_learned" rows="2" maxlength="2000" placeholder="Catatan evaluasi untuk periode berikutnya"></textarea>
