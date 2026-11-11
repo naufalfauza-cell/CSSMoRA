@@ -670,6 +670,167 @@ async function shareProgramDocument(accessToken: string, documentId: string, ext
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const GOOGLE_DOC_MIME = "application/vnd.google-apps.document";
 
+async function createProgramPreparation(request: Request, cycleId: string) {
+  const actor = await requireUser(request);
+  if (!actor.roles.some(role => ["ketua", "wakil", "bph_departemen"].includes(role))) {
+    throw new AppError(403, "Akses pengelola proker diperlukan.");
+  }
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(cycleId)) {
+    throw new AppError(400, "Siklus proker tidak valid.");
+  }
+  const cyclePath = SUPABASE_URL + "/rest/v1/cssmora_program_cycles";
+  const writeCycle = async (filters: Record<string, string>, values: Record<string, unknown>) => {
+    const query = new URLSearchParams({ id: "eq." + cycleId, ...filters });
+    const response = await fetch(cyclePath + "?" + query, {
+      method: "PATCH",
+      headers: {
+        apikey: ANON_KEY, Authorization: request.headers.get("authorization")!,
+        "Content-Type": "application/json", Prefer: "return=representation",
+      },
+      body: JSON.stringify(values),
+    });
+    if (!response.ok) throw new AppError(response.status, "Perubahan persiapan proker belum dapat disimpan.");
+    return (await response.json())?.[0];
+  };
+
+  const startedAt = new Date().toISOString();
+  const expiresBefore = new Date(Date.now() - 5 * 60_000).toISOString();
+  const cycle = await writeCycle({
+    status: "in.(planning,ongoing,revision)",
+    or: `(prep_generation_started_at.is.null,prep_generation_started_at.lt.${expiresBefore})`,
+  }, { prep_generation_started_at: startedAt });
+  if (!cycle) throw new AppError(409, "Siklus terkunci atau pembuatan berkas masih berjalan. Muat ulang dan coba lagi.");
+
+  const lease = { prep_generation_started_at: "eq." + startedAt };
+  try {
+    const links = {
+      prep_document_url: cycle.prep_document_url as string | null,
+      prep_budget_url: cycle.prep_budget_url as string | null,
+    };
+    if (links.prep_document_url && links.prep_budget_url) return links;
+
+    const connection = await currentConnection();
+    if (!connection?.refresh_token_ciphertext || !connection?.drive_root_folder_id) {
+      throw new AppError(409, "Drive CSSMoRA belum tersambung.");
+    }
+    const programs = (await serviceRequest(queryPath("agenda_programs", {
+      select: "name,division", id: "eq." + cycle.program_id, limit: "1",
+    }))).data;
+    const program = programs?.[0];
+    if (!program) throw new AppError(404, "Proker tidak ditemukan.");
+
+    const token = await driveAccessToken(connection);
+    const folderId = await findOrCreateProgramDocumentsFolder(token, connection.drive_root_folder_id);
+    const title = `${program.name} — ${cycle.period_label}`;
+    const specs = [
+      { kind: "document", field: "prep_document_url", label: "Persiapan", mime: GOOGLE_DOC_MIME },
+      { kind: "spreadsheet", field: "prep_budget_url", label: "RAB", mime: "application/vnd.google-apps.spreadsheet" },
+    ] as const;
+
+    for (const spec of specs) {
+      if (links[spec.field]) continue;
+      const marker = `${cycleId}-${spec.kind}`;
+      let fileId = await findDriveFolder(token,
+        `'${folderId}' in parents and trashed=false and mimeType='${spec.mime}' and appProperties has { key='cssmoraPreparation' and value='${marker}' }`);
+      if (!fileId) {
+        const created = await googleJson(token, "https://www.googleapis.com/drive/v3/files?fields=id", {
+          method: "POST",
+          body: {name: `${spec.label} — ${title}`, mimeType: spec.mime, parents: [folderId],
+            appProperties: {cssmoraPreparation: marker}},
+        });
+        fileId = created.data?.id;
+      }
+      if (!fileId) throw new AppError(502, "Berkas persiapan gagal dibuat di Google Drive.");
+      const fileUrl = `https://docs.google.com/${spec.kind === "document" ? "document" : "spreadsheets"}/d/${fileId}/edit`;
+      if (spec.kind === "document") {
+        await initializePreparationDocument(token, fileId, title, program.division, cycle);
+      } else {
+        await initializePreparationBudget(token, fileId);
+      }
+      await shareProgramDocument(token, fileId, [actor.email], ["ketua", "wakil"]);
+      const saved = await writeCycle({ ...lease, [spec.field]: "is.null" }, { [spec.field]: fileUrl });
+      if (!saved) throw new AppError(409, "Siklus berubah saat berkas dibuat. Muat ulang sebelum mencoba lagi.");
+      links[spec.field] = fileUrl;
+    }
+    return links;
+  } finally {
+    await writeCycle(lease, { prep_generation_started_at: null }).catch(() => {});
+  }
+}
+
+async function initializePreparationDocument(token: string, fileId: string, title: string, division: string, cycle: any) {
+  const endpoint = "https://docs.googleapis.com/v1/documents/" + encodeURIComponent(fileId);
+  const current = (await googleJson(token, endpoint)).data;
+  if (current?.body?.content?.some((row: any) => row.paragraph?.elements?.some(
+    (element: any) => element.inlineObjectElement || element.textRun?.content?.trim()))) return;
+  const lines = [
+    ["TITLE", "LEMBAR KERJA PERSIAPAN"],
+    ["SUBTITLE", title],
+    ["NORMAL_TEXT", `Divisi: ${division || "—"}\nJumlah panitia: ${cycle.prep_committee_count ?? "—"}\nEstimasi anggaran (Rp): ${cycle.prep_budget_amount ?? "—"}`],
+    ["HEADING_1", "Konsep dan sasaran kegiatan"],
+    ["NORMAL_TEXT", "Tujuan, peserta atau tamu, tanggal, lokasi, dan target hasil."],
+    ["HEADING_1", "Kepanitiaan dan pembagian tugas"],
+    ["NORMAL_TEXT", "Catat nama, peran, PIC, jumlah orang per seksi, dan tenggat setiap tugas."],
+    ["HEADING_1", "Kebutuhan dan koordinasi"],
+    ["NORMAL_TEXT", "Persuratan dan perizinan, rundown, konsumsi, perlengkapan, publikasi, dokumentasi, serta kebutuhan teknis."],
+    ["HEADING_1", "Rapat dan keputusan"],
+    ["NORMAL_TEXT", "Tanggal rapat, peserta, keputusan, PIC tindak lanjut, dan tenggat."],
+    ["HEADING_1", "Catatan persiapan"],
+    ["NORMAL_TEXT", cycle.prep_notes || "Isi catatan dan kebutuhan yang masih perlu dikonfirmasi."],
+  ];
+  let index = 1;
+  const formatting = lines.map(([namedStyleType, text]) => {
+    const startIndex = index;
+    index += text.length + 1;
+    return {updateParagraphStyle: {range: {startIndex, endIndex: index},
+      paragraphStyle: {namedStyleType}, fields: "namedStyleType"}};
+  });
+  await googleJson(token, endpoint + ":batchUpdate", {
+    method: "POST",
+    body: {writeControl: {requiredRevisionId: current.revisionId},
+      requests: [{insertText: {location: {index: 1}, text: lines.map(([, text]) => text).join("\n") + "\n"}}, ...formatting]},
+  });
+}
+
+async function initializePreparationBudget(token: string, fileId: string) {
+  const endpoint = "https://sheets.googleapis.com/v4/spreadsheets/" + encodeURIComponent(fileId);
+  const current = (await googleJson(token, endpoint + "?ranges=A1:H2&includeGridData=true&fields=sheets(properties(sheetId),data(rowData(values(userEnteredValue)))")).data;
+  const sheet = current?.sheets?.[0];
+  const sheetId = sheet?.properties?.sheetId;
+  if (typeof sheetId !== "number") throw new AppError(502, "Tab RAB tidak ditemukan.");
+  if (sheet.data?.some((grid: any) => grid.rowData?.some(
+    (row: any) => row.values?.some((cell: any) => cell.userEnteredValue)))) return;
+
+  const text = (value: string) => ({userEnteredValue: {stringValue: value}});
+  const formula = (value: string) => ({userEnteredValue: {formulaValue: value}});
+  const rows = [
+    {values: ["Kategori", "Kebutuhan", "Jumlah", "Satuan", "Harga satuan (Rp)", "Subtotal (Rp)", "PIC", "Catatan"].map(text)},
+    ...Array.from({length: 100}, (_, index) => ({
+      values: [{}, {}, {}, {}, {}, formula(`=IF(OR(C${index + 2}="",E${index + 2}=""),"",C${index + 2}*E${index + 2})`)],
+    })),
+  ];
+  const range = (startRowIndex: number, endRowIndex: number, startColumnIndex: number, endColumnIndex: number) =>
+    ({sheetId, startRowIndex, endRowIndex, startColumnIndex, endColumnIndex});
+  await googleJson(token, endpoint + ":batchUpdate", {
+    method: "POST",
+    body: {requests: [
+      {updateSheetProperties: {properties: {sheetId, title: "RAB", gridProperties: {frozenRowCount: 1}},
+        fields: "title,gridProperties.frozenRowCount"}},
+      {updateCells: {start: {sheetId, rowIndex: 0, columnIndex: 0}, rows, fields: "userEnteredValue"}},
+      {updateCells: {start: {sheetId, rowIndex: 0, columnIndex: 9}, rows: [
+        {values: [text("TOTAL RAB (Rp)")]}, {values: [formula("=SUM(F2:F)")]},
+      ], fields: "userEnteredValue"}},
+      {repeatCell: {range: range(0, 1, 0, 8), cell: {userEnteredFormat: {
+        backgroundColor: {red: 0.88, green: 0.94, blue: 0.89}, textFormat: {bold: true},
+      }}, fields: "userEnteredFormat"}},
+      {repeatCell: {range: range(1, 101, 4, 6), cell: {userEnteredFormat: {
+        numberFormat: {type: "NUMBER", pattern: "#,##0"},
+      }}, fields: "userEnteredFormat.numberFormat"}},
+      {autoResizeDimensions: {dimensions: {sheetId, dimension: "COLUMNS", startIndex: 0, endIndex: 10}}},
+    ]},
+  });
+}
+
 async function importProgramTemplate(accessToken: string, folderId: string, documentType: string, title: string, existingDocumentId: string, programDocumentId: string) {
   if (!existingDocumentId) {
     const query = new URLSearchParams({
@@ -3085,6 +3246,10 @@ async function handleRequest(request: Request) {
       if (!connection?.refresh_token_ciphertext || !connection?.drive_root_folder_id) throw new AppError(409, "Drive CSSMoRA belum tersambung.");
       const accessToken = await driveAccessToken(connection);
       return jsonResponse(request, 200, { ok: true, action, ...(await signProgramGoogleDoc(accessToken, connection, body, actor)) });
+    }
+    if (action === "create_program_preparation") {
+      const links = await createProgramPreparation(request, String(body.cycle_id || ""));
+      return jsonResponse(request, 200, {ok: true, links});
     }
     if (action === "create_document") {
       const actor = await requireUser(request);

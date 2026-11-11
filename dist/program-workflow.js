@@ -22,6 +22,7 @@
   let programPeriods=new Map();
   const downloadButton=$('#download-program-lpj');
   let pendingLoad=null;
+  let creatingPreparation=false;
 
   const api=()=>window.CSSMoRAAdmin?.api;
   const context=()=>window.CSSMoRAAdmin?.context?.()||{};
@@ -113,13 +114,23 @@
   }
 
   function renderPreparation(form) {
-    const links = $('#program-prep-links');
     for (const field of prepFields) form.elements[field].value = currentCycle?.[field] ?? '';
+    renderPreparationLinks();
+    $('#program-prep-create-message').textContent = '';
+  }
+
+  function renderPreparationLinks() {
+    const links = $('#program-prep-links');
     links.innerHTML = Object.entries(prepLinks).map(([field, label]) => {
       const url = preparationUrl(currentCycle?.[field]);
       return url ? `<a class="member-option-button" href="${escape(url)}" target="_blank" rel="noopener noreferrer">${label} ↗</a>` : '';
     }).join('');
     links.hidden = !links.innerHTML;
+    const create = $('#program-prep-create');
+    create.hidden = !currentCycle || ['lpj_review', 'completed'].includes(currentCycle.status) ||
+      Boolean(currentCycle.prep_document_url && currentCycle.prep_budget_url);
+    create.disabled = creatingPreparation;
+
   }
 
   function renderSelectedCycle() {
@@ -145,7 +156,6 @@
     $('#program-cycle-start').value=dateField(currentCycle.period_start);
     $('#program-cycle-end').value=dateField(currentCycle.period_end);
     $('#program-cycle-deadline').value=dateField(currentCycle.lpj_due_date);
-    $('#program-cycle-akunpro').value=currentCycle.akunpro_url||'';
     $('#program-cycle-summary').value=currentCycle.lpj_summary||'';
     $('#program-cycle-outputs').value=currentCycle.output_summary||'';
     $('#program-cycle-lessons').value=currentCycle.lesson_learned||'';
@@ -186,6 +196,7 @@
     if(!$('#program-workflow-panel'))return;
     if(!context().canManageProgramCycles){$('#program-cycle-list').innerHTML='<p class="records-empty">Akses pengelolaan proker diperlukan.</p>';return;}
     if(pendingLoad)return pendingLoad;
+    if(creatingPreparation)return;
     pendingLoad=(async()=>{
       $('#program-cycle-list').setAttribute('aria-busy','true');
       if(!cycles.length)$('#program-cycle-list').innerHTML='<p class="records-empty">Memuat siklus proker…</p>';
@@ -225,7 +236,7 @@
   function cyclePayload() {
     const f=$('#program-cycle-form');
     const payload={period_start:f.elements.period_start.value||null,period_end:f.elements.period_end.value||null,
-      lpj_due_date:f.elements.lpj_due_date.value||null,akunpro_url:f.elements.akunpro_url.value.trim()||null,
+      lpj_due_date:f.elements.lpj_due_date.value||null,
       lpj_summary:f.elements.lpj_summary.value.trim(),output_summary:f.elements.output_summary.value.trim(),lesson_learned:f.elements.lesson_learned.value.trim()};
     for (const [field, label] of Object.entries(prepLinks)) {
       const value = f.elements[field].value.trim();
@@ -239,12 +250,11 @@
     payload.prep_notes = f.elements.prep_notes.value.trim();
     if(!currentCycle){payload.program_id=f.elements.program_id.value;payload.period_label=f.elements.period_label.value.trim();payload.status=f.elements.status.value;}
     else if(['planning','ongoing'].includes(currentCycle.status))payload.status=f.elements.status.value;
-    if(payload.akunpro_url){let parsed;try{parsed=new URL(payload.akunpro_url);}catch{throw new Error('Tautan AkunPro tidak valid.');}if(parsed.protocol!=='https:')throw new Error('Tautan AkunPro harus menggunakan HTTPS.');}
     if(payload.period_start&&payload.period_end&&payload.period_end<payload.period_start)throw new Error('Akhir periode harus setelah tanggal mulai.');
     return payload;
   }
   $('#program-cycle-form').addEventListener('submit',async event=>{
-    event.preventDefault();const button=$('#save-program-cycle');if(!event.currentTarget.reportValidity())return;
+    event.preventDefault();const button=$('#save-program-cycle');if(creatingPreparation||!event.currentTarget.reportValidity())return;
     button.disabled=true;showMessage('Menyimpan monitoring…');
     try{
       const payload=cyclePayload();
@@ -253,6 +263,45 @@
       showMessage('Monitoring proker tersimpan.','success');await load({selectedId:saved.id});
     }catch(error){showMessage(error.message||'Siklus belum tersimpan.','error');}
     finally{button.disabled=false;renderActions();}
+  });
+  $('#program-prep-create').addEventListener('click', async () => {
+    if (!currentCycle || creatingPreparation) return;
+    const cycleId = currentCycle.id;
+    const button = $('#program-prep-create');
+    const message = $('#program-prep-create-message');
+    const preparationForm = $('#program-cycle-form');
+    if (prepFields.some(field => preparationForm.elements[field].value.trim() !== String(currentCycle[field] ?? ''))) {
+      message.textContent = 'Simpan perubahan persiapan sebelum membuat berkas.';
+      return;
+    }
+    creatingPreparation = true;
+    button.disabled = true;
+    message.textContent = 'Membuat lembar kerja dan RAB di Google Drive…';
+    try {
+      const config = window.CSSMORA_SUPABASE;
+      const response = await window.CSSMoRAAdmin.request(`${config.url}/functions/v1/drive-integration`, {
+        method: 'POST', headers: {apikey: config.publishableKey, 'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'create_program_preparation', cycle_id: cycleId}),
+        timeoutMs: 120000,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Berkas persiapan belum dapat dibuat.');
+      const update = cycle => ({...cycle, ...result.links});
+      cycles = cycles.map(cycle => cycle.id === cycleId ? update(cycle) : cycle);
+      if (currentCycle?.id !== cycleId) return;
+      currentCycle = update(currentCycle);
+      const form = $('#program-cycle-form');
+      for (const [field, url] of Object.entries(result.links)) {
+        if (!form.elements[field].value.trim()) form.elements[field].value = url;
+      }
+      renderPreparationLinks();
+      message.textContent = 'Lembar kerja dan RAB tersimpan di proker ini.';
+    } catch (error) {
+      if (currentCycle?.id === cycleId) message.textContent = error.message;
+    } finally {
+      creatingPreparation = false;
+      button.disabled = false;
+    }
   });
   $('#program-cycle-program').addEventListener('change',()=>{
     const detailsPeriod=programPeriods.get($('#program-cycle-program').value);
@@ -319,7 +368,7 @@
     const agendaRows=recap;
     const safe=value=>escape(value||'—');
     const rowHtml=(title,body)=>`<section><h2>${safe(title)}</h2><p>${safe(body)}</p></section>`;
-    const html=`<!doctype html><html lang="id"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>LPJ ${safe(program.name)} ${safe(currentCycle.period_label)}</title><style>body{max-width:850px;margin:40px auto;padding:0 24px;color:#183328;font:15px/1.65 Arial,sans-serif}h1{font-size:28px}h2{font-size:18px;margin-bottom:5px}header{padding-bottom:18px;border-bottom:2px solid #1c6b43}small{color:#597467}.tag{display:inline-block;padding:4px 9px;border-radius:30px;background:#e9f3e8;color:#28563b}table{width:100%;border-collapse:collapse;margin-top:12px}td,th{padding:9px;border-bottom:1px solid #dce8de;text-align:left}footer{margin-top:32px;color:#597467;font-size:12px}@media print{body{margin:0 auto;padding:0 12mm}}</style><body><header><small>CSSMoRA UNAIR · REKAP PELAKSANAAN PROKER</small><h1>${safe(program.name)}</h1><p>${safe(program.division||'')} · Periode ${safe(currentCycle.period_label)} · <span class="tag">${safe(statusLabel(currentCycle.status))}</span></p></header>${rowHtml('Ringkasan pelaksanaan',currentCycle.lpj_summary)}${rowHtml('Luaran dan capaian',currentCycle.output_summary)}${rowHtml('Evaluasi dan tindak lanjut',currentCycle.lesson_learned)}<section><h2>Tahapan kerja</h2>${milestoneRows.length?`<table><thead><tr><th>Tahapan</th><th>Tenggat</th><th>Status</th><th>Catatan</th></tr></thead><tbody>${milestoneRows.map(row=>`<tr><td>${safe(row.title)}</td><td>${safe(dateLabel(row.due_date))}</td><td>${safe(row.status==='completed'?'Selesai':row.status==='in_progress'?'Berjalan':'Belum mulai')}</td><td>${safe(row.completion_note)}</td></tr>`).join('')}</tbody></table>`:'<p>Belum ada checkpoint.</p>'}</section><section><h2>Agenda dan absensi</h2>${agendaRows.length?`<table><thead><tr><th>Kegiatan</th><th>Waktu</th><th>Hadir</th><th>Persentase</th></tr></thead><tbody>${agendaRows.map(row=>{const total=Number(row.eligible_count)||0,present=Number(row.present_count)||0;return `<tr><td>${safe(row.agenda_title)}</td><td>${safe(dateTimeLabel(row.starts_at))}</td><td>${present}/${total}</td><td>${total?Math.round(present*100/total):0}%</td></tr>`;}).join('')}</tbody></table>`:'<p>Belum ada agenda selesai yang terhubung pada periode ini.</p>'}</section>${currentCycle.akunpro_url?`<section><h2>Referensi anggaran</h2><p><a href="${safe(currentCycle.akunpro_url)}">Buka AkunPro</a></p></section>`:''}<footer>Disusun dari data monitoring CSSMoRA. Angka keuangan dirujuk di AkunPro dan tidak disalin ke sistem ini.<br>Diekspor ${safe(dateTimeLabel(new Date().toISOString()))}.</footer></body></html>`;
+    const html=`<!doctype html><html lang="id"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>LPJ ${safe(program.name)} ${safe(currentCycle.period_label)}</title><style>body{max-width:850px;margin:40px auto;padding:0 24px;color:#183328;font:15px/1.65 Arial,sans-serif}h1{font-size:28px}h2{font-size:18px;margin-bottom:5px}header{padding-bottom:18px;border-bottom:2px solid #1c6b43}small{color:#597467}.tag{display:inline-block;padding:4px 9px;border-radius:30px;background:#e9f3e8;color:#28563b}table{width:100%;border-collapse:collapse;margin-top:12px}td,th{padding:9px;border-bottom:1px solid #dce8de;text-align:left}footer{margin-top:32px;color:#597467;font-size:12px}@media print{body{margin:0 auto;padding:0 12mm}}</style><body><header><small>CSSMoRA UNAIR · REKAP PELAKSANAAN PROKER</small><h1>${safe(program.name)}</h1><p>${safe(program.division||'')} · Periode ${safe(currentCycle.period_label)} · <span class="tag">${safe(statusLabel(currentCycle.status))}</span></p></header>${rowHtml('Ringkasan pelaksanaan',currentCycle.lpj_summary)}${rowHtml('Luaran dan capaian',currentCycle.output_summary)}${rowHtml('Evaluasi dan tindak lanjut',currentCycle.lesson_learned)}<section><h2>Tahapan kerja</h2>${milestoneRows.length?`<table><thead><tr><th>Tahapan</th><th>Tenggat</th><th>Status</th><th>Catatan</th></tr></thead><tbody>${milestoneRows.map(row=>`<tr><td>${safe(row.title)}</td><td>${safe(dateLabel(row.due_date))}</td><td>${safe(row.status==='completed'?'Selesai':row.status==='in_progress'?'Berjalan':'Belum mulai')}</td><td>${safe(row.completion_note)}</td></tr>`).join('')}</tbody></table>`:'<p>Belum ada checkpoint.</p>'}</section><section><h2>Agenda dan absensi</h2>${agendaRows.length?`<table><thead><tr><th>Kegiatan</th><th>Waktu</th><th>Hadir</th><th>Persentase</th></tr></thead><tbody>${agendaRows.map(row=>{const total=Number(row.eligible_count)||0,present=Number(row.present_count)||0;return `<tr><td>${safe(row.agenda_title)}</td><td>${safe(dateTimeLabel(row.starts_at))}</td><td>${present}/${total}</td><td>${total?Math.round(present*100/total):0}%</td></tr>`;}).join('')}</tbody></table>`:'<p>Belum ada agenda selesai yang terhubung pada periode ini.</p>'}</section><footer>Disusun dari data monitoring CSSMoRA. <br>Diekspor ${safe(dateTimeLabel(new Date().toISOString()))}.</footer></body></html>`;
     const blob=new Blob([html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`LPJ-${String(program.name||'proker').replace(/[^a-z0-9-]+/gi,'-')}-${currentCycle.period_label.replace(/[^a-z0-9-]+/gi,'-')}.html`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   downloadButton.addEventListener('click',downloadLpj);
