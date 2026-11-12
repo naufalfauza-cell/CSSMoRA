@@ -15,6 +15,11 @@
   const showMessage = (message,kind='') => { const node=$('#program-cycle-message');node.textContent=message;node.dataset.kind=kind; };
   let programs=[];
   let cycles=[];
+  let officialLpj=[];
+  let officialLpjAvailable=true;
+  const officialLpjFor=cycle=>officialLpj.find(doc=>doc.program_id===cycle.program_id&&doc.period_label===cycle.period_label);
+  const officialLpjLabel=doc=>({draft:'Draf',revision:'Perlu revisi',secretary_review:'Peninjauan Sekretaris',treasurer_review:'Verifikasi Bendahara',chair_review:'Peninjauan Ketua',approved:'Disetujui'})[doc?.status]||'—';
+
   let milestones=[];
   let history=[];
   let recap=[];
@@ -37,7 +42,8 @@
     if(selected)select.value=selected;
   }
   function renderReminders() {
-    const rows=domain.reminderRows(cyclesWithNames(),milestonesWithNames(),todayWib());
+    const reminderCycles=cyclesWithNames().map(cycle=>officialLpjFor(cycle)?.status==='approved'?{...cycle,lpj_due_date:null}:cycle);
+    const rows=domain.reminderRows(reminderCycles,milestonesWithNames(),todayWib());
     const list=$('#program-reminder-list');
     if(!rows.length){list.innerHTML='<p class="program-reminder-clear">Tidak ada tenggat dalam tujuh hari ke depan.</p>';return;}
     list.innerHTML=rows.map(row=>`<button class="program-reminder-item ${row.days<0?'is-overdue':row.days===0?'is-today':''}" type="button" data-reminder-cycle="${escape(row.cycle_id)}"><span class="program-reminder-icon" aria-hidden="true">${row.days<0?'!':'◷'}</span><span><strong>${escape(row.title)}</strong><small>${row.days<0?`Terlambat ${Math.abs(row.days)} hari`:row.days===0?'Tenggat hari ini':`${row.days} hari lagi`} · ${dateLabel(row.due_date)}</small></span><span aria-hidden="true">→</span></button>`).join('');
@@ -51,7 +57,7 @@
       const stepRows=milestones.filter(row=>row.cycle_id===cycle.id);
       const progress=domain.progressPercent(stepRows);
       const due=cycle.lpj_due_date?domain.daysUntil(cycle.lpj_due_date,todayWib()):null;
-      return `<button type="button" class="program-cycle-card ${currentCycle?.id===cycle.id?'is-selected':''}" data-cycle-id="${escape(cycle.id)}"><span class="program-cycle-card-top"><strong>${escape(cycle.program_name)}</strong><span class="record-status ${statusClass(cycle.status)}">${escape(statusLabel(cycle.status))}</span></span><span class="program-cycle-card-meta">${escape(cycle.period_label)}${cycle.lpj_due_date?` · LPJ ${due<0?`terlambat ${Math.abs(due)} hari`:dateLabel(cycle.lpj_due_date)}`:''}</span><span class="program-cycle-progress-track"><i style="width:${progress}%"></i></span><small>${progress}% · ${stepRows.filter(row=>row.status==='completed').length}/${stepRows.length} tahapan selesai</small></button>`;
+      return `<button type="button" class="program-cycle-card ${currentCycle?.id===cycle.id?'is-selected':''}" data-cycle-id="${escape(cycle.id)}"><span class="program-cycle-card-top"><strong>${escape(cycle.program_name)}</strong><span class="record-status ${statusClass(cycle.status)}">${escape(statusLabel(cycle.status))}</span></span><span class="program-cycle-card-meta">${escape(cycle.period_label)}${officialLpjFor(cycle)?` · LPJ: ${escape(officialLpjLabel(officialLpjFor(cycle)))}`:''}${cycle.lpj_due_date?` · LPJ ${due<0?`terlambat ${Math.abs(due)} hari`:dateLabel(cycle.lpj_due_date)}`:''}</span><span class="program-cycle-progress-track"><i style="width:${progress}%"></i></span><small>${progress}% · ${stepRows.filter(row=>row.status==='completed').length}/${stepRows.length} tahapan selesai</small></button>`;
     }).join('');
   }
   function renderMilestones() {
@@ -88,12 +94,13 @@
     node.hidden=!currentCycle;
     if(!currentCycle){node.innerHTML='';return;}
     const {isLeadership}=context();
-    const canSubmit=['ongoing','revision'].includes(currentCycle.status);
+    const official=officialLpjFor(currentCycle);
     if(currentCycle.status==='lpj_review'&&isLeadership){
       node.innerHTML='<label for="program-cycle-review-note">Catatan peninjauan (wajib jika meminta revisi)</label><textarea id="program-cycle-review-note" rows="2" maxlength="2000" placeholder="Catatan untuk pengurus proker"></textarea><div class="program-review-buttons"><button type="button" class="member-option-button" data-cycle-review="revision_requested">Minta revisi</button><button type="button" class="admin-button" data-cycle-review="approved">Setujui LPJ <span aria-hidden="true">✓</span></button></div>';
-    } else if(canSubmit){
-      node.innerHTML='<button type="button" class="member-option-button" data-cycle-submit>Ajukan LPJ untuk ditinjau</button>';
-    } else node.innerHTML='';
+    } else {
+      const label=official?officialLpjLabel(official):'Belum ada LPJ yang dapat dibuka dari akun ini';
+      node.innerHTML=`<p class="admin-muted">LPJ resmi · ${escape(officialLpjAvailable?label:'Status belum dapat dimuat')}</p><button type="button" class="member-option-button" data-cycle-open-lpj>${official?'Buka LPJ':'Buka Proposal &amp; LPJ'}</button>`;
+    }
     const save=$('#save-program-cycle');
     save.disabled=['lpj_review','completed'].includes(currentCycle.status);
     save.title=save.disabled?'Data dikunci selama peninjauan atau setelah LPJ disetujui.':'';
@@ -202,12 +209,15 @@
       $('#program-cycle-list').setAttribute('aria-busy','true');
       if(!cycles.length)$('#program-cycle-list').innerHTML='<p class="records-empty">Memuat siklus proker…</p>';
       try{
-        const [programRows,cycleRows,detailRows]=await Promise.all([
+        const [programRows,cycleRows,detailRows,lpjRows]=await Promise.all([
           api()('agenda_programs?select=id,name,division,is_active&order=name.asc'),
           api()('cssmora_program_cycles?select=*&order=updated_at.desc'),
-          api()('cssmora_program_details?select=program_id,period_label&order=updated_at.desc')
+          api()('cssmora_program_details?select=program_id,period_label&order=updated_at.desc'),
+          api()('cssmora_program_documents?select=id,program_id,period_label,status&document_type=eq.lpj').catch(()=>null)
         ]);
         programs=programRows||[];cycles=cycleRows||[];
+        officialLpjAvailable=Array.isArray(lpjRows);
+        officialLpj=lpjRows||[];
         programPeriods=new Map();for(const row of detailRows||[])if(row.period_label&&!programPeriods.has(row.program_id))programPeriods.set(row.program_id,row.period_label);
         renderProgramSelect(currentCycle?.program_id||'');
         const cycleIds=cycles.map(row=>row.id);
@@ -345,13 +355,17 @@
     }catch(error){showMessage(error.message||'Perubahan tahapan gagal.','error');button.disabled=false;}
   });
   $('#program-cycle-actions').addEventListener('click',async event=>{
-    const submit=event.target.closest('[data-cycle-submit]');
+    const open=event.target.closest('[data-cycle-open-lpj]');
     const review=event.target.closest('[data-cycle-review]');
-    if(submit){
-      if($('#program-cycle-summary').value.trim().length<30){showMessage('Lengkapi ringkasan LPJ minimal 30 karakter sebelum mengajukan.','error');return;}
-      submit.disabled=true;
-      try{await api()(`cssmora_program_cycles?id=eq.${encodeURIComponent(currentCycle.id)}`,{method:'PATCH',body:{status:'lpj_review'},extraHeaders:{Prefer:'return=representation'}});showMessage('LPJ dikirim untuk ditinjau Ketua atau Wakil.','success');await load({selectedId:currentCycle.id});}
-      catch(error){showMessage(error.message||'LPJ belum dapat diajukan.','error');submit.disabled=false;}
+    if(open&&currentCycle){
+      const cycle=currentCycle;
+      open.disabled=true;
+      try{
+        const editor=window.CSSMoRAProgramDocuments;
+        if(!editor)throw new Error('Menu Proposal & LPJ belum tersedia.');
+        await editor.openCycleLpj(cycle);
+      }catch(error){showMessage(error.message,'error');}
+      finally{open.disabled=false;}
       return;
     }
     if(review){
