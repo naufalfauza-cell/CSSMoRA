@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { letterTemplates, letterIdentityKind, normalizeLetterIdentity, letterIdentityToken, letterLayoutRequests, chairIdentityReplacements } from "./letter-templates.ts";
+import { letterTemplates, letterIdentityKind, normalizeLetterIdentity, letterIdentityToken, letterLayoutRequests, chairIdentityReplacements, secretaryIdentityReplacement, secretaryTemplateNia } from "./letter-templates.ts";
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -3121,6 +3121,15 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
     if (!sourceId) throw new AppError(409, "Master Google Docs untuk jenis surat ini belum dikonfigurasi.");
     const chair = (await serviceRequest("secretariat_chair_identity?select=nim,nia&singleton=eq.true")).data?.[0];
     if (!chair) throw new AppError(409, "Identitas Ketua belum dikonfigurasi. Hubungi pengelola aplikasi.");
+    const signerReplacements = chairIdentityReplacements(identityKind, chair, template.key);
+    if (template.hasSecretarySignature) {
+      const secretary = (await serviceRequest(queryPath("secretariat_members", {
+        select: "nim,nia", nia: "eq." + secretaryTemplateNia, limit: "1",
+      }))).data?.[0];
+      const replacement = secretary && secretaryIdentityReplacement(identityKind, secretary);
+      if (!replacement) throw new AppError(409, identityKind + " Sekretaris belum tersedia di data anggota.");
+      signerReplacements.push(replacement);
+    }
     const claim = (await serviceRequest(outgoingDrafts + "?on_conflict=id", {
       method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=representation" }, body: draft,
     })).data?.[0];
@@ -3149,13 +3158,11 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
           body: { writeControl: { requiredRevisionId: document.revisionId }, requests: layout },
         });
       }
-      const chairReplacements = chairIdentityReplacements(identityKind, chair, template.key);
-      const replies = await replaceLetterFields(token, documentId, fields, template.code, chairReplacements);
+      const replies = await replaceLetterFields(token, documentId, fields, template.code, signerReplacements);
       const fieldCount = Object.keys(fields).length;
-      const chairMatches = replies.slice(fieldCount).reduce((count: number, reply: any) =>
-        count + (reply?.replaceAllText?.occurrencesChanged ?? 0), 0);
+      const signersMatch = replies.slice(fieldCount).every((reply: any) => reply?.replaceAllText?.occurrencesChanged === 1);
       if (replies.slice(0, fieldCount).some((reply: any) => !reply?.replaceAllText?.occurrencesChanged) ||
-          replies.length !== fieldCount + chairReplacements.length || chairMatches !== chairReplacements.length) {
+          replies.length !== fieldCount + signerReplacements.length || !signersMatch) {
         throw new AppError(409, "Penanda isian di master surat berbeda dari formulir. Hubungi pengelola aplikasi.");
       }
       await shareDriveFile(token, documentId, [...await activeRoleEmails(["sekretaris"]), actor.email], "writer");
