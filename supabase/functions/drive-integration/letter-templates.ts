@@ -24,6 +24,10 @@ export const letterTemplates = [
   fields: template.fields.split(" "),
 }));
 
+export function letterIdentityKind(scope: "i" | "e"): "NIM" | "NIA" {
+  return scope === "i" ? "NIM" : "NIA";
+}
+
 export function normalizeLetterIdentity(value: string, kind: "NIM" | "NIA") {
   const prefix = value.match(/^(NIM|NIA)(?=[\s.:0-9]|$)[\s.:]*/i);
   if (prefix && prefix[1].toUpperCase() !== kind) return null;
