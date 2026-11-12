@@ -1155,10 +1155,10 @@ async function loadAttendancePermissions(){
   const message='#attendance-permission-message';
   showMessage(message,'Memuat pengajuan…');
   try{
-    const rows=await api('secretariat_attendance_permissions?select=id,agenda_title,reason,secretariat_members(full_name,cohort)&order=created_at.desc&limit=100');
+    const rows=await api('secretariat_attendance_permissions?select=id,agenda_title,reason,approved_at,secretariat_members(full_name,cohort)&order=created_at.desc&limit=100');
     list.innerHTML=(rows||[]).map(row=>{
       const member=row.secretariat_members;
-      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td><button class="text-button" type="button" data-permission-download="${escapeHTML(row.id)}">Unduh PDF</button></td></tr>`;
+      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td><button class="text-button" type="button" data-permission-download="${escapeHTML(row.id)}">Unduh PDF</button> ${row.approved_at?'Izin tercatat':isSecretariatAdmin?`<button class="member-option-button" type="button" data-permission-approve="${escapeHTML(row.id)}">Setujui dan catat izin</button>`:'Menunggu Sekretaris'}</td></tr>`;
     }).join('')||'<tr><td colspan="4" class="records-empty">Belum ada pengajuan izin.</td></tr>';
     showMessage(message,'');
   }catch(error){showMessage(message,error.message||'Pengajuan belum dapat dimuat.','error');}
@@ -1168,6 +1168,18 @@ $('#attendance-permissions').addEventListener('toggle',event=>{
 });
 $('#attendance-permissions-refresh').addEventListener('click',()=>void loadAttendancePermissions());
 $('#attendance-permission-rows').addEventListener('click',async event=>{
+  const approval=event.target.closest('[data-permission-approve]');
+  if(approval){
+    approval.disabled=true;
+    try{
+      const eventId=await api('rpc/approve_cssmora_attendance_permission',{method:'POST',body:{p_permission_id:approval.dataset.permissionApprove}});
+      await loadAttendancePermissions();
+      if(currentAttendanceEvent?.id===eventId&&!attendanceRosterDirty)await loadAttendanceRoster(eventId);
+      showMessage('#attendance-permission-message','Izin disetujui dan sudah tercatat di daftar hadir.','success');
+    }catch(error){showMessage('#attendance-permission-message',error.message,'error');}
+    finally{approval.disabled=false;}
+    return;
+  }
   const button=event.target.closest('[data-permission-download]');
   if(!button)return;
   const id=button.dataset.permissionDownload;

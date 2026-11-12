@@ -10,6 +10,7 @@
   const activeBucket='cssmora-program-documentation';
   let programs=[],details=new Map(),members=[],documents=[],current=null,budget=[],committee=[],rundown=[],photos=[],pendingPhotos=[],finance={},subrecordsDirty=false,formDirty=false;
   let loading=null;
+  let financeConfirmedAt=new Map();
   let editorBusy=false, detailsReady=true, selectionVersion=0;
 
   async function runEditorTask(task){
@@ -158,7 +159,39 @@
     if(!photos.length&&!pendingPhotos.length){list.innerHTML='<p class="records-empty">Belum ada foto diunggah.</p>';return;}
     list.innerHTML=[...photos.map((photo,index)=>`<div class="program-document-photo-row"><span aria-hidden="true">📷</span><input data-photo-caption="${esc(photo.id)}" maxlength="240" aria-label="Caption foto" value="${esc(photo.caption||'')}"><button type="button" data-remove-photo="${esc(photo.id)}">Hapus</button></div>`),...pendingPhotos.map((item,index)=>`<div class="program-document-photo-row"><img src="${item.preview}" alt="Pratinjau dokumentasi ${index+1}"><input data-pending-caption="${index}" maxlength="240" aria-label="Caption dokumentasi ${index+1}" value="${esc(item.caption)}"><button type="button" data-remove-pending-photo="${index}">Hapus</button></div>`)].join('');
   }
+  function nextDocumentAction(doc){
+    const own=doc.created_by===context().userId;
+    const roles=context().roles||[];
+    const financialLpj=doc.document_type==='lpj'&&doc.optional_sections?.finance;
+    if(doc.status==='draft'||doc.status==='revision'){
+      return {mine:own, text:doc.status==='revision'?'PIC · Perbaiki draf sesuai catatan peninjauan.':'PIC · Lengkapi draf, buat Google Docs, lalu ajukan.'};
+    }
+    if(doc.status==='secretary_review'){
+      const confirmedAt=financeConfirmedAt.get(doc.id);
+      if(financialLpj&&roles.includes('bendahara')&&(!confirmedAt||Date.parse(doc.google_doc_generated_at||'')<Date.parse(confirmedAt)||!doc.google_doc_generated_at)){
+        return {mine:true,text:confirmedAt?'Bendahara · Verifikasi sudah tersimpan. Perbarui Google Docs.':'Bendahara · Simpan verifikasi dan perbarui Google Docs.'};
+      }
+      const financeHint=financialLpj&&!roles.includes('bendahara')?' Pastikan Bendahara telah menyimpan verifikasi dan memperbarui Docs.':'';
+      return {mine:!own&&roles.includes('sekretaris'),text:(own&&roles.includes('sekretaris')?'Sekretaris lain · Pembuat draf tidak dapat menandatangani draf sendiri.':'Sekretaris · Tinjau dokumen dan teruskan ke Ketua.')+financeHint};
+    }
+    if(doc.status==='treasurer_review'){
+      return {mine:!own&&roles.includes('bendahara'),text:'Bendahara · Verifikasi realisasi dan perbarui Google Docs.'};
+    }
+    if(doc.status==='chair_review'){
+      return {mine:!own&&(roles.includes('ketua')||roles.includes('wakil')),text:own&&roles.includes('ketua')?'Tanda tangan tertahan · Pembuat draf tidak dapat menandatangani draf sendiri. Hubungi Sekretariat untuk menyelesaikan penugasan.':!roles.includes('ketua')&&roles.includes('wakil')?'Wakil · Tinjau dan minta revisi bila perlu. Tanda tangan oleh Ketua.':'Ketua · Tinjau dan selesaikan tanda tangan.'};
+    }
+    return {mine:false,text:'Selesai · Dokumen sudah disetujui.'};
+  }
+
+  function renderDocumentTasks(){
+    const tasks=documents.map(doc=>({doc,...nextDocumentAction(doc)})).filter(task=>task.mine);
+    $('#program-document-task-list').innerHTML=tasks.map(({doc,text})=>
+      `<article class="program-document-card"><button class="text-button" type="button" data-task-document="${esc(doc.id)}">${esc(typeLabels[doc.document_type])} · ${esc(doc.title)}</button><small>${esc(text)}</small></article>`
+    ).join('')||'<p class="records-empty">Tidak ada tindakan yang menunggu akun ini.</p>';
+  }
+
   function renderDocumentList(){
+    renderDocumentTasks();
     $('#program-document-count').textContent=`${documents.length} dokumen`;
     const list=$('#program-document-list');
     if(!documents.length){list.innerHTML='<p class="records-empty">Belum ada proposal atau LPJ.</p>';return;}
@@ -194,6 +227,9 @@
   }
   function renderActions(){
     const editable=isEditable();
+    const next=$('#program-document-next-action');
+    next.hidden=!current;
+    next.textContent=current?nextDocumentAction(current).text:'';
     const roles=context().roles||[];
     const canRefreshDoc=editable||Boolean(current&&((current.status==='treasurer_review'&&roles.includes('bendahara'))||(current.status==='secretary_review'&&current.document_type==='lpj'&&current.optional_sections?.finance&&roles.includes('bendahara'))));
     const blocked=editorBusy||!detailsReady;
@@ -337,13 +373,15 @@
     const version=selectionVersion;
     loading=(async()=>{
       try{
-        const [programRows,detailRows,docRows,memberRows]=await Promise.all([
+        const [programRows,detailRows,docRows,memberRows,financeRows]=await Promise.all([
           api()('agenda_programs?select=id,name,division,is_active&order=name.asc'),
           api()('cssmora_program_details?select=program_id,period_label,description,goals,target,planned_schedule,pic,budget_amount'),
           api()('cssmora_program_documents?select=*&order=updated_at.desc'),
-          api()('rpc/get_cssmora_program_document_members',{method:'POST',body:{}})
+          api()('rpc/get_cssmora_program_document_members',{method:'POST',body:{}}),
+          roles.includes('bendahara')?api()('cssmora_program_document_finance?select=document_id,confirmed_at').catch(()=>[]):[]
         ]);
         if(version!==selectionVersion||editorBusy||formDirty||subrecordsDirty)return;
+        financeConfirmedAt=new Map((financeRows||[]).map(row=>[row.document_id,row.confirmed_at]));
         programs=programRows||[];details=new Map((detailRows||[]).map(row=>[row.program_id,row]));documents=docRows||[];members=memberRows||[];
         const selection=current?.id;
         setSelectOptions($('#program-document-program'),programs,row=>`${row.name}${row.division?` · ${row.division}`:''}`,current?.program_id||'');
@@ -401,8 +439,9 @@
       akunpro_url:$('#lpj-akunpro').value.trim()||null,realization_note:$('#lpj-finance-note').value.trim()};
     if(!payload.akunpro_url)throw new Error('Tautan AkunPro wajib dicantumkan agar realisasi dapat diverifikasi.');
     const url=new URL(payload.akunpro_url);if(url.protocol!=='https:')throw new Error('Tautan AkunPro harus menggunakan HTTPS.');
-    await api()('cssmora_program_document_finance?on_conflict=document_id',{method:'POST',body:payload,extraHeaders:{Prefer:'resolution=merge-duplicates,return=minimal'}});
-    finance=payload;message('Verifikasi Bendahara tersimpan. Perbarui Google Docs agar angkanya ikut masuk sebelum tanda tangan Sekretaris.','success');renderActions();
+    const rows=await api()('cssmora_program_document_finance?on_conflict=document_id',{method:'POST',body:payload,extraHeaders:{Prefer:'resolution=merge-duplicates,return=representation'}});
+    finance=rows?.[0]||payload;
+    if(finance.confirmed_at)financeConfirmedAt.set(current.id,finance.confirmed_at);
   }
   function formPayload(){
     const type=selectedType(),programId=$('#program-document-program').value;
@@ -629,15 +668,53 @@
     });
   });
   $('#program-document-submit').addEventListener('click',()=>void submitDocument());
-  $('#program-document-finance-save').addEventListener('click',async event=>{
-    const button=event.currentTarget;button.disabled=true;message('Menyimpan verifikasi Bendahara…');
-    try{await saveFinance();}
-    catch(error){message(error.message||'Verifikasi keuangan gagal disimpan.','error');}
-    finally{renderActions();}
+  $('#program-document-finance-save').addEventListener('click',async()=>{
+    await runEditorTask(async()=>{
+      message('Menyimpan verifikasi Bendahara…');
+      try{await saveFinance();}
+      catch(error){message(error.message||'Verifikasi keuangan gagal disimpan.','error');return;}
+      message('Verifikasi tersimpan. Memperbarui Google Docs…');
+      try{
+        await assistant('create_doc');
+        message('Verifikasi tersimpan dan Google Docs diperbarui. Dokumen siap untuk tahap peninjauan.','success');
+      }catch(error){
+        renderDocumentTasks();
+        message('Verifikasi sudah tersimpan, tetapi Docs belum diperbarui. Gunakan Perbarui Google Docs untuk mencoba lagi. '+error.message,'error');
+      }
+    });
+  });
+  $('#program-document-task-list').addEventListener('click',event=>{
+    const button=event.target.closest('[data-task-document]');
+    if(button)selectDocument(button.dataset.taskDocument);
   });
   $('#program-document-review-actions').addEventListener('click',event=>{const sign=event.target.closest('[data-document-sign]');if(sign){void signDocument(sign.dataset.documentSign);return;}const button=event.target.closest('[data-document-review]');if(button)void reviewDocument(button.dataset.documentReview);});
   $('#program-document-list').addEventListener('click',event=>{const button=event.target.closest('[data-select-document]');if(button)selectDocument(button.dataset.selectDocument);});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#program-documents-panel').hidden)void load();});
-  window.CSSMoRAProgramDocuments={load};
+  async function openCycleLpj(cycle){
+    if(editorBusy||formDirty||subrecordsDirty)throw new Error('Simpan perubahan di Proposal & LPJ sebelum membuka proker lain.');
+    $('#tab-program-documents').click();
+    await load();
+    if(editorBusy||formDirty||subrecordsDirty)throw new Error('Simpan perubahan di Proposal & LPJ sebelum membuka proker lain.');
+    const match=documents.find(doc=>doc.document_type==='lpj'&&doc.program_id===cycle.program_id&&doc.period_label===cycle.period_label);
+    if(match){selectDocument(match.id);return;}
+    if(!programs.some(program=>program.id===cycle.program_id)){
+      message('Data proker belum dapat dimuat. Muat ulang daftar dokumen.','error');
+      return;
+    }
+    clearEditor();
+    $('#program-document-type').value='lpj';
+    $('#program-document-program').value=cycle.program_id;
+    prefillProgram(cycle.program_id);
+    $('#program-document-period').value=cycle.period_label;
+    $('#lpj-summary').value=cycle.lpj_summary||'';
+    $('#lpj-outcomes').value=cycle.output_summary||'';
+    $('#lpj-recommendations').value=(cycle.lesson_learned||'').slice(0,1600);
+    $('#program-document-start').value=cycle.period_start||'';
+    $('#program-document-end').value=cycle.period_end||'';
+    formDirty=true;
+    renderType();
+    message('Lengkapi dan simpan draf LPJ untuk proker ini.');
+  }
+  window.CSSMoRAProgramDocuments={load,openCycleLpj};
   renderType();
 })();
