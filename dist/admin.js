@@ -1150,6 +1150,38 @@ $('#member-csv').addEventListener('change',async event=>{
   finally{event.target.value='';}
 });
 
+async function loadAttendancePermissions(){
+  const list=$('#attendance-permission-rows');
+  const message='#attendance-permission-message';
+  showMessage(message,'Memuat pengajuan…');
+  try{
+    const rows=await api('secretariat_attendance_permissions?select=id,agenda_title,reason,secretariat_members(full_name,cohort)&order=created_at.desc&limit=100');
+    list.innerHTML=(rows||[]).map(row=>{
+      const member=row.secretariat_members;
+      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td><button class="text-button" type="button" data-permission-download="${escapeHTML(row.id)}">Unduh PDF</button></td></tr>`;
+    }).join('')||'<tr><td colspan="4" class="records-empty">Belum ada pengajuan izin.</td></tr>';
+    showMessage(message,'');
+  }catch(error){showMessage(message,error.message||'Pengajuan belum dapat dimuat.','error');}
+}
+$('#attendance-permissions').addEventListener('toggle',event=>{
+  if(event.currentTarget.open)void loadAttendancePermissions();
+});
+$('#attendance-permissions-refresh').addEventListener('click',()=>void loadAttendancePermissions());
+$('#attendance-permission-rows').addEventListener('click',async event=>{
+  const button=event.target.closest('[data-permission-download]');
+  if(!button)return;
+  const id=button.dataset.permissionDownload;
+  button.disabled=true;
+  try{
+    const result=await authenticatedFetch(`${config.url}/storage/v1/object/authenticated/attendance-permission-letters/${encodeURIComponent(id)}.pdf`,{cache:"no-store",headers:{apikey:config.publishableKey}});
+    if(!result.ok)throw new Error('Surat izin belum dapat diunduh.');
+    const url=URL.createObjectURL(await result.blob());
+    const anchor=document.createElement('a');
+    anchor.href=url;anchor.download='surat-izin.pdf';anchor.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(error){showMessage('#attendance-permission-message',error.message,'error');}
+  finally{button.disabled=false;}
+});
 async function loadAttendanceEvents(){
   attendanceEventList.innerHTML='<p class="records-empty">Memuat agenda…</p>';
   try{

@@ -13,6 +13,11 @@ let compressedPhoto = null;
 let photoPreviewUrl = null;
 const directToken = new URLSearchParams(location.search).get("t");
 let activeEvents = [];
+const modeSelect = $("#checkin-mode");
+const permissionMode = () => modeSelect.value === "permission";
+const eventKey = event => event?.public_token || event?.id || "";
+let modeVersion = 0;
+let submitting = false;
 let selectedEvent = null;
 let refreshTimer = null;
 let loadingOptions = false;
@@ -55,6 +60,8 @@ function resetMemberFields() {
   fillSelect(program, [], "Pilih prodi");
   fillSelect(member, [], "Pilih nama");
   resetPhoto();
+  $("#checkin-letter").value = "";
+  $("#checkin-reason").value = "";
 }
 function hideCheckin(message, kind = "") {
   form.hidden = true;
@@ -65,71 +72,107 @@ function hideCheckin(message, kind = "") {
 }
 async function loadRosterOptions(level, extra = {}) {
   if (!selectedEvent) return [];
-  const data = await request("GET", { mode: "options", level, token: selectedEvent.public_token, ...extra });
+  const source = permissionMode()
+    ? { mode: "permission-options", event_id: selectedEvent.id }
+    : { mode: "options", token: selectedEvent.public_token };
+  const data = await request("GET", { ...source, level, ...extra });
   return Array.isArray(data.items) ? data.items : [];
 }
 async function chooseEvent(token) {
-  selectedEvent = activeEvents.find(item => item.public_token === token) || null;
+  selectedEvent = activeEvents.find(item => eventKey(item) === token) || null;
   resetMemberFields();
   if (!selectedEvent) {
     hideCheckin("Pilih kegiatan aktif untuk melanjutkan.");
     return;
   }
-  $("#event-meta").textContent = selectedEvent.title + " · " + selectedEvent.event_date + " · " + (selectedEvent.session_name || "Umum") + " · WIB";
+  const version = modeVersion;
+  const requestId = rosterOptionsRequest;
+  $("#event-meta").textContent = permissionMode()
+    ? selectedEvent.title + " · " + new Intl.DateTimeFormat("id-ID", {dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Jakarta"}).format(new Date(selectedEvent.starts_at)) + " WIB"
+    : selectedEvent.title + " · " + selectedEvent.event_date + " · " + (selectedEvent.session_name || "Umum") + " · WIB";
   form.hidden = false;
   setMessage("Pilih angkatan, prodi, dan nama anggota.", "");
   try {
     const cohorts = await loadRosterOptions("cohorts");
-    if (!selectedEvent || selectedEvent.public_token !== token) return;
+    if (modeVersion !== version || rosterOptionsRequest !== requestId || eventKey(selectedEvent) !== token) return;
     fillSelect($("#checkin-cohort"), cohorts, "Pilih angkatan");
     $("#checkin-cohort").disabled = false;
     if (!cohorts.length) setMessage("Tidak ada anggota yang belum tercatat pada kegiatan ini.", "");
   } catch (error) {
-    setMessage(error.message, "error");
+    if (modeVersion === version && rosterOptionsRequest === requestId) setMessage(error.message, "error");
   }
 }
 function renderEventPicker(preferredToken) {
-  if (activeEvents.length > 1 && !directToken) {
+  if (activeEvents.length > 1 && (permissionMode() || !directToken)) {
     eventLabel.hidden = false;
     eventSelect.hidden = false;
-    fillSelect(eventSelect, activeEvents, "Pilih kegiatan aktif", event => event.public_token, event => event.title + (event.session_name ? " · " + event.session_name : ""));
-    const preferred = activeEvents.find(event => event.public_token === preferredToken);
-    if (preferred) eventSelect.value = preferred.public_token;
+    fillSelect(eventSelect, activeEvents, "Pilih kegiatan aktif", eventKey, event => event.title + (event.session_name ? " · " + event.session_name : ""));
+    const preferred = activeEvents.find(event => eventKey(event) === preferredToken);
+    if (preferred) eventSelect.value = eventKey(preferred);
   } else {
     eventLabel.hidden = true;
     eventSelect.hidden = true;
   }
 }
 async function refreshActiveEvents(silent = false) {
-  if (loadingOptions || !config?.url || !config?.publishableKey) return;
+  if (loadingOptions || submitting || !config?.url || !config?.publishableKey) return;
   loadingOptions = true;
+  const version = modeVersion;
+  const permission = permissionMode();
+  const token = permission ? "" : directToken;
   try {
-    const result = await request("GET", { mode: "active" });
+    const result = await request("GET", { mode: permission ? "permission-events" : "active" });
+    if (version !== modeVersion) return;
     const fresh = Array.isArray(result.events) ? result.events : [];
     activeEvents = fresh;
-    if (!fresh.length || (directToken && !fresh.some(event => event.public_token === directToken))) {
+    if (!fresh.length || (token && !fresh.some(event => eventKey(event) === token))) {
       selectedEvent = null;
       resetMemberFields();
-      hideCheckin(directToken ? "Kegiatan ini belum aktif atau sudah ditutup." : "Belum ada kegiatan absensi aktif. Absensi akan muncul setelah pengurus membuka kegiatan hari ini.");
+      hideCheckin(permission ? "Belum ada kegiatan yang dibuka untuk izin dalam tujuh hari ke depan." :
+        token ? "Kegiatan ini belum aktif atau sudah ditutup." : "Belum ada kegiatan absensi aktif. Absensi akan muncul setelah pengurus membuka kegiatan hari ini.");
       return;
     }
-    const currentToken = selectedEvent?.public_token || eventSelect.value;
-    const nextToken = directToken || (fresh.some(event => event.public_token === currentToken) ? currentToken : fresh.length === 1 ? fresh[0].public_token : "");
+    const currentToken = eventKey(selectedEvent) || eventSelect.value;
+    const nextToken = token || (fresh.some(event => eventKey(event) === currentToken) ? currentToken : fresh.length === 1 ? eventKey(fresh[0]) : "");
     renderEventPicker(nextToken);
     if (nextToken) {
-      if (selectedEvent?.public_token !== nextToken) await chooseEvent(nextToken);
+      if (eventKey(selectedEvent) !== nextToken) await chooseEvent(nextToken);
     } else {
       selectedEvent = null;
       resetMemberFields();
       form.hidden = true;
-      setMessage("Pilih kegiatan aktif untuk mulai absen.", "");
+      setMessage(permission ? "Pilih kegiatan untuk mengajukan izin." : "Pilih kegiatan aktif untuk mulai absen.");
     }
   } catch (error) {
-    if (!silent || !activeEvents.length) hideCheckin(error.message, "error");
+    if (version === modeVersion && (permission || !silent || !activeEvents.length)) {
+      selectedEvent = null;
+      resetMemberFields();
+      hideCheckin(error.message, "error");
+    }
   } finally {
-    loadingOptions = false;
+    if (version === modeVersion) loadingOptions = false;
   }
 }
+
+modeSelect.addEventListener("change", () => {
+  modeVersion++;
+  loadingOptions = false;
+  activeEvents = [];
+  selectedEvent = null;
+  eventSelect.value = "";
+  resetMemberFields();
+  const permission = permissionMode();
+  $("#checkin-photo-fields").hidden = permission;
+  photoInput.disabled = permission;
+  $("#checkin-permission-fields").hidden = !permission;
+  $("#checkin-letter").disabled = !permission;
+  $("#checkin-reason").disabled = !permission;
+  $("#checkin-submit-label").textContent = permission ? "Kirim pengajuan izin" : "Catat kehadiran";
+  $("#event-picker-label").textContent = permission ? "Kegiatan yang menerima izin" : "Kegiatan aktif";
+  $("#checkin-footnote").textContent = permission ? "Izin dibuka mulai tujuh hari sebelum acara dan ditutup saat acara dimulai (WIB)." : "Foto hanya bisa dikirim saat kegiatan dibuka.";
+  hideCheckin("Memeriksa kegiatan…");
+  void refreshActiveEvents();
+});
 eventSelect.addEventListener("change", () => { void chooseEvent(eventSelect.value); });
 $("#checkin-cohort").addEventListener("change", async event => {
   const requestId = ++rosterOptionsRequest;
@@ -216,6 +259,8 @@ async function compressPhoto(file) {
 }
 photoInput.addEventListener("change", async () => {
   const file = photoInput.files?.[0];
+  const version = modeVersion;
+  const token = eventKey(selectedEvent);
   compressedPhoto = null;
   if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
   photoPreviewUrl = null;
@@ -226,22 +271,52 @@ photoInput.addEventListener("change", async () => {
   setMessage("Mengompres foto di perangkat…");
   photoInput.disabled = true;
   try {
-    compressedPhoto = await compressPhoto(file);
+    const photo = await compressPhoto(file);
+    if (version !== modeVersion || token !== eventKey(selectedEvent)) return;
+    compressedPhoto = photo;
     photoPreviewUrl = URL.createObjectURL(compressedPhoto);
     photoPreviewImage.src = photoPreviewUrl;
     photoSize.textContent = "Siap diunggah · " + Math.max(1, Math.round(compressedPhoto.size / 1024)) + " KB";
     photoPreview.hidden = false;
     setMessage("Foto siap. Lanjutkan untuk mencatat kehadiran.", "success");
   } catch (error) {
+    if (version !== modeVersion || token !== eventKey(selectedEvent)) return;
     resetPhoto();
     setMessage(error.message, "error");
   } finally {
-    photoInput.disabled = false;
+    photoInput.disabled = permissionMode();
   }
 });
 form.addEventListener("submit", async event => {
   event.preventDefault();
-  if (!selectedEvent || !compressedPhoto) {
+  if (submitting || !selectedEvent) return;
+  if (permissionMode()) {
+    const button = $("#checkin-submit");
+    const file = $("#checkin-letter").files?.[0];
+    if (!file || file.size > 2 * 1024 * 1024) {
+      setMessage("Pilih surat izin PDF maksimal 2 MB.", "error");
+      return;
+    }
+    submitting = true;
+    modeSelect.disabled = eventSelect.disabled = button.disabled = true;
+    try {
+      setMessage("Mengunggah surat izin…");
+      const response = await window.cssmoraFetch(apiUrl({mode:"permission-submit", event_id:selectedEvent.id}), {
+        method:"POST", headers:{apikey:config.publishableKey}, body:new FormData(form)
+      }, 30000);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Izin belum dapat disimpan.");
+      form.hidden = true;
+      resetMemberFields();
+      setMessage(result.message, "success");
+    } catch (error) { setMessage(error.message, "error"); }
+    finally {
+      submitting = false;
+      modeSelect.disabled = eventSelect.disabled = button.disabled = false;
+    }
+    return;
+  }
+  if (!compressedPhoto) {
     setMessage("Pilih foto bukti terlebih dahulu.", "error");
     return;
   }
@@ -249,7 +324,8 @@ form.addEventListener("submit", async event => {
   const studyProgram = $("#checkin-program").value;
   const memberId = $("#checkin-member").value;
   const button = $("#checkin-submit");
-  button.disabled = true;
+  submitting = true;
+  modeSelect.disabled = eventSelect.disabled = button.disabled = true;
   try {
     setMessage("Menyiapkan unggahan foto…");
     const upload = await request("POST", { token: selectedEvent.public_token }, {
@@ -278,7 +354,8 @@ form.addEventListener("submit", async event => {
   } catch (error) {
     setMessage(error.message, "error");
   } finally {
-    button.disabled = false;
+    submitting = false;
+    modeSelect.disabled = eventSelect.disabled = button.disabled = false;
   }
 });
 window.addEventListener("beforeunload", () => { if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl); });

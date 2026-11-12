@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261111-incoming-letter-ai" defer></script>
+  <script src="./admin.js?v=20261112-attendance-permissions" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261029-v5" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -432,6 +432,16 @@
             <div class="table-toolbar"><input class="table-search" id="attendance-recap-filter" type="search" placeholder="Cari nama atau NIA" aria-label="Cari anggota pada rekap kehadiran"></div>
             <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Hadir</th><th>Agenda selesai</th><th>Persentase</th></tr></thead><tbody id="attendance-recap"><tr><td colspan="5" class="records-empty">Memuat rekap…</td></tr></tbody></table></div>
           </section>
+          <details class="records-card" id="attendance-permissions">
+            <summary>Pengajuan izin anggota</summary>
+            <p class="admin-muted">Tinjau alasan dan surat, lalu catat status izin melalui daftar hadir kegiatan.</p>
+            <button id="attendance-permissions-refresh" class="text-button" type="button">Muat ulang pengajuan</button>
+            <div class="secretariat-table-wrap"><table class="secretariat-table">
+              <thead><tr><th>Kegiatan</th><th>Anggota</th><th>Alasan</th><th>Surat</th></tr></thead>
+              <tbody id="attendance-permission-rows"></tbody>
+            </table></div>
+            <p class="form-message" id="attendance-permission-message" role="status"></p>
+          </details>
           <p class="form-message" id="event-message" role="status" aria-live="polite"></p>
           <section class="records-card attendance-roster-panel" id="attendance-roster-panel" hidden aria-labelledby="attendance-roster-title">
             <div class="editor-heading"><div><span class="admin-kicker">REKAP KEGIATAN</span><h3 id="attendance-roster-title">Daftar hadir</h3><p class="admin-muted" id="attendance-event-meta"></p></div><div class="attendance-actions"><button class="text-button" id="attendance-export" type="button">Ekspor CSV</button><button class="admin-button attendance-save" id="attendance-save" type="button">Simpan status</button></div></div>
