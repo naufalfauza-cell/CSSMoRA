@@ -1,3 +1,12 @@
+export const secretaryTemplateNia = "C0924011";
+
+const secretarySignatureTemplates = new Set(["pinjam", "izin", "wisuda", "pengantar-lpj", "pengantar-proposal"]);
+
+export function secretaryIdentityReplacement(kind: "NIM" | "NIA", secretary: {nim?: string | null; nia?: string | null}) {
+  const number = (kind === "NIM" ? secretary.nim : secretary.nia)?.trim();
+  return number ? ["NIM/NIA. " + secretaryTemplateNia, kind + ". " + number] : null;
+}
+
 const invitationFields = "nama_kegiatan instansi_penerima hari_tanggal_kegiatan waktu_kegiatan tempat_kegiatan sapaan_penerima nama_ketua_pelaksana identitas_ketua_pelaksana nama_sekretaris_pelaksana identitas_sekretaris_pelaksana";
 
 export const letterTemplates = [
@@ -20,9 +29,14 @@ export const letterTemplates = [
 ].map(template => ({
   ...template,
   minimumAttachments: template.appendix ? 1 : 0,
+  hasSecretarySignature: secretarySignatureTemplates.has(template.key),
   identityFields: template.fields.split(" ").filter(field => field.startsWith("identitas_")),
   fields: template.fields.split(" "),
 }));
+
+export function letterIdentityKind(scope: "i" | "e"): "NIM" | "NIA" {
+  return scope === "i" ? "NIM" : "NIA";
+}
 
 export function normalizeLetterIdentity(value: string, kind: "NIM" | "NIA") {
   const prefix = value.match(/^(NIM|NIA)(?=[\s.:0-9]|$)[\s.:]*/i);
