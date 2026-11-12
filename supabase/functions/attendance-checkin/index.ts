@@ -389,8 +389,8 @@ async function getRosterMembers(supabaseUrl: string, headers: Record<string, str
   if (!memberResponse.ok) throw new Error("Data anggota belum dapat dimuat.");
   return await memberResponse.json();
 }
-async function rosterOptions(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, event: Record<string, unknown>) {
-  if (event.event_date !== todayJakarta()) return json({ error: "Absensi hanya tersedia pada tanggal kegiatan." }, 403);
+async function rosterOptions(request: Request, url: URL, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, event: Record<string, unknown>, permission = false) {
+  if (!permission && event.event_date !== todayJakarta()) return json({ error: "Absensi hanya tersedia pada tanggal kegiatan." }, 403);
   const windowStart = new Date(Math.floor(Date.now() / 30000) * 30000).toISOString();
   const ipHash = toHex(await hmacBytes(serviceKey, "cssmora-ip:" + requestIp(request)));
   let attempts: number;
@@ -429,6 +429,80 @@ async function rosterOptions(request: Request, url: URL, supabaseUrl: string, se
   return json({ error: "Pilihan angkatan, prodi, atau nama belum lengkap." }, 400);
 }
 
+const permissionLetterBucket = "attendance-permission-letters";
+const maxPermissionPdfBytes = 2 * 1024 * 1024;
+const permissionWindowMs = 7 * 24 * 60 * 60 * 1000;
+
+async function getPermissionEvents(supabaseUrl: string, headers: Record<string, string>, eventId?: string) {
+  const now = Date.now();
+  const query = new URLSearchParams({
+    select: "id,agenda!inner(id,title,starts_at)",
+    "agenda.status": "eq.published",
+    "agenda.starts_at": "gt." + new Date(now).toISOString(),
+  });
+  query.append("agenda.starts_at", "lte." + new Date(now + permissionWindowMs).toISOString());
+  if (eventId) query.set("id", "eq." + eventId);
+  const response = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_events?" + query, { headers });
+  if (!response.ok) throw new Error("Agenda izin belum dapat dimuat.");
+  const rows = await response.json();
+  return rows.map((row: { id: string; agenda: { id: string; title: string; starts_at: string } }) =>
+    ({ id: row.id, agenda_id: row.agenda.id, title: row.agenda.title, starts_at: row.agenda.starts_at }))
+    .sort((a: { starts_at: string }, b: { starts_at: string }) => Date.parse(a.starts_at) - Date.parse(b.starts_at));
+}
+
+async function submitPermission(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, storage: FileStorageProvider, event: { id: string; agenda_id: string }) {
+  if (Number(request.headers.get("content-length")) > maxPermissionPdfBytes + 16384) {
+    return json({ error: "Surat izin PDF maksimal 2 MB." }, 413);
+  }
+  const form = await request.formData().catch(() => null);
+  const file = form?.get("letter");
+  const reason = String(form?.get("reason") ?? "").trim();
+  if (!reason || reason.length > 1000) return json({ error: "Isi alasan izin, maksimal 1.000 karakter." }, 400);
+  if (!(file instanceof File) || !file.size || file.size > maxPermissionPdfBytes ||
+      !file.name.toLowerCase().endsWith(".pdf") || (file.type && file.type !== "application/pdf") ||
+      await file.slice(0, 5).text() !== "%PDF-") return json({ error: "Unggah surat izin PDF yang valid, maksimal 2 MB." }, 400);
+
+  const windowStart = new Date(Math.floor(Date.now() / 30000) * 30000).toISOString();
+  const ipHash = toHex(await hmacBytes(serviceKey, "cssmora-ip:" + requestIp(request)));
+  if (await recordAttempt(supabaseUrl, headers, event.id, "permission-ip:" + ipHash, windowStart) > 40) {
+    return json({ error: "Terlalu banyak permintaan. Tunggu 30 detik lalu coba lagi." }, 429);
+  }
+
+  const memberId = String(form?.get("member_id") ?? "");
+  const validated = await validateAttendanceMember(supabaseUrl, headers, event.id, {
+    member_id: memberId, cohort: form?.get("cohort"), study_program: form?.get("study_program"),
+  });
+  if (!validated.member) return json({ error: validated.error }, validated.status || 400);
+  const existingQuery = new URLSearchParams({ select: "id", agenda_id: "eq." + event.agenda_id, member_id: "eq." + memberId, limit: "1" });
+  const existing = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_permissions?" + existingQuery, { headers });
+  if (!existing.ok) return json({ error: "Status pengajuan izin belum dapat diperiksa." }, 503);
+  if ((await existing.json()).length) return json({ error: "Izin untuk anggota ini sudah tercatat pada kegiatan tersebut." }, 409);
+
+  const id = crypto.randomUUID();
+  const path = id + ".pdf";
+  const uploaded = await fetch(supabaseUrl + "/storage/v1/object/" + permissionLetterBucket + "/" + path, {
+    method: "POST", headers: { ...headers, "Content-Type": "application/pdf", "x-upsert": "false" }, body: file,
+  });
+  if (!uploaded.ok) return json({ error: "Surat izin belum berhasil diunggah." }, 502);
+
+  const saved = await fetch(supabaseUrl + "/rest/v1/rpc/record_cssmora_attendance_permission", {
+    method: "POST", headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_id: id, p_event_id: event.id, p_member_id: memberId, p_reason: reason }),
+  }).catch(() => null);
+  const result = await saved?.json().catch(() => null);
+  if (saved?.ok && result === true) return json({ message: "Pengajuan izin tersimpan dan dapat diperiksa pengurus." }, 201);
+  if (result === false || result?.code === "23505") {
+    await storage.removeMany(permissionLetterBucket, [path]).catch(() => {});
+    return json({ error: result === false ? "Waktu izin sudah tutup atau roster kegiatan berubah." : "Izin untuk kegiatan ini sudah tercatat." }, 409);
+  }
+  // An uncertain commit can still succeed. Keep the private file unless the insert was definitively rejected.
+  const readback = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_permissions?select=id&id=eq." + id, { headers }).catch(() => null);
+  if (readback?.ok) {
+    if ((await readback.json()).length) return json({ message: "Pengajuan izin tersimpan dan dapat diperiksa pengurus." }, 201);
+  }
+  return json({ error: "Izin belum dapat dikonfirmasi. Coba lagi sebentar." }, 503);
+}
+
 async function handleRequest(request: Request) {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "GET" && request.method !== "POST") return json({ error: "Metode tidak didukung." }, 405);
@@ -439,6 +513,16 @@ async function handleRequest(request: Request) {
   const headers = { apikey: serviceKey, Authorization: "Bearer " + serviceKey };
   const storage = createStorageProvider({ baseUrl: supabaseUrl, apiKey: serviceKey });
   const mode = url.searchParams.get("mode") ?? "";
+  if (request.method === "GET" && mode === "permission-events") return json({ events: await getPermissionEvents(supabaseUrl, headers) });
+  if ((request.method === "GET" && mode === "permission-options") ||
+      (request.method === "POST" && mode === "permission-submit")) {
+    const eventId = url.searchParams.get("event_id") ?? "";
+    if (!isUuid(eventId)) return json({ error: "Kegiatan izin tidak valid." }, 400);
+    const [event] = await getPermissionEvents(supabaseUrl, headers, eventId);
+    if (!event) return json({ error: "Izin belum dibuka atau kegiatan sudah dimulai." }, 403);
+    if (mode === "permission-options") return rosterOptions(request, url, supabaseUrl, serviceKey, headers, event, true);
+    return submitPermission(request, supabaseUrl, serviceKey, headers, storage, event);
+  }
   if (request.method === "GET" && mode === "active") return getActiveEvents(supabaseUrl, headers);
   if (request.method === "GET" && mode === "proof-url") return adminProofUrl(request, url, supabaseUrl, serviceKey, headers, storage);
   if (request.method === "POST" && mode === "cleanup") return cleanExpiredAttendancePhotos(request, supabaseUrl, serviceKey, headers, storage);
@@ -496,7 +580,7 @@ const allowedOrigin = (origin: string | null) => {
 Deno.serve(async (request: Request)=>{
   const origin=request.headers.get("Origin");
   if(!allowedOrigin(origin))return new Response(JSON.stringify({error:"Asal permintaan tidak diizinkan."}),{status:403,headers:{"Content-Type":"application/json"}});
-  const response=await handleRequest(request);
+  const response=await handleRequest(request).catch(()=>json({error:"Layanan absensi belum dapat merespons. Coba lagi."},503));
   const headers=new Headers(response.headers);
   if(origin)headers.set("Access-Control-Allow-Origin",origin);
   headers.set("Vary","Origin");

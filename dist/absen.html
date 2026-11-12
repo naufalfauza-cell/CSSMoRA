@@ -8,9 +8,9 @@
   <title>Absensi Anggota · CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png?v=20261023-perf-assets">
   <link rel="stylesheet" href="./style.css?v=20261103-transparent-partners-v2">
-  <link rel="stylesheet" href="./absen.css?v=20261021-photo24h">
+  <link rel="stylesheet" href="./absen.css?v=20261112-perizinan">
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
-  <script src="./absen.js?v=20261023-performance-v1" defer></script>
+  <script src="./absen.js?v=20261112-perizinan" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261103-secondary-pages-v1">
   <link rel="stylesheet" href="./wallet-theme.css?v=20261103-mobile-nav-scroll-video-v1">
 </head>
@@ -28,6 +28,8 @@
       <span class="flow-emblem" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4v5c0 4.6-5 7.6-8 9-3-1.4-8-4.4-8-9V7l8-4Z"/><path d="m8.5 12 2.3 2.3 4.7-4.8"/></svg></span>
       <span class="admin-kicker">CSSMoRA UNAIR</span>
       <h1 id="checkin-title">Absensi anggota</h1>
+      <label for="checkin-mode">Jenis pengisian</label>
+      <select id="checkin-mode"><option value="attendance">Hadir</option><option value="permission">Izin</option></select>
       <p id="event-meta" class="checkin-meta"></p>
       <label id="event-picker-label" for="event-select" hidden>Kegiatan aktif</label>
       <select id="event-select" hidden aria-label="Pilih kegiatan aktif"></select>
@@ -39,6 +41,7 @@
         <select id="checkin-program" name="study_program" required disabled><option value="">Pilih prodi</option></select>
         <label for="checkin-member">Nama</label>
         <select id="checkin-member" name="member_id" required disabled><option value="">Pilih nama</option></select>
+        <div id="checkin-photo-fields">
         <label for="checkin-photo">Foto bukti kehadiran</label>
         <input id="checkin-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required aria-describedby="checkin-photo-hint">
         <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat, maksimal 500 KB.</small>
@@ -46,9 +49,17 @@
           <img id="photo-preview-image" alt="Pratinjau foto bukti kehadiran">
           <span id="photo-size"></span>
         </div>
-        <button class="admin-button" id="checkin-submit" type="submit">Catat kehadiran <span aria-hidden="true">↗</span></button>
+        </div>
+        <div id="checkin-permission-fields" hidden>
+          <label for="checkin-reason">Alasan izin</label>
+          <textarea id="checkin-reason" name="reason" rows="3" maxlength="1000" required disabled></textarea>
+          <label for="checkin-letter">Surat izin (PDF, maksimal 2 MB)</label>
+          <input id="checkin-letter" name="letter" type="file" accept="application/pdf,.pdf" required disabled>
+          <p class="checkin-photo-hint"><a href="./template-surat-izin.rtf" download>Unduh template surat izin</a>. Isi, tanda tangani, lalu simpan sebagai PDF.</p>
+        </div>
+        <button class="admin-button" id="checkin-submit" type="submit"><span id="checkin-submit-label">Catat kehadiran</span> <span aria-hidden="true">↗</span></button>
       </form>
-      <p class="checkin-footnote">Foto hanya bisa dikirim saat kegiatan dibuka.</p>
+      <p class="checkin-footnote" id="checkin-footnote">Foto hanya bisa dikirim saat kegiatan dibuka.</p>
     </section>
   </main>
 

@@ -29,3 +29,6 @@
 .checkin-photo-preview img{width:72px;height:72px;border-radius:8px;object-fit:cover}
 .checkin-photo-preview span{color:var(--muted);font-size:.75rem;font-weight:700}
 .checkin-photo-preview[hidden]{display:none!important}
+
+#checkin-permission-fields textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit;resize:vertical}
+#checkin-permission-fields textarea:focus{outline:2px solid var(--green);outline-offset:1px}
