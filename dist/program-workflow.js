@@ -15,9 +15,10 @@
   const showMessage = (message,kind='') => { const node=$('#program-cycle-message');node.textContent=message;node.dataset.kind=kind; };
   let programs=[];
   let cycles=[];
-  let officialLpj=[];
+  let officialDocuments=[];
   let officialLpjAvailable=true;
-  const officialLpjFor=cycle=>officialLpj.find(doc=>doc.program_id===cycle.program_id&&doc.period_label===cycle.period_label);
+  const officialDocumentFor=(cycle,type)=>officialDocuments.find(doc=>doc.document_type===type&&doc.program_id===cycle.program_id&&doc.period_label===cycle.period_label);
+  const officialLpjFor=cycle=>officialDocumentFor(cycle,'lpj');
   const officialLpjLabel=doc=>({draft:'Draf',revision:'Perlu revisi',secretary_review:'Peninjauan Sekretaris',treasurer_review:'Verifikasi Bendahara',chair_review:'Peninjauan Ketua',approved:'Disetujui'})[doc?.status]||'—';
 
   let milestones=[];
@@ -91,15 +92,27 @@
   }
   function renderActions() {
     const node=$('#program-cycle-actions');
-    node.hidden=!currentCycle;
-    if(!currentCycle){node.innerHTML='';return;}
+    const proposalNode=$('#program-cycle-proposal');
+    const lpjNode=$('#program-cycle-lpj');
+    node.innerHTML='';
+    node.hidden=true;
+    if(!currentCycle){
+      proposalNode.textContent='Simpan monitoring untuk mulai membuat proposal.';
+      lpjNode.textContent='Simpan monitoring untuk membuka LPJ setelah kegiatan.';
+      return;
+    }
     const {isLeadership}=context();
+    const proposal=officialDocumentFor(currentCycle,'proposal');
     const official=officialLpjFor(currentCycle);
+    const end=proposal?.period_end||proposal?.period_start||currentCycle.period_end;
+    const canCreateLpj=officialLpjAvailable&&Boolean(end&&end<todayWib());
+    proposalNode.innerHTML=proposal||currentCycle.prep_document_url?'<button type="button" class="member-option-button" data-cycle-open-proposal>'+ (proposal?'Buka proposal':'Buat proposal')+'</button>':'<p class="admin-muted">Buat atau simpan tautan lembar kerja terlebih dahulu.</p>';
+    const label=official?officialLpjLabel(official):'Belum dibuat';
+    lpjNode.innerHTML='<p class="admin-muted">LPJ resmi · '+escape(officialLpjAvailable?label:'Status belum dapat dimuat')+'</p>'+
+      (official||canCreateLpj?'<button type="button" class="member-option-button" data-cycle-open-lpj>'+(official?'Buka LPJ':'Buat LPJ')+'</button>':'<p class="admin-muted">LPJ baru tersedia mulai sehari setelah tanggal akhir kegiatan. Isi tanggal pada proposal atau akhir periode siklus.</p>');
     if(currentCycle.status==='lpj_review'&&isLeadership){
+      node.hidden=false;
       node.innerHTML='<label for="program-cycle-review-note">Catatan peninjauan (wajib jika meminta revisi)</label><textarea id="program-cycle-review-note" rows="2" maxlength="2000" placeholder="Catatan untuk pengurus proker"></textarea><div class="program-review-buttons"><button type="button" class="member-option-button" data-cycle-review="revision_requested">Minta revisi</button><button type="button" class="admin-button" data-cycle-review="approved">Setujui LPJ <span aria-hidden="true">✓</span></button></div>';
-    } else {
-      const label=official?officialLpjLabel(official):'Belum ada LPJ yang dapat dibuka dari akun ini';
-      node.innerHTML=`<p class="admin-muted">LPJ resmi · ${escape(officialLpjAvailable?label:'Status belum dapat dimuat')}</p><button type="button" class="member-option-button" data-cycle-open-lpj>${official?'Buka LPJ':'Buka Proposal &amp; LPJ'}</button>`;
     }
     const save=$('#save-program-cycle');
     save.disabled=['lpj_review','completed'].includes(currentCycle.status);
@@ -156,7 +169,7 @@
       $('#program-cycle-recap').hidden=true;$('#program-cycle-history').hidden=true;
       $('#program-milestone-list').innerHTML='<p class="records-empty">Pilih siklus untuk mengelola tahapan.</p>';
       $('#program-cycle-progress').textContent='Progres 0% · 0 dari 0 tahapan selesai';
-      $('#save-program-cycle').disabled=false;showMessage('');return;
+      $('#save-program-cycle').disabled=false;renderActions();showMessage('');return;
     }
     $('#program-cycle-id').value=currentCycle.id;
     $('#program-cycle-program').value=currentCycle.program_id;
@@ -213,11 +226,11 @@
           api()('agenda_programs?select=id,name,division,is_active&order=name.asc'),
           api()('cssmora_program_cycles?select=*&order=updated_at.desc'),
           api()('cssmora_program_details?select=program_id,period_label&order=updated_at.desc'),
-          api()('cssmora_program_documents?select=id,program_id,period_label,status&document_type=eq.lpj').catch(()=>null)
+          api()('cssmora_program_documents?select=id,program_id,period_label,status,document_type,period_start,period_end&order=updated_at.desc').catch(()=>null)
         ]);
         programs=programRows||[];cycles=cycleRows||[];
         officialLpjAvailable=Array.isArray(lpjRows);
-        officialLpj=lpjRows||[];
+        officialDocuments=lpjRows||[];
         programPeriods=new Map();for(const row of detailRows||[])if(row.period_label&&!programPeriods.has(row.program_id))programPeriods.set(row.program_id,row.period_label);
         renderProgramSelect(currentCycle?.program_id||'');
         const cycleIds=cycles.map(row=>row.id);
@@ -301,6 +314,7 @@
       cycles = cycles.map(cycle => cycle.id === cycleId ? update(cycle) : cycle);
       if (currentCycle?.id !== cycleId) return;
       currentCycle = update(currentCycle);
+      renderActions();
       const form = $('#program-cycle-form');
       for (const [field, url] of Object.entries(result.links)) {
         if (!form.elements[field].value.trim()) form.elements[field].value = url;
@@ -354,8 +368,8 @@
       await load({selectedId:currentCycle?.id});
     }catch(error){showMessage(error.message||'Perubahan tahapan gagal.','error');button.disabled=false;}
   });
-  $('#program-cycle-actions').addEventListener('click',async event=>{
-    const open=event.target.closest('[data-cycle-open-lpj]');
+  $('#program-cycle-form').addEventListener('click',async event=>{
+    const open=event.target.closest('[data-cycle-open-lpj],[data-cycle-open-proposal]');
     const review=event.target.closest('[data-cycle-review]');
     if(open&&currentCycle){
       const cycle=currentCycle;
@@ -363,7 +377,8 @@
       try{
         const editor=window.CSSMoRAProgramDocuments;
         if(!editor)throw new Error('Menu Proposal & LPJ belum tersedia.');
-        await editor.openCycleLpj(cycle);
+        if(open.hasAttribute('data-cycle-open-proposal'))await editor.openCycleProposal(cycle);
+        else await editor.openCycleLpj(cycle);
       }catch(error){showMessage(error.message,'error');}
       finally{open.disabled=false;}
       return;
@@ -387,6 +402,13 @@
     const blob=new Blob([html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`LPJ-${String(program.name||'proker').replace(/[^a-z0-9-]+/gi,'-')}-${currentCycle.period_label.replace(/[^a-z0-9-]+/gi,'-')}.html`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   downloadButton.addEventListener('click',downloadLpj);
-  window.CSSMoRAProgramWorkflow={load};
+  window.CSSMoRAProgramWorkflow={
+    load,
+    updateDocument(doc){
+      officialDocuments=[doc,...officialDocuments.filter(row=>row.id!==doc.id)];
+      renderActions();
+      renderCycles();
+    }
+  };
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('#program-workflow-panel')&&!$('#program-workflow-panel').hidden)void load();});
 })();

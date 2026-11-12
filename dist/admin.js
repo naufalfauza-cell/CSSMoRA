@@ -688,8 +688,10 @@ document.querySelectorAll('.agenda-admin-tab').forEach(tab=>tab.addEventListener
     panel.hidden=panel.id!==tab.getAttribute('aria-controls');
   });
   $('#dashboard-title').textContent='Kegiatan · '+tab.textContent.replace(/^\d+\s*·\s*/,'').trim();
-  if(tab.id==='tab-program-workflow')void window.CSSMoRAProgramWorkflow?.load();
-  if(tab.id==='tab-program-documents')void window.CSSMoRAProgramDocuments?.load();
+  if(tab.id==='tab-program-workflow'){
+    void window.CSSMoRAProgramWorkflow?.load();
+    void window.CSSMoRAProgramDocuments?.load();
+  }
 }));
 document.querySelector('[data-open-schedule]').addEventListener('click',()=>$('#tab-schedule').click());
 

@@ -10,6 +10,7 @@
   const activeBucket='cssmora-program-documentation';
   let programs=[],details=new Map(),members=[],documents=[],current=null,budget=[],committee=[],rundown=[],photos=[],pendingPhotos=[],finance={},subrecordsDirty=false,formDirty=false;
   let loading=null;
+  let draftCycle=null;
   let financeConfirmedAt=new Map();
   let editorBusy=false, detailsReady=true, selectionVersion=0;
 
@@ -95,7 +96,7 @@
   function message(text,kind='') { const node=$('#program-document-message');node.textContent=text;node.dataset.kind=kind; }
   function financeReviewer(){const roles=context().roles||[];return roles.includes('bendahara')||roles.includes('ketua')||roles.includes('wakil');}
   function mayReview(stage){const roles=context().roles||[];return stage==='sekretaris'?roles.includes('sekretaris'):stage==='bendahara'?roles.includes('bendahara'):roles.includes('ketua')||roles.includes('wakil');}
-  function isEditable(){return !current||(['draft','revision'].includes(current.status)&&current.created_by===context().userId);}
+  function isEditable(){return current?(['draft','revision'].includes(current.status)&&current.created_by===context().userId):Boolean(draftCycle);}
   function setSelectOptions(select,rows,label,selected=''){
     select.innerHTML='<option value="">Pilih…</option>'+rows.map(row=>`<option value="${esc(row.id)}">${esc(label(row))}</option>`).join('');
     if(selected)select.value=selected;
@@ -247,9 +248,9 @@
     submitButton.title=submitReady?'Mengajukan Google Docs yang sudah dibuat tanpa membuat ulang isinya.':'Buat atau perbarui Google Docs, lalu ajukan dokumen tersebut.';
     document.querySelectorAll('.program-document-fields').forEach(section=>section.querySelectorAll('input,textarea,select').forEach(field=>field.disabled=!editable||section.hidden));
     renderArchive();
-    $('#program-document-type').disabled=!editable||Boolean(current);
-    $('#program-document-program').disabled=!editable||Boolean(current);
-    $('#program-document-period').disabled=!editable||Boolean(current);
+    $('#program-document-type').disabled=true;
+    $('#program-document-program').disabled=true;
+    $('#program-document-period').readOnly=true;
     $('#program-document-title').disabled=!editable;
     $('#program-document-start').disabled=!editable;
     $('#program-document-end').disabled=!editable;
@@ -301,9 +302,10 @@
     $('#program-document-form').inert=false;
     editorVersion++;
     archiveMessage('');
+    draftCycle=null;
     current=null;budget=[];committee=[];rundown=[];photos=[];pendingPhotos.forEach(item=>URL.revokeObjectURL(item.preview));pendingPhotos=[];finance={};subrecordsDirty=false;formDirty=false;
     $('#program-document-form').reset();$('#program-document-id').value='';$('#program-document-type').value='proposal';
-    $('#program-document-editor-title').textContent='Mulai proposal atau LPJ';
+    $('#program-document-editor-title').textContent='Pilih proposal atau LPJ dari siklus proker';
     $('#program-document-finance-message').textContent='';
     renderType();renderCommittee();renderRundown();renderBudget();renderPhotos();renderDocumentList();message('');
     renderAiPreview();
@@ -338,7 +340,9 @@
     if(editorBusy)return;
     const selected=documents.find(row=>row.id===id);
     if(!selected)return;
+    draftCycle=null;
     current=selected;
+    window.CSSMoRAProgramWorkflow?.updateDocument(current);
     const version=++selectionVersion;
     detailsReady=false;
     $('#program-document-form').inert=true;
@@ -481,7 +485,9 @@
     renderAiPreview();
     await saveSubrecords();
     formDirty=false;
-    documents=[current,...documents.filter(doc=>doc.id!==current.id)];renderDocumentList();renderActions();
+    documents=[current,...documents.filter(doc=>doc.id!==current.id)];
+    window.CSSMoRAProgramWorkflow?.updateDocument(current);
+    renderDocumentList();renderActions();
     return current;
   }
   async function assistant(action){
@@ -575,7 +581,10 @@
     finally{button.disabled=false;}
   });
   document.querySelectorAll('.program-document-options input').forEach(input=>input.addEventListener('change',()=>{formDirty=true;renderType();}));
-  $('#program-document-reset').addEventListener('click',clearEditor);
+  $('#program-document-reset').addEventListener('click',()=>{
+    if((formDirty||subrecordsDirty)&&!window.confirm('Tutup editor dan buang perubahan yang belum disimpan?'))return;
+    clearEditor();
+  });
   $('#program-documents-refresh').addEventListener('click',()=>void load());
   $('#program-document-form').addEventListener('submit',async event=>{
     event.preventDefault();
@@ -689,32 +698,44 @@
   });
   $('#program-document-review-actions').addEventListener('click',event=>{const sign=event.target.closest('[data-document-sign]');if(sign){void signDocument(sign.dataset.documentSign);return;}const button=event.target.closest('[data-document-review]');if(button)void reviewDocument(button.dataset.documentReview);});
   $('#program-document-list').addEventListener('click',event=>{const button=event.target.closest('[data-select-document]');if(button)selectDocument(button.dataset.selectDocument);});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#program-documents-panel').hidden)void load();});
-  async function openCycleLpj(cycle){
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#program-workflow-panel').hidden)void load();});
+  async function openCycleDocument(cycle,type){
     if(editorBusy||formDirty||subrecordsDirty)throw new Error('Simpan perubahan di Proposal & LPJ sebelum membuka proker lain.');
-    $('#tab-program-documents').click();
     await load();
     if(editorBusy||formDirty||subrecordsDirty)throw new Error('Simpan perubahan di Proposal & LPJ sebelum membuka proker lain.');
-    const match=documents.find(doc=>doc.document_type==='lpj'&&doc.program_id===cycle.program_id&&doc.period_label===cycle.period_label);
-    if(match){selectDocument(match.id);return;}
+    const match=documents.find(doc=>doc.document_type===type&&doc.program_id===cycle.program_id&&doc.period_label===cycle.period_label);
+    if(match){selectDocument(match.id);revealDocumentEditor();return;}
     if(!programs.some(program=>program.id===cycle.program_id)){
       message('Data proker belum dapat dimuat. Muat ulang daftar dokumen.','error');
       return;
     }
     clearEditor();
-    $('#program-document-type').value='lpj';
+    draftCycle=cycle;
+    $('#program-document-type').value=type;
     $('#program-document-program').value=cycle.program_id;
     prefillProgram(cycle.program_id);
     $('#program-document-period').value=cycle.period_label;
-    $('#lpj-summary').value=cycle.lpj_summary||'';
-    $('#lpj-outcomes').value=cycle.output_summary||'';
-    $('#lpj-recommendations').value=(cycle.lesson_learned||'').slice(0,1600);
-    $('#program-document-start').value=cycle.period_start||'';
-    $('#program-document-end').value=cycle.period_end||'';
+    if(type==='lpj'){
+      $('#lpj-summary').value=cycle.lpj_summary||'';
+      $('#lpj-outcomes').value=cycle.output_summary||'';
+      $('#lpj-recommendations').value=(cycle.lesson_learned||'').slice(0,1600);
+      $('#program-document-start').value=cycle.period_start||'';
+      $('#program-document-end').value=cycle.period_end||'';
+    }
     formDirty=true;
     renderType();
-    message('Lengkapi dan simpan draf LPJ untuk proker ini.');
+    message(type==='lpj'?'Lengkapi dan simpan draf LPJ untuk proker ini.':'Lengkapi dan simpan draf proposal untuk proker ini.');
+    revealDocumentEditor();
   }
-  window.CSSMoRAProgramDocuments={load,openCycleLpj};
+  function revealDocumentEditor(){
+    const heading=$('#program-document-editor-title');
+    heading.tabIndex=-1;
+    heading.focus();
+  }
+  window.CSSMoRAProgramDocuments={
+    load,
+    openCycleLpj:cycle=>openCycleDocument(cycle,'lpj'),
+    openCycleProposal:cycle=>openCycleDocument(cycle,'proposal')
+  };
   renderType();
 })();
