@@ -26,14 +26,14 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
-  <script src="./admin.js?v=20261112-officer-handoff" defer></script>
+  <script src="./admin.js?v=20261112-unified-program-workspace" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261029-v5" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
   <script src="./workflows.js?v=20261023-performance-v1" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
-  <script src="./program-workflow.js?v=20261112-officer-handoff" defer></script>
-  <script src="./program-documents.js?v=20261112-officer-handoff" defer></script>
+  <script src="./program-workflow.js?v=20261112-unified-program-workspace" defer></script>
+  <script src="./program-documents.js?v=20261112-unified-program-workspace" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261029-v2">
   <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v2">
@@ -126,7 +126,6 @@
           <button class="agenda-admin-tab is-active" id="tab-programs" type="button" role="tab" aria-selected="true" aria-controls="programs-panel">1 · Database proker</button>
           <button class="agenda-admin-tab" id="tab-schedule" type="button" role="tab" aria-selected="false" aria-controls="schedule-panel">2 · Jadwal agenda</button>
           <button class="agenda-admin-tab" id="tab-program-workflow" type="button" role="tab" aria-selected="false" aria-controls="program-workflow-panel">3 · Progres &amp; LPJ</button>
-          <button class="agenda-admin-tab" id="tab-program-documents" type="button" role="tab" aria-selected="false" aria-controls="program-documents-panel">4 · Proposal &amp; LPJ</button>
         </nav>
         <section class="agenda-admin-subpanel" id="programs-panel" role="tabpanel" aria-labelledby="tab-programs">
           <div class="editor-heading program-library-heading"><div><span class="admin-kicker">DATABASE PROGRAM KERJA</span><h3>Data proker dan dokumentasi</h3><p class="admin-muted">Simpan siklus, tujuan, sasaran, PIC, anggaran, dan foto. Data dapat diperbarui kapan saja dan tetap tertaut ke agenda sebelumnya.</p></div></div>
@@ -195,7 +194,7 @@
           </div>
         </section>
         <section class="agenda-admin-subpanel" id="program-workflow-panel" role="tabpanel" aria-labelledby="tab-program-workflow" hidden>
-          <div class="program-workflow-heading"><div><span class="admin-kicker">MONITORING PROGRAM KERJA</span><h3>Progres, tenggat, dan LPJ</h3><p>Gunakan siklus proker yang sama dengan database dan agenda. Catatan kas tetap dikelola di AkunPro.</p></div><button class="text-button" id="program-workflow-refresh" type="button">Muat ulang</button></div>
+          <div class="program-workflow-heading"><div><span class="admin-kicker">MONITORING PROGRAM KERJA</span><h3>Ruang kerja proker</h3><p>Pilih siklus untuk mengelola lembar kerja, proposal, dan LPJ di halaman ini.</p></div><button class="text-button" id="program-workflow-refresh" type="button">Muat ulang</button></div>
           <section class="program-reminders" id="program-reminders" aria-live="polite"><h4>Perlu ditindaklanjuti</h4><div id="program-reminder-list"><p class="records-empty">Memuat tenggat…</p></div></section>
           <div class="admin-columns program-workflow-grid">
             <section class="editor-card program-cycle-editor" aria-labelledby="program-cycle-editor-title">
@@ -222,9 +221,13 @@
                   <p id="program-prep-create-hint" class="field-hint">Pilih proker dan klik Simpan monitoring untuk mengaktifkan pembuatan berkas.</p>
                   <p id="program-prep-create-message" class="form-message" role="status"></p>
                 </fieldset>
+                <fieldset class="program-preparation"><legend>Proposal</legend><div id="program-cycle-proposal"></div></fieldset>
+                <fieldset class="program-preparation"><legend>LPJ setelah kegiatan</legend>
                 <label for="program-cycle-summary">Ringkasan pelaksanaan / LPJ</label><textarea id="program-cycle-summary" name="lpj_summary" rows="3" maxlength="5000" placeholder="Kegiatan yang dilaksanakan dan hasil utamanya"></textarea>
                 <label for="program-cycle-outputs">Luaran dan capaian</label><textarea id="program-cycle-outputs" name="output_summary" rows="2" maxlength="2000" placeholder="Contoh: jumlah peserta, produk, atau target tercapai"></textarea>
                 <label for="program-cycle-lessons">Evaluasi dan tindak lanjut</label><textarea id="program-cycle-lessons" name="lesson_learned" rows="2" maxlength="2000" placeholder="Catatan evaluasi untuk periode berikutnya"></textarea>
+                <div id="program-cycle-lpj"></div>
+                </fieldset>
                 <p class="program-cycle-progress" id="program-cycle-progress">Progres 0% · 0 dari 0 tahapan selesai</p>
                 <button class="admin-button" id="save-program-cycle" type="submit">Simpan monitoring <span aria-hidden="true">↗</span></button>
                 <div class="program-cycle-actions" id="program-cycle-actions" hidden></div>
@@ -249,12 +252,11 @@
               <details class="program-cycle-history" id="program-cycle-history" hidden><summary>Riwayat persetujuan</summary><div id="program-cycle-history-list"></div></details>
             </section>
           </div>
-        </section>
-        <section class="agenda-admin-subpanel" id="program-documents-panel" role="tabpanel" aria-labelledby="tab-program-documents" hidden>
-          <div class="program-workflow-heading"><div><span class="admin-kicker">DOKUMEN PROGRAM KERJA</span><h3>Proposal dan LPJ otomatis</h3><p>PIC mengisi draf, meninjau narasi, membuat Google Docs, lalu mengajukan dokumen yang sama. Sekretaris meninjau dan menandatangani; PDF lalu disimpan di Drive dan diteruskan ke Ketua. Realisasi keuangan LPJ tetap diverifikasi Bendahara dari AkunPro.</p></div><button class="text-button" id="program-documents-refresh" type="button">Muat ulang</button></div>
+          <section id="program-documents-panel" aria-labelledby="program-documents-title">
+          <div class="program-workflow-heading"><div><span class="admin-kicker">DOKUMEN PROGRAM KERJA</span><h3 id="program-documents-title">Editor dan arsip Proposal &amp; LPJ</h3><p>PIC mengisi draf, meninjau narasi, membuat Google Docs, lalu mengajukan dokumen yang sama. Sekretaris meninjau dan menandatangani; PDF lalu disimpan di Drive dan diteruskan ke Ketua. Realisasi keuangan LPJ tetap diverifikasi Bendahara dari AkunPro.</p></div><button class="text-button" id="program-documents-refresh" type="button">Muat ulang</button></div>
           <div class="program-documents-layout">
             <section class="editor-card program-document-editor" aria-labelledby="program-document-editor-title">
-              <div class="editor-heading"><div><span class="admin-kicker">DRAF DOKUMEN</span><h4 id="program-document-editor-title">Mulai proposal atau LPJ</h4></div><button class="text-button" id="program-document-reset" type="button">Draf baru</button></div>
+              <div class="editor-heading"><div><span class="admin-kicker">DRAF DOKUMEN</span><h4 id="program-document-editor-title">Mulai proposal atau LPJ</h4></div><button class="text-button" id="program-document-reset" type="button">Tutup editor</button></div>
               <form id="program-document-form">
                 <input type="hidden" id="program-document-id" name="id">
                 <div class="form-two"><div><label for="program-document-type">Jenis dokumen</label><select id="program-document-type" name="document_type"><option value="proposal">Proposal</option><option value="lpj">LPJ</option></select></div><div><label for="program-document-program">Proker</label><select id="program-document-program" name="program_id" required><option value="">Pilih proker…</option></select></div></div>
@@ -333,6 +335,7 @@
             </section>
             <section class="records-card program-document-list-card" aria-labelledby="program-document-list-title"><div class="editor-heading"><div><span class="admin-kicker">ARSIP &amp; PERSETUJUAN</span><h4 id="program-document-list-title">Dokumen terbaru</h4></div><span class="record-count" id="program-document-count">—</span></div><section id="program-document-tasks" aria-label="Tugas saya"><h5>Tugas saya</h5><div id="program-document-task-list"></div></section><div id="program-document-list"><p class="records-empty">Memuat dokumen…</p></div><details class="program-document-template"><summary>Struktur tetap yang dipakai</summary><p><strong>Proposal:</strong> sampul dan lembar pengesahan, latar belakang, tujuan, nama/tema/deskripsi, sasaran, waktu-tempat, penutup, lalu lampiran rundown dan RAB. Panitia dipilih dari anggota aktif.</p><p><strong>LPJ:</strong> sampul dan lembar pengesahan, pendahuluan, realisasi umum/per divisi, indikator keberhasilan, evaluasi dan saran, laporan keuangan, penutup, lalu lampiran administrasi, absensi, serta galeri foto.</p></details></section>
           </div>
+          </section>
         </section>
       </section>
       <section class="management-panel finance-management" id="finance-panel" role="tabpanel" aria-labelledby="tab-finance" hidden>
