@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { letterTemplates, normalizeLetterIdentity, letterIdentityToken, letterLayoutRequests, chairIdentityReplacements } from "./letter-templates.ts";
+import { letterTemplates, letterIdentityKind, normalizeLetterIdentity, letterIdentityToken, letterLayoutRequests, chairIdentityReplacements } from "./letter-templates.ts";
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -3092,16 +3092,13 @@ async function outgoingLetterAction(request: Request, action: string, body: any)
       throw new AppError(400, `Master ini memuat lampiran ${template.appendix}. Isi jumlah lampiran minimal 1.`);
     }
     const fields: Record<string, string> = {};
-    const identityKind = body.identity_kind ?? (template.identityFields.length ? null : "NIA");
-    if (identityKind !== "NIM" && identityKind !== "NIA") {
-      throw new AppError(400, "Pilih NIM untuk surat ke kampus atau NIA untuk surat ke luar kampus.");
-    }
+    const identityKind = letterIdentityKind(scope as "i" | "e");
     for (const key of template.fields) {
       const value = clean(body.fields?.[key], key === "uraian_tugas" ? 1000 : 240);
       if (!value || /[{}]/.test(value)) throw new AppError(400, "Lengkapi isian " + key.replaceAll("_", " ") + ".");
       if (template.identityFields.includes(key)) {
         const identity = normalizeLetterIdentity(value, identityKind);
-        if (!identity) throw new AppError(400, "Masukkan nomor " + identityKind + " sesuai jenis identitas yang dipilih.");
+        if (!identity) throw new AppError(400, "Masukkan nomor " + identityKind + " sesuai cakupan surat.");
         fields[key] = identityKind + (key === "identitas_peserta" ? " : " : ". ") + identity;
       } else {
         fields[key] = value;

@@ -1765,7 +1765,7 @@ async function connectOutgoingOrganizerFields(controls, identity){
     if(!options.isConnected)return;
     const choices=new Map(roster.map(member=>[member.full_name+' · '+member.nia,member]));
     options.replaceChildren(...Array.from(choices.keys(),value=>new Option(value,value)));
-    hint.textContent='Ketik nama atau NIA, lalu pilih anggota. Identitas terisi mengikuti pilihan NIM atau NIA.';
+    hint.textContent='Ketik nama atau NIA, lalu pilih anggota. Identitas terisi mengikuti cakupan surat.';
     for(const {name,number} of pairs){
       name.setAttribute('list',options.id);
       name.setAttribute('aria-describedby',hint.id);
@@ -1789,7 +1789,7 @@ async function connectOutgoingOrganizerFields(controls, identity){
       };
       name.addEventListener('input',select);
       name.addEventListener('change',select);
-      identity.addEventListener('change',fill);
+      identity.addEventListener('change',()=>{if(selected)fill();else if(number.value)number.value='';});
     }
   }catch(error){
     if(options.isConnected)hint.textContent='Daftar anggota gagal dimuat. Nama dan identitas bisa diisi manual.';
@@ -1812,15 +1812,16 @@ function showOutgoingTemplateFields(){
   $('#outgoing-attachment-hint').textContent=template.appendix
     ? 'Master ini memuat lampiran '+template.appendix+'. Lengkapi tabelnya di Google Docs sebelum menyiapkan tanda tangan.'
     : 'Isi 0 jika surat tidak memiliki lampiran.';
-  const label=document.createElement('label');
-  label.htmlFor='outgoing-identity-kind';
-  label.textContent='Jenis identitas';
-  const identity=document.createElement('select');
-  identity.id=label.htmlFor;
+  const identity=document.createElement('input');
+  identity.type='hidden';
+  identity.id='outgoing-identity-kind';
   identity.name='identity_kind';
-  identity.required=true;
-  identity.append(new Option('Pilih jenis identitas',''),new Option('NIM · Surat ke kampus','NIM'),new Option('NIA · Surat ke luar kampus','NIA'));
-  controls.append(label,identity);
+  const identityHint=document.createElement('p');
+  identityHint.id='outgoing-identity-hint';
+  identityHint.className='field-hint';
+  identityHint.setAttribute('aria-live','polite');
+  controls.append(identity,identityHint);
+  syncOutgoingIdentity();
   for(const key of template.fields){
     const label=document.createElement('label');
     const input=document.createElement(key==='uraian_tugas' ? 'textarea' : 'input');
@@ -1837,6 +1838,17 @@ function showOutgoingTemplateFields(){
   }
   void connectOutgoingOrganizerFields(controls,identity);
 }
+function syncOutgoingIdentity(){
+  const identity=$('#outgoing-identity-kind');
+  if(!identity)return;
+  const scope=$('#outgoing-scope').value;
+  const kind=scope==='i'?'NIM':'NIA';
+  const changed=identity.value!==kind;
+  identity.value=kind;
+  $('#outgoing-identity-hint').textContent='Identitas penanda tangan: '+kind+' · surat '+(scope==='i'?'internal':'eksternal')+'.';
+  if(changed)identity.dispatchEvent(new Event('change'));
+}
+$('#outgoing-scope').addEventListener('change',syncOutgoingIdentity);
 outgoingTemplateSelect.addEventListener('change',showOutgoingTemplateFields);
 $('#outgoing-draft-refresh').addEventListener('click',loadOutgoingDrafts);
 outgoingSignatureSelect.addEventListener('change',()=>{
