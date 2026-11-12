@@ -11,3 +11,13 @@ test('outgoing signatures use NIM for internal scope and NIA for external scope'
   assert.match(edge, /identityKind = letterIdentityKind\(scope/);
   assert.doesNotMatch(edge, /body\.identity_kind/);
 });
+
+test('secretary signature masters resolve the roster identity for both scopes', async () => {
+  const { letterTemplates, secretaryIdentityReplacement, secretaryTemplateNia } = await import('../supabase/functions/drive-integration/letter-templates.ts');
+  assert.deepEqual(letterTemplates.filter(template => template.hasSecretarySignature).map(template => template.key).sort(),
+    ['izin', 'pengantar-lpj', 'pengantar-proposal', 'pinjam', 'wisuda']);
+  const secretary = {nim:'12345', nia:secretaryTemplateNia};
+  assert.deepEqual(secretaryIdentityReplacement('NIM', secretary), ['NIM/NIA. ' + secretaryTemplateNia, 'NIM. 12345']);
+  assert.deepEqual(secretaryIdentityReplacement('NIA', secretary), ['NIM/NIA. ' + secretaryTemplateNia, 'NIA. ' + secretaryTemplateNia]);
+  assert.equal(secretaryIdentityReplacement('NIM', {nim:''}), null);
+});
