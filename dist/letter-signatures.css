@@ -57,3 +57,7 @@
 .letter-sign-dialog .form-message{margin:0}
 @media(max-width:790px){.letter-signatures-layout,.letter-sign-viewer{grid-template-columns:1fr}.letter-sign-preview,.letter-sign-controls{max-height:none}.letter-sign-controls{overflow:visible}.letter-sign-dialog{max-height:calc(100dvh - 14px);padding:13px}.admin-page .letter-signatures{padding:15px}.admin-page .letter-work-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.admin-page .letter-work-tab{padding-inline:7px}}
 @media(prefers-reduced-motion:reduce){.letter-signatures *{scroll-behavior:auto!important}}
+
+.letter-sign-dialog.is-read-only .letter-sign-viewer{grid-template-columns:minmax(0,1fr)}
+.letter-sign-controls[hidden]{display:none}
+#letter-sign-dialog-message:empty{display:none}
