@@ -15,7 +15,7 @@
   }
   async function compressImage(file,{maxBytes=2*1024*1024,maxSourceBytes=20*1024*1024}={}){
     if(!file||!/^image\/(jpeg|png|webp)$/i.test(file.type)) return file;
-    if(file.size>maxSourceBytes) throw new Error("Ukuran gambar sebelum dikompres maksimal 20 MB.");
+    if(file.size>maxSourceBytes) throw new Error("Gambar sumber terlalu besar untuk diproses. Coba pilih gambar yang lebih ringan.");
     if(file.size<=maxBytes) return file;
     const bitmap=await decode(file);
     try{
@@ -37,7 +37,11 @@
         }
       }
     }finally{if(typeof bitmap.close==="function")bitmap.close()}
-    throw new Error("Gambar belum bisa dikompres sampai 2 MB. Pilih gambar yang lebih kecil.");
+    throw new Error("Gambar belum bisa dikompres otomatis. Coba pilih gambar yang lebih ringan.");
   }
-  window.CSSMoRAUpload={compressImage};
+  async function compressEvidencePdf(file){
+    const {preparePermissionPdf}=await import('./permission-pdf.js?v=20261116-public-uploads');
+    return preparePermissionPdf(file,{maxBytes:5*1024*1024});
+  }
+  window.CSSMoRAUpload={compressImage,compressEvidencePdf};
 })();

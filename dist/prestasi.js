@@ -55,8 +55,9 @@ form.addEventListener('submit',async event=>{
   const id=crypto.randomUUID();
   button.disabled=true;button.textContent='Mengirim pengajuan…';message.textContent=sourceFile.type==='application/pdf'?'Menyiapkan bukti PDF…':'Mengompres bukti gambar…';
   try{
-    const file=sourceFile.type==='application/pdf'?sourceFile:await window.CSSMoRAUpload.compressImage(sourceFile,{maxBytes:2*1024*1024});
-    if(file.size>5*1024*1024)throw new Error('Ukuran bukti maksimal 5 MB.');
+    const file=sourceFile.type==='application/pdf'
+      ? await window.CSSMoRAUpload.compressEvidencePdf(sourceFile)
+      : await window.CSSMoRAUpload.compressImage(sourceFile,{maxBytes:2*1024*1024});
     const ext={'image/jpeg':'jpg','image/png':'png','application/pdf':'pdf'}[file.type];
     if(!ext)throw new Error('Format bukti harus JPG, PNG, atau PDF.');
     const path=`applications/${id}/proof.${ext}`;
@@ -69,7 +70,7 @@ form.addEventListener('submit',async event=>{
     message.textContent=sourceFile.type==='application/pdf'?'Mengirim bukti PDF…':'Mengirim bukti terkompres…';
     const body=new FormData();
     body.append('payload',JSON.stringify(payload));
-    body.append('proof',file,sourceFile.name||('proof.'+ext));
+    body.append('proof',file,(sourceFile.name?.replace(/\.[^.]+$/,'')||'proof')+'.'+ext);
     const submit=await window.cssmoraFetch(`${config.url}/functions/v1/submit-achievement`,{
       method:'POST',headers:{apikey:config.publishableKey},body
     });

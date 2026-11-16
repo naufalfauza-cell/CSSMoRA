@@ -1,13 +1,13 @@
 const MAX_PERMISSION_PDF = 2 * 1024 * 1024;
 const MAX_SOURCE_PDF = 30 * 1024 * 1024;
 
-export async function preparePermissionPdf(file) {
+export async function preparePermissionPdf(file, {maxBytes=MAX_PERMISSION_PDF}={}) {
   if (!file || (file.type && file.type !== 'application/pdf') ||
       await file.slice(0, 5).text() !== '%PDF-') {
     throw new Error('Pilih surat izin dalam format PDF yang valid.');
   }
-  if (file.size <= MAX_PERMISSION_PDF) return new Blob([file], { type: 'application/pdf' });
-  if (file.size > MAX_SOURCE_PDF) throw new Error('Pilih PDF sumber berukuran maksimal 30 MB.');
+  if (file.size <= maxBytes) return new Blob([file], { type: 'application/pdf' });
+  if (file.size > MAX_SOURCE_PDF) throw new Error('PDF sumber terlalu besar untuk diproses di perangkat ini. Coba pilih PDF yang lebih ringkas.');
 
   const pdfjs = await import('./vendor/pdfjs/pdf.min.mjs');
   pdfjs.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdfjs/pdf.worker.min.mjs', import.meta.url).href;
@@ -25,7 +25,7 @@ export async function preparePermissionPdf(file) {
   const canvas = document.createElement('canvas');
   try {
     const source = await loading.promise;
-    if (source.numPages > 20) throw new Error('Kompresi otomatis mendukung surat hingga 20 halaman. Pilih PDF yang lebih ringkas.');
+    if (source.numPages > 20) throw new Error('PDF memiliki terlalu banyak halaman untuk dikompres otomatis. Pilih PDF yang lebih ringkas.');
     for (const {edge,quality} of [{edge:1700,quality:0.82},{edge:1350,quality:0.72},{edge:1050,quality:0.58}]) {
       const output = await PDFDocument.create();
       let encodedSize = 0;
@@ -40,7 +40,7 @@ export async function preparePermissionPdf(file) {
           const image = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',quality));
           if (!image) throw new Error('Halaman PDF gagal dikompres. Coba pilih file lain.');
           encodedSize += image.size;
-          if (encodedSize > MAX_PERMISSION_PDF) break;
+          if (encodedSize > maxBytes) break;
           const embedded = await output.embedJpg(await image.arrayBuffer());
           output.addPage([size.width,size.height]).drawImage(embedded,{x:0,y:0,width:size.width,height:size.height});
         } finally {
@@ -49,9 +49,9 @@ export async function preparePermissionPdf(file) {
       }
       if (output.getPageCount() !== source.numPages) continue;
       const bytes = await output.save();
-      if (bytes.byteLength <= MAX_PERMISSION_PDF) return new Blob([bytes],{type:'application/pdf'});
+      if (bytes.byteLength <= maxBytes) return new Blob([bytes],{type:'application/pdf'});
     }
-    throw new Error('PDF belum bisa dikompres hingga 2 MB dengan ukuran halaman yang cukup terbaca. Pilih PDF yang lebih ringkas.');
+    throw new Error('PDF belum bisa dikompres tanpa mengurangi keterbacaan. Coba pilih PDF yang lebih ringkas.');
   } finally {
     canvas.width = canvas.height = 0;
     await loading.destroy();

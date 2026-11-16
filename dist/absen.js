@@ -255,7 +255,7 @@ async function compressPhoto(file) {
   } finally {
     if (typeof bitmap.close === "function") bitmap.close();
   }
-  throw new Error("Foto belum bisa diperkecil sampai 500 KB. Coba foto lain dengan ukuran lebih kecil.");
+  throw new Error("Foto belum bisa dikompres otomatis. Coba pilih foto yang lebih kecil.");
 }
 photoInput.addEventListener("change", async () => {
   const file = photoInput.files?.[0];
@@ -303,7 +303,7 @@ form.addEventListener("submit", async event => {
     modeSelect.disabled = eventSelect.disabled = button.disabled = $("#checkin-letter").disabled = true;
     try {
       setMessage(file.size > 2 * 1024 * 1024 ? "Mengompres surat izin di perangkat…" : "Menyiapkan surat izin…");
-      const {preparePermissionPdf} = await import("./permission-pdf.js?v=20261116-izin-compress");
+      const {preparePermissionPdf} = await import("./permission-pdf.js?v=20261116-public-uploads");
       const pdf = await preparePermissionPdf(file);
       formData.set("letter", pdf, file.name);
       setMessage("Mengunggah surat izin…");

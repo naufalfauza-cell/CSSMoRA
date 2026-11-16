@@ -24,6 +24,16 @@ test('small permission PDFs are preserved and invalid files are rejected',async(
   assert.equal(await (await prepare(original)).text(),await original.text());
   await assert.rejects(prepare(new Blob(['wrong'],{type:'application/pdf'})),/PDF yang valid/);
   const large=new Blob(['%PDF-',new Uint8Array(30*1024*1024)],{type:'application/pdf'});
-  await assert.rejects(prepare(large),/30 MB/);
+  await assert.rejects(prepare(large),/PDF sumber terlalu besar/);
   assert.match(read('absen.js'),/formData\.set\("letter", pdf, file\.name\)/);
+});
+
+test('public achievement and subsidy forms compress PDFs and images before upload',()=>{
+  for(const file of ['prestasi.js','workflows.js']){
+    const js=read(file);
+    assert.match(js,/await window.CSSMoRAUpload.compressEvidencePdf\(/);
+    assert.match(js,/await window.CSSMoRAUpload.compressImage\(/);
+  }
+  assert.match(read('absen.html'),/href="\.\/template-surat-izin\.rtf" download/);
+  assert.doesNotMatch(read('absen.html')+read('prestasi.html'),/maksimal \d+ (?:MB|KB)|di atas 2 MB/i);
 });
