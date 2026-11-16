@@ -34,6 +34,6 @@ test('public achievement and subsidy forms compress PDFs and images before uploa
     assert.match(js,/await window.CSSMoRAUpload.compressEvidencePdf\(/);
     assert.match(js,/await window.CSSMoRAUpload.compressImage\(/);
   }
-  assert.match(read('absen.html'),/href="\.\/template-surat-izin\.docx" download/);
+  assert.match(read('absen.html'),/href="\.\/template-surat-izin\.rtf" download/);
   assert.doesNotMatch(read('absen.html')+read('prestasi.html'),/maksimal \d+ (?:MB|KB)|di atas 2 MB/i);
 });
