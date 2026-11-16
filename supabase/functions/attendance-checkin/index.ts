@@ -81,6 +81,25 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
   if (!verifyResponse.ok) return json({ error: "Pemeriksaan pembersihan gagal." }, 500);
   if (await verifyResponse.json() !== true) return json({ error: "Akses pembersihan ditolak." }, 401);
 
+  const permissions = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_permissions?" + new URLSearchParams({
+    select: "id,letter_path,drive_file_id", agenda_id: "not.is.null", letter_deleted_at: "is.null",
+    created_at: "lt." + new Date(Date.now() - 5 * 86400000).toISOString(), order: "created_at.asc", limit: "10",
+  }), { headers });
+  if (!permissions.ok) return json({ error: "Daftar surat izin kedaluwarsa belum dapat dimuat." }, 500);
+  const permissionResults = await Promise.allSettled((await permissions.json()).map(async (row: {id: string; letter_path: string; drive_file_id: string | null}) => {
+    if (!row.drive_file_id && !await archiveAttendanceEvidence(supabaseUrl, serviceKey, {
+      action: "archive_attendance_permission", permission_id: row.id,
+    })) throw new Error("Arsip surat izin belum tersedia.");
+    const removed = await storage.removeMany(permissionLetterBucket, [row.letter_path]);
+    if (!removed.ok) throw new Error("Surat izin belum dapat dihapus.");
+    const saved = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_permissions?id=eq." + row.id, {
+      method: "PATCH", headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ letter_deleted_at: new Date().toISOString() }),
+    });
+    if (!saved.ok) throw new Error("Status penghapusan izin belum tercatat.");
+  }));
+  const permissionFailures = permissionResults.filter(result => result.status === "rejected").length;
+
   const query = new URLSearchParams({
     select: "event_id,member_id,proof_path,proof_uploaded_at,proof_expires_at",
     proof_path: "not.is.null",
@@ -91,7 +110,7 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
   const recordsResponse = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_records?" + query, { headers });
   if (!recordsResponse.ok) return json({ error: "Daftar foto kedaluwarsa belum dapat dimuat." }, 500);
   const rows = await recordsResponse.json();
-  if (!rows.length) return json({ success: true, deleted: 0, records_updated: 0 });
+  if (!rows.length) return json({ success: !permissionFailures, deleted: 0, permission_failures: permissionFailures }, permissionFailures ? 503 : 200);
 
   const now = new Date().toISOString();
   const entries = rows
@@ -136,10 +155,14 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
   const existingCleared = await clearRecords(existingPaths, now);
   const missingCleared = await clearRecords(missingPaths);
   if (!existingCleared || !missingCleared) return json({ error: "Foto sudah diproses, tetapi status penghapusan belum tercatat." }, 500);
-  return json({ success: true, deleted: existingPaths.length, archived: existingPaths.length, reservations_cleared: missingPaths.length });
+  return json({ success: !permissionFailures, deleted: existingPaths.length, archived: existingPaths.length, reservations_cleared: missingPaths.length, permission_failures: permissionFailures }, permissionFailures ? 503 : 200);
 }
 
 async function archiveAttendancePhoto(supabaseUrl: string, serviceKey: string, eventId: string, proofPath: string) {
+  return archiveAttendanceEvidence(supabaseUrl, serviceKey, { action: "archive_attendance_photo", event_id: eventId, proof_path: proofPath });
+}
+
+async function archiveAttendanceEvidence(supabaseUrl: string, serviceKey: string, body: Record<string, string>) {
   try {
     const response = await fetch(supabaseUrl.replace(/\/+$/, "") + "/functions/v1/drive-integration", {
       method: "POST",
@@ -148,7 +171,8 @@ async function archiveAttendancePhoto(supabaseUrl: string, serviceKey: string, e
         Authorization: "Bearer " + serviceKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ action: "archive_attendance_photo", event_id: eventId, proof_path: proofPath }),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(20000),
     });
     const result = await response.json().catch(() => ({}));
     return response.ok && result?.ok === true && result?.archived === true;
@@ -278,6 +302,7 @@ async function finalizeAttendance(request: Request, supabaseUrl: string, service
   if (!saveResponse.ok) return json({ error: "Absensi belum tersimpan. Silakan coba lagi." }, 500);
   const updatedRows = await saveResponse.json().catch(() => []);
   if (!updatedRows.length) return json({ error: "Absensi sudah tercatat. Hubungi sekretaris bila perlu koreksi." }, 409);
+  await archiveAttendancePhoto(supabaseUrl, serviceKey, String(event.id), expectedPath);
   return json({ success: true, message: "Absensi dan foto bukti berhasil dicatat." });
 }
 async function getActiveEvents(supabaseUrl: string, headers: Record<string, string>) {
@@ -490,15 +515,19 @@ async function submitPermission(request: Request, supabaseUrl: string, serviceKe
     body: JSON.stringify({ p_id: id, p_event_id: event.id, p_member_id: memberId, p_reason: reason }),
   }).catch(() => null);
   const result = await saved?.json().catch(() => null);
-  if (saved?.ok && result === true) return json({ message: "Pengajuan izin tersimpan dan dapat diperiksa pengurus." }, 201);
-  if (result === false || result?.code === "23505") {
+  async function confirmPermission() {
+    await archiveAttendanceEvidence(supabaseUrl, serviceKey, { action: "archive_attendance_permission", permission_id: id });
+    return json({ message: "Izin dan surat bukti berhasil dicatat." }, 201);
+  }
+  if (saved?.ok && result === true) return confirmPermission();
+  if (result === false || ["23505", "23514", "40P01"].includes(result?.code)) {
     await storage.removeMany(permissionLetterBucket, [path]).catch(() => {});
     return json({ error: result === false ? "Waktu izin sudah tutup atau roster kegiatan berubah." : "Izin untuk kegiatan ini sudah tercatat." }, 409);
   }
   // An uncertain commit can still succeed. Keep the private file unless the insert was definitively rejected.
   const readback = await fetch(supabaseUrl + "/rest/v1/secretariat_attendance_permissions?select=id&id=eq." + id, { headers }).catch(() => null);
   if (readback?.ok) {
-    if ((await readback.json()).length) return json({ message: "Pengajuan izin tersimpan dan dapat diperiksa pengurus." }, 201);
+    if ((await readback.json()).length) return confirmPermission();
   }
   return json({ error: "Izin belum dapat dikonfirmasi. Coba lagi sebentar." }, 503);
 }
