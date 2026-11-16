@@ -293,16 +293,22 @@ form.addEventListener("submit", async event => {
   if (permissionMode()) {
     const button = $("#checkin-submit");
     const file = $("#checkin-letter").files?.[0];
-    if (!file || file.size > 2 * 1024 * 1024) {
-      setMessage("Pilih surat izin PDF maksimal 2 MB.", "error");
+    if (!file) {
+      setMessage("Pilih surat izin PDF terlebih dahulu.", "error");
       return;
     }
     submitting = true;
-    modeSelect.disabled = eventSelect.disabled = button.disabled = true;
+    const formData = new FormData(form);
+    const eventId = selectedEvent.id;
+    modeSelect.disabled = eventSelect.disabled = button.disabled = $("#checkin-letter").disabled = true;
     try {
+      setMessage(file.size > 2 * 1024 * 1024 ? "Mengompres surat izin di perangkat…" : "Menyiapkan surat izin…");
+      const {preparePermissionPdf} = await import("./permission-pdf.js?v=20261116-izin-compress");
+      const pdf = await preparePermissionPdf(file);
+      formData.set("letter", pdf, file.name);
       setMessage("Mengunggah surat izin…");
-      const response = await window.cssmoraFetch(apiUrl({mode:"permission-submit", event_id:selectedEvent.id}), {
-        method:"POST", headers:{apikey:config.publishableKey}, body:new FormData(form)
+      const response = await window.cssmoraFetch(apiUrl({mode:"permission-submit", event_id:eventId}), {
+        method:"POST", headers:{apikey:config.publishableKey}, body:formData
       }, 30000);
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Izin belum dapat disimpan.");
@@ -312,6 +318,7 @@ form.addEventListener("submit", async event => {
     } catch (error) { setMessage(error.message, "error"); }
     finally {
       submitting = false;
+      $("#checkin-letter").disabled = !permissionMode();
       modeSelect.disabled = eventSelect.disabled = button.disabled = false;
     }
     return;

@@ -2,7 +2,9 @@ let competitions = [];
 
 const $ = selector => document.querySelector(selector);
 const grid = $('#competition-grid');
-const isOpen = item => new Date(item.deadline) >= new Date();
+const CATALOG_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
+const isOpen = (item, now = Date.now()) => Date.parse(item.deadline) >= now;
+const isCatalogVisible = (item, now = Date.now()) => Date.parse(item.deadline) + CATALOG_RETENTION_MS >= now;
 const formatDate = date => new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Jakarta'}).format(new Date(date));
 const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const poster = item => item.posterImage
@@ -13,7 +15,8 @@ function render() {
   const query = $('#search').value.trim().toLocaleLowerCase('id');
   const category = $('#category').value;
   const status = $('#status').value;
-  const items = competitions.filter(item => {
+  const visible = competitions.filter(item => isCatalogVisible(item));
+  const items = visible.filter(item => {
     const matchedText = `${item.title} ${item.organizer} ${item.category} ${item.subtitle}`.toLocaleLowerCase('id').includes(query);
     return matchedText && (category==='all'||item.category===category) && (status==='all'||(status==='open')===isOpen(item));
   }).sort((a,b) => Number(isOpen(b))-Number(isOpen(a)) || (isOpen(a)?a.deadline.localeCompare(b.deadline):b.deadline.localeCompare(a.deadline)));
@@ -26,7 +29,7 @@ function render() {
   </button>`).join('');
   $('#result-count').textContent = `${items.length} lomba ditemukan`;
   $('#empty-state').hidden = items.length !== 0;
-  const noPublishedItems = competitions.length === 0;
+  const noPublishedItems = visible.length === 0;
   $('#empty-title').textContent = noPublishedItems ? 'Belum ada lomba' : 'Tidak ada yang cocok';
   $('#empty-hint').hidden = noPublishedItems;
   $('#reset-filter').hidden = noPublishedItems;
@@ -38,6 +41,7 @@ function render() {
 }
 
 function detail(item, updateURL=true) {
+  if (!isCatalogVisible(item)) {closeDetail(updateURL);render();return;}
   const open=isOpen(item);
   const url=/^https:\/\//i.test(item.registrationUrl)?item.registrationUrl:'';
   $('#catalog-page').hidden=true;
@@ -55,6 +59,7 @@ function detail(item, updateURL=true) {
   if(updateURL){const u=new URL(location.href);u.searchParams.set('lomba',item.id);history.pushState({lomba:item.id},'',u);}
 }
 function closeDetail(updateURL=true){
+  render();
   $('#competition-detail-page').hidden=true;
   $('#catalog-page').hidden=false;
   document.title='Info Lomba — CSSMoRA UNAIR';
