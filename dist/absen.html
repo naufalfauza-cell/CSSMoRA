@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="./style.css?v=20261103-transparent-partners-v2">
   <link rel="stylesheet" href="./absen.css?v=20261112-perizinan">
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
-  <script src="./absen.js?v=20261112-perizinan" defer></script>
+  <script src="./absen.js?v=20261116-izin-compress" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261103-secondary-pages-v1">
   <link rel="stylesheet" href="./wallet-theme.css?v=20261103-mobile-nav-scroll-video-v1">
 </head>
@@ -53,9 +53,9 @@
         <div id="checkin-permission-fields" hidden>
           <label for="checkin-reason">Alasan izin</label>
           <textarea id="checkin-reason" name="reason" rows="3" maxlength="1000" required disabled></textarea>
-          <label for="checkin-letter">Surat izin (PDF, maksimal 2 MB)</label>
+          <label for="checkin-letter">Surat izin (PDF)</label>
           <input id="checkin-letter" name="letter" type="file" accept="application/pdf,.pdf" required disabled>
-          <p class="checkin-photo-hint"><a href="./template-surat-izin.rtf" download>Unduh template surat izin</a>. Isi, tanda tangani, lalu simpan sebagai PDF.</p>
+          <p class="checkin-photo-hint"><a href="./template-surat-izin.rtf" download>Unduh template surat izin</a>. Isi, tanda tangani, lalu simpan sebagai PDF. File di atas 2 MB dikompres otomatis saat dikirim.</p>
         </div>
         <button class="admin-button" id="checkin-submit" type="submit"><span id="checkin-submit-label">Catat kehadiran</span> <span aria-hidden="true">↗</span></button>
       </form>
