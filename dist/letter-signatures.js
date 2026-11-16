@@ -53,26 +53,60 @@
   }
   const statusLabels={draft:'Unggahan tertunda',pending:'Menunggu tanda tangan',signed:'Sudah ditandatangani',rejected:'Ditolak',cancelled:'Dibatalkan'};
 
+  function queueCards(items,{isSecretariatAdmin,userId}) {
+    const latest = new Map();
+    function prefer(previous,item) {
+      const active=['draft','pending','signed'];
+      return !previous || (!active.includes(previous.status) && active.includes(item.status));
+    }
+    for (const item of items) {
+      if (!isSecretariatAdmin && item.signer_id!==userId) continue;
+      const key=isSecretariatAdmin && item.source_request_id ? item.source_request_id : item.letter_id;
+      const group=isSecretariatAdmin && item.source_request_id ? 'handoff:' : 'letter:';
+      if (prefer(latest.get(group+key),item)) latest.set(group+key,item);
+    }
+    const cards=[];
+    const attached=new Set();
+    for (const [key,item] of latest) {
+      if (key.startsWith('handoff:')) continue;
+      const handoff=latest.get('handoff:'+item.id);
+      if (handoff) attached.add(handoff.id);
+      cards.push({item,handoff});
+    }
+    const shownLetters=new Set(cards.map(({item})=>item.letter_id));
+    for (const [key,item] of latest) {
+      if (!key.startsWith('handoff:') || attached.has(item.id) || shownLetters.has(item.letter_id)) continue;
+      cards.push({item});
+      shownLetters.add(item.letter_id);
+    }
+    return cards;
+  }
+
   function renderQueue() {
     const list=$('#letter-sign-requests');
-    if (!requests.length) {list.innerHTML='<p class="records-empty">Belum ada pengajuan tanda tangan.</p>';return;}
-    const {userId,isLeadership,isSecretariatAdmin}=admin.context();
-    list.innerHTML=requests.map(item=>{
-      const canSign=(isLeadership||isSecretariatAdmin) && item.signer_id===userId && item.status==='pending';
-      const canCancel=['draft','pending'].includes(item.status) && item.created_by===userId;
-      const canRetry=item.status==='draft' && item.created_by===userId;
-      const handoff=requests.find(request=>request.source_request_id===item.id && ['draft','pending','signed'].includes(request.status));
-      const canForward=isSecretariatAdmin && item.status==='signed' && item.signed_by===userId && !item.source_request_id && !handoff;
-      const email=signers.find(signer=>signer.id===item.signer_id)?.email || 'Akun penandatangan';
+    const context=admin.context();
+    const {userId,isLeadership,isSecretariatAdmin}=context;
+    const cards=queueCards(requests,context);
+    if (!cards.length) {list.innerHTML='<p class="records-empty">Belum ada pengajuan tanda tangan.</p>';return;}
+    const labels=(request,stage='')=>`<span class="letter-sign-status" data-state="${esc(request.status)}">${esc(stage ? (request.status==='signed'?'Sudah ditandatangani '+stage:stage+': '+(statusLabels[request.status]||request.status)) : statusLabels[request.status]||request.status)}</span>`;
+    list.innerHTML=cards.map(({item,handoff})=>{
+      const current=handoff||item;
+      const canSign=(isLeadership||isSecretariatAdmin) && current.signer_id===userId && current.status==='pending';
+      const canCancel=['draft','pending'].includes(current.status) && current.created_by===userId;
+      const canRetry=current.status==='draft' && current.created_by===userId;
+      const canForward=isSecretariatAdmin && item.status==='signed' && item.signed_by===userId && !item.source_request_id && (!handoff || ['cancelled','rejected'].includes(handoff.status));
+      const signed=current.status==='signed'?current:item.status==='signed'?item:null;
+      const stage=handoff || (isSecretariatAdmin && item.signer_id===userId && !item.source_request_id) ? 'Sekretaris' : item.source_request_id ? 'Ketua' : '';
+      const email=signers.find(signer=>signer.id===current.signer_id)?.email;
       return `<article class="letter-sign-item" data-request-id="${esc(item.id)}">
-        <div><strong>${esc(requestLabel(item))}</strong><span class="letter-sign-status" data-state="${esc(item.status)}">${esc(statusLabels[item.status]||item.status)}</span></div>
-        <small>${item.source_request_id?'Tahap Ketua · ':''}${esc(email)} · ${esc(new Date(item.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Jakarta'}))}</small>
-        ${item.rejection_reason?`<p class="letter-sign-reason">${esc(item.rejection_reason)}</p>`:''}
-        <div class="letter-sign-actions">
+        <div><strong>${esc(requestLabel(item))}</strong>${labels(item,stage)}${handoff?labels(handoff,'Ketua'):''}</div>
+        <small>${email?esc(email)+' · ':''}${esc(new Date(current.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Jakarta'}))}</small>
+        ${current.rejection_reason?`<p class="letter-sign-reason">${esc(current.rejection_reason)}</p>`:''}
+        <div class="letter-sign-actions" data-action-request-id="${esc(current.id)}">
           ${canSign?'<button type="button" data-sign="1">Tinjau &amp; tandatangani</button><button type="button" data-reject="1">Tolak</button>':''}
           ${canRetry?'<button type="button" data-resume="1">Lanjutkan unggah</button>':''}
-          ${item.status==='signed'?`<button type="button" data-download="signed">${item.source_request_id?'Unduh PDF kedua tanda tangan':'Unduh hasil PDF'}</button>`:''}
-          ${['pending','signed','rejected','cancelled'].includes(item.status)?`<button type="button" data-preview-original="1">${item.source_request_id?'Lihat PDF bertanda tangan Sekretaris':'Lihat PDF asli'}</button>`:''}
+          ${signed?`<button type="button" data-download="signed" data-action-request-id="${esc(signed.id)}">${signed.source_request_id?'Unduh PDF kedua tanda tangan':'Unduh hasil PDF'}</button>`:''}
+          ${['pending','signed','rejected','cancelled'].includes(item.status)?`<button type="button" data-preview-original="1" data-action-request-id="${esc(item.id)}">${item.source_request_id?'Lihat PDF bertanda tangan Sekretaris':'Lihat PDF asli'}</button>`:''}
           ${canCancel?'<button type="button" data-cancel="1">Batalkan</button>':''}
         </div>
         ${canForward?`<div class="letter-sign-actions">${chairs.length===1?`<span>Ketua: ${esc(chairs[0].email)}</span>`:chairs.length>1?`<label>Pilih Ketua <select data-chair><option value="">Pilih akun</option>${chairs.map(chair=>`<option value="${esc(chair.id)}">${esc(chair.email)}</option>`).join('')}</select></label>`:'<span>Belum ada akun Ketua yang bisa menerima surat.</span>'}${chairs.length?'<button type="button" data-forward="1">Kirim PDF ke Ketua</button>':''}</div>`:''}
@@ -165,7 +199,8 @@
     const button=event.target.closest('button');
     const card=button?.closest('[data-request-id]');
     if (!card) return;
-    const item=requests.find(request=>request.id===card.dataset.requestId);
+    const requestId=button.closest('[data-action-request-id]')?.dataset.actionRequestId||card.dataset.requestId;
+    const item=requests.find(request=>request.id===requestId);
     if (!item) return;
     button.disabled=true;
     try {
@@ -543,7 +578,7 @@
       if (currentRequest!==item) return;
       $('#letter-sign-dialog').close();
       await loadRequests();
-      const card=$('#letter-sign-requests').querySelector('[data-request-id="'+CSS.escape(item.id)+'"]');
+      const card=$('#letter-sign-requests').querySelector('[data-request-id="'+CSS.escape(item.source_request_id||item.id)+'"]');
       const forward=card?.querySelector('[data-chair], [data-forward]');
       message('#letter-sign-message',forward?'PDF sudah ditandatangani. Pilih “Kirim PDF ke Ketua” untuk meneruskannya.':'Surat berhasil ditandatangani. PDF hasil siap diunduh.','success');
       (forward||card?.querySelector('[data-download="signed"]'))?.focus();

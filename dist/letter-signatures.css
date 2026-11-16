@@ -61,3 +61,9 @@
 .letter-sign-dialog.is-read-only .letter-sign-viewer{grid-template-columns:minmax(0,1fr)}
 .letter-sign-controls[hidden]{display:none}
 #letter-sign-dialog-message:empty{display:none}
+
+.letter-sign-queue{grid-column:2}
+.letter-sign-request-form[hidden]+.letter-sign-queue{grid-column:1/-1}
+.letter-signatures-heading>div{flex:1}
+.letter-signatures-heading>#letter-sign-refresh{width:auto;flex:0 0 auto}
+@media(max-width:790px){.letter-sign-queue{grid-column:1/-1}}
