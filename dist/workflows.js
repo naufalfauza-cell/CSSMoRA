@@ -92,8 +92,9 @@
       try{ids=domain.participantIds(type,memberSelect.value,type==='tim'?[...selected]:[]);}catch(error){message.textContent=error.message;message.dataset.kind='error';return;}
       const id=crypto.randomUUID();button.disabled=true;button.textContent='Mengirim…';
       try{
-        let file=source;if(source.type!=='application/pdf')file=await window.CSSMoRAUpload.compressImage(source,{maxBytes:2*1024*1024});
-        if(file.size>5*1024*1024)throw new Error('Sertifikat maksimal 5 MB setelah dikompres.');
+        const file=source.type==='application/pdf'
+      ? await window.CSSMoRAUpload.compressEvidencePdf(source)
+      : await window.CSSMoRAUpload.compressImage(source,{maxBytes:2*1024*1024});
         const extension={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'}[file.type];if(!extension)throw new Error('Format berkas sertifikat tidak didukung.');
         const payload={id,competition_name:publicForm.elements.competition_name.value.trim(),competition_level:publicForm.elements.competition_level.value,
           competition_category:publicForm.elements.competition_category.value.trim(),participation_type:type,award_title:publicForm.elements.award_title.value.trim(),

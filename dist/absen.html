@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="./style.css?v=20261103-transparent-partners-v2">
   <link rel="stylesheet" href="./absen.css?v=20261112-perizinan">
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
-  <script src="./absen.js?v=20261116-izin-compress" defer></script>
+  <script src="./absen.js?v=20261116-public-uploads" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261103-secondary-pages-v1">
   <link rel="stylesheet" href="./wallet-theme.css?v=20261103-mobile-nav-scroll-video-v1">
 </head>
@@ -44,7 +44,7 @@
         <div id="checkin-photo-fields">
         <label for="checkin-photo">Foto bukti kehadiran</label>
         <input id="checkin-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required aria-describedby="checkin-photo-hint">
-        <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat, maksimal 500 KB.</small>
+        <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat.</small>
         <div class="checkin-photo-preview" id="photo-preview" hidden>
           <img id="photo-preview-image" alt="Pratinjau foto bukti kehadiran">
           <span id="photo-size"></span>
@@ -55,7 +55,7 @@
           <textarea id="checkin-reason" name="reason" rows="3" maxlength="1000" required disabled></textarea>
           <label for="checkin-letter">Surat izin (PDF)</label>
           <input id="checkin-letter" name="letter" type="file" accept="application/pdf,.pdf" required disabled>
-          <p class="checkin-photo-hint"><a href="./template-surat-izin.rtf" download>Unduh template surat izin</a>. Isi, tanda tangani, lalu simpan sebagai PDF. File di atas 2 MB dikompres otomatis saat dikirim.</p>
+          <p class="checkin-photo-hint"><a href="./template-surat-izin.rtf" download>Unduh template surat izin</a>. Isi, tanda tangani, lalu simpan sebagai PDF. PDF dikompres otomatis jika diperlukan.</p>
         </div>
         <button class="admin-button" id="checkin-submit" type="submit"><span id="checkin-submit-label">Catat kehadiran</span> <span aria-hidden="true">↗</span></button>
       </form>
