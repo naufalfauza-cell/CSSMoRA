@@ -51,6 +51,11 @@
   function requestLabel(request) {
     return letters.find(item=>item.id===request.letter_id)?.letter_number || 'Surat terarsip';
   }
+  function signedPdfFilename(value) {
+    const name=value.replace(/(?:\.pdf)+$/i,'').replace(/[\\/:*?"<>|\x00-\x1f\x7f]/g,'-')
+      .replace(/^[ .]+|[ .]+$/g,'').slice(0,110).replace(/[ .]+$/g,'');
+    return name ? name+'.pdf' : '';
+  }
   const statusLabels={draft:'Unggahan tertunda',pending:'Menunggu tanda tangan',signed:'Sudah ditandatangani',rejected:'Ditolak',cancelled:'Dibatalkan'};
 
   function queueCards(items,{isSecretariatAdmin,userId}) {
@@ -214,10 +219,16 @@
         message('#letter-sign-message','PDF bertanda tangan Sekretaris masuk ke antrean tanda tangan Ketua.','success');
       }
       else if (button.dataset.download==='signed') {
+        const letter=letters.find(record=>record.id===item.letter_id);
+        const suggested=signedPdfFilename(`${letter?.letter_number||'Nomor surat'}_${letter?.subject||'Surat'}`);
+        const edited=window.prompt('Nama file PDF',suggested);
+        if (edited===null) return;
+        const filename=signedPdfFilename(edited.trim());
+        if (!filename) throw new Error('Isi nama file PDF sebelum mengunduh.');
         const kind='signed';
         const blob=await download(pdfBucket,requestPath(item.id,kind));
         const href=URL.createObjectURL(blob), anchor=document.createElement('a');
-        anchor.href=href;anchor.download=`${requestLabel(item).replace(/[^a-z0-9-]/gi,'-')}-${kind}.pdf`;
+        anchor.href=href;anchor.download=filename;
         document.body.append(anchor);anchor.click();anchor.remove();
         setTimeout(()=>URL.revokeObjectURL(href),60000);
       } else if (button.dataset.resume) {
