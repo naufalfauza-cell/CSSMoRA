@@ -28,14 +28,14 @@
   <script src="./upload-utils.js?v=20261022-upload-v1" defer></script>
   <script src="./admin.js?v=20261112-unified-program-workspace" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
-  <script src="./letter-signatures.js?v=20261113-secretary-chair" defer></script>
+  <script src="./letter-signatures.js?v=20261116-pdf-preview" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
   <script src="./workflows.js?v=20261023-performance-v1" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
   <script src="./program-workflow.js?v=20261112-unified-program-workspace" defer></script>
   <script src="./program-documents.js?v=20261112-unified-program-workspace" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
-  <link rel="stylesheet" href="./letter-signatures.css?v=20261113-secretary-chair">
+  <link rel="stylesheet" href="./letter-signatures.css?v=20261116-pdf-preview">
   <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v2">
   <link rel="stylesheet" href="./wallet-theme.css?v=20261110-letter-layout">
 </head>
@@ -566,6 +566,7 @@
           </section>
           <dialog id="letter-sign-dialog" class="letter-sign-dialog" aria-labelledby="letter-sign-dialog-title">
             <div class="letter-sign-dialog-head"><div><span class="admin-kicker">TINJAU SURAT</span><h3 id="letter-sign-dialog-title">Bubuhkan tanda tangan</h3></div><button id="letter-sign-close" type="button" aria-label="Tutup peninjauan">✕</button></div>
+            <p class="form-message" id="letter-sign-dialog-message" role="status" aria-live="polite"></p>
             <div class="letter-sign-viewer">
               <div class="letter-sign-preview">
                 <div class="letter-sign-pages"><button id="letter-sign-prev" type="button">← Sebelumnya</button><span id="letter-sign-page-count">Halaman —</span><button id="letter-sign-next" type="button">Berikutnya →</button></div>
@@ -583,7 +584,6 @@
                 <label for="letter-stamp-size">Ukuran stempel</label><input id="letter-stamp-size" type="range" min="10" max="35" value="19">
                 <label class="letter-sign-consent"><input id="letter-sign-consent" type="checkbox"> Saya menyetujui pembubuhan tanda tangan pada surat ini.</label>
                 <button id="letter-sign-confirm" class="admin-button" type="button">Tandatangani PDF <span aria-hidden="true">↗</span></button>
-                <p class="form-message" id="letter-sign-dialog-message" role="status" aria-live="polite"></p>
               </div>
             </div>
           </dialog>

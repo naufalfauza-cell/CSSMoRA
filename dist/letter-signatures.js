@@ -72,7 +72,7 @@
           ${canSign?'<button type="button" data-sign="1">Tinjau &amp; tandatangani</button><button type="button" data-reject="1">Tolak</button>':''}
           ${canRetry?'<button type="button" data-resume="1">Lanjutkan unggah</button>':''}
           ${item.status==='signed'?`<button type="button" data-download="signed">${item.source_request_id?'Unduh PDF kedua tanda tangan':'Unduh hasil PDF'}</button>`:''}
-          ${['pending','signed','rejected','cancelled'].includes(item.status)?`<button type="button" data-download="original">${item.source_request_id?'Lihat PDF bertanda tangan Sekretaris':'Lihat PDF asli'}</button>`:''}
+          ${['pending','signed','rejected','cancelled'].includes(item.status)?`<button type="button" data-preview-original="1">${item.source_request_id?'Lihat PDF bertanda tangan Sekretaris':'Lihat PDF asli'}</button>`:''}
           ${canCancel?'<button type="button" data-cancel="1">Batalkan</button>':''}
         </div>
         ${canForward?`<div class="letter-sign-actions">${chairs.length===1?`<span>Ketua: ${esc(chairs[0].email)}</span>`:chairs.length>1?`<label>Pilih Ketua <select data-chair><option value="">Pilih akun</option>${chairs.map(chair=>`<option value="${esc(chair.id)}">${esc(chair.email)}</option>`).join('')}</select></label>`:'<span>Belum ada akun Ketua yang bisa menerima surat.</span>'}${chairs.length?'<button type="button" data-forward="1">Kirim PDF ke Ketua</button>':''}</div>`:''}
@@ -170,6 +170,7 @@
     button.disabled=true;
     try {
       if (button.dataset.sign) await openViewer(item);
+      else if (button.dataset.previewOriginal) await showViewer(item,true);
       else if (button.dataset.forward) {
         const chairId=chairs.length===1?chairs[0].id:card.querySelector('[data-chair]')?.value;
         if (!chairId) throw new Error('Pilih akun Ketua terlebih dahulu.');
@@ -177,9 +178,9 @@
         await loadRequests();
         message('#letter-sign-message','PDF bertanda tangan Sekretaris masuk ke antrean tanda tangan Ketua.','success');
       }
-      else if (button.dataset.download) {
-        const kind=button.dataset.download;
-        const blob=await download(pdfBucket,kind==='original'?originalPath(item):requestPath(item.id,kind));
+      else if (button.dataset.download==='signed') {
+        const kind='signed';
+        const blob=await download(pdfBucket,requestPath(item.id,kind));
         const href=URL.createObjectURL(blob), anchor=document.createElement('a');
         anchor.href=href;anchor.download=`${requestLabel(item).replace(/[^a-z0-9-]/gi,'-')}-${kind}.pdf`;
         document.body.append(anchor);anchor.click();anchor.remove();
@@ -276,13 +277,24 @@
     padDirty=false;
   }
   async function openViewer(item) {
+    return showViewer(item,false);
+  }
+  async function showViewer(item,readOnly) {
     const {isLeadership,isSecretariatAdmin,userId}=admin.context();
-    if ((!isLeadership&&!isSecretariatAdmin) || item.signer_id!==userId || item.status!=='pending' || $('#letter-sign-dialog').open) return;
+    const dialog=$('#letter-sign-dialog');
+    if ((!isLeadership&&!isSecretariatAdmin) || dialog.open) return;
+    if (!readOnly && (item.signer_id!==userId || item.status!=='pending')) return;
     closeViewer();
     currentRequest=item;currentPage=1;positions={signature:null,stamp:null};selectedMark='signature';
     $('#letter-stamp-status').textContent='Memuat stempel tersimpan…';
     $('#letter-sign-consent').checked=false;
-    $('#letter-sign-dialog-title').textContent=`Tandatangani ${requestLabel(item)}`;
+    dialog.classList.toggle('is-read-only',readOnly);
+    $('.letter-sign-controls').hidden=readOnly;
+    $('#letter-sign-prev').disabled=true;
+    $('#letter-sign-next').disabled=true;
+    $('#letter-sign-page-count').textContent='Halaman —';
+    const title=readOnly?(item.source_request_id?'PDF bertanda tangan Sekretaris':'PDF asli'):'Tandatangani';
+    $('#letter-sign-dialog-title').textContent=`${title} · ${requestLabel(item)}`;
     message('#letter-sign-dialog-message','Memuat PDF…');
     $('#letter-sign-dialog').showModal();
     try {
@@ -293,6 +305,11 @@
       const loaded=await library.getDocument({data:new Uint8Array(bytes),isEvalSupported:false}).promise;
       if (currentRequest!==item) {await loaded.destroy();return;}
       pdfDocument=loaded;
+      if (readOnly) {
+        await renderPage();
+        if (currentRequest===item) message('#letter-sign-dialog-message','');
+        return;
+      }
       await Promise.all([loadMark('signature',{fresh:true}),loadMark('stamp',{fresh:true})]);
       if (currentRequest!==item) return;
       showSavedSignatureInPad();
@@ -502,6 +519,7 @@
   }
   $('#letter-sign-confirm').addEventListener('click',async event=>{
     const button=event.currentTarget;
+    if ($('#letter-sign-dialog').classList.contains('is-read-only')) return;
     if (!$('#letter-sign-consent').checked) {message('#letter-sign-dialog-message','Centang persetujuan sebelum menandatangani.','error');return;}
     if (!signature || !positions.signature || !pdfDocument || !currentRequest) {message('#letter-sign-dialog-message','Tempatkan tanda tangan pada PDF dahulu.','error');return;}
     const item=currentRequest;
