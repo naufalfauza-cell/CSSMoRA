@@ -917,16 +917,26 @@ agendaForm.addEventListener('submit',async event=>{
   submit.disabled=true;
   showMessage('#agenda-editor-message','Menyimpan…');
   try {
+    let agendaId=existingId;
     if(existingId) {
       await api(`agenda?id=eq.${encodeURIComponent(existingId)}`,{method:'PATCH',body:payload});
       showMessage('#agenda-editor-message','Perubahan agenda berhasil disimpan.','success');
     } else {
-      await api('agenda',{method:'POST',body:payload});
+      const rows=await api('agenda?select=id',{method:'POST',body:payload,extraHeaders:{Prefer:'return=representation'}});
+      agendaId=rows?.[0]?.id;
       showMessage('#agenda-editor-message','Agenda berhasil ditambahkan.','success');
+    }
+    let archivePending=false;
+    if(payload.status==='published'&&agendaId){
+      const response=await authenticatedFetch(config.url+'/functions/v1/drive-integration',{
+        method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},
+        body:JSON.stringify({action:'create_attendance_archive_folders',agenda_id:agendaId}),
+      }).catch(()=>null);
+      archivePending=!response?.ok;
     }
     await loadAgenda();
     clearAgendaEditor();
-    showMessage('#agenda-editor-message',existingId?'Perubahan agenda berhasil disimpan.':'Agenda berhasil ditambahkan.','success');
+    showMessage('#agenda-editor-message',archivePending?'Agenda tersimpan. Folder Drive belum terbentuk. Simpan ulang agenda untuk mencoba lagi.':existingId?'Perubahan agenda berhasil disimpan.':'Agenda berhasil ditambahkan.',archivePending?'error':'success');
   } catch(error) {
     showMessage('#agenda-editor-message',error.message,'error');
   } finally {
@@ -1385,7 +1395,13 @@ function attendanceStatusLabel(status){return({hadir:'Hadir',izin:'Izin',sakit:'
 let attendanceRosterRequest=0;
 let attendanceRosterLoading=false;
 let attendanceRosterDirty=false;
+let attendancePermissionProofs=new Map();
 const attendanceRosterDrafts=new Map();
+async function loadAttendancePermissionProofs(agendaId){
+  if(!agendaId)return new Map();
+  const rows=await api('secretariat_attendance_permissions?select=id,member_id,created_at,letter_deleted_at,drive_file_id&agenda_id=eq.'+encodeURIComponent(agendaId));
+  return new Map(rows.map(row=>[row.member_id,row]));
+}
 function captureAttendanceRosterDrafts(){
   currentAttendanceRows.forEach(row=>{
     const select=document.querySelector('[data-attendance-status="'+CSS.escape(row.member_id)+'"]');
@@ -1406,16 +1422,20 @@ async function loadAttendanceRoster(eventId){
   const selected=attendanceEvents.find(event=>event.id===eventId);if(!selected)return;
   if(currentAttendanceEvent&&attendanceRosterDirty&&!window.confirm('Buang perubahan rekap yang belum disimpan?'))return;
   const requestId=++attendanceRosterRequest;
-  currentAttendanceEvent=selected;currentAttendanceRows=[];attendanceRosterDrafts.clear();attendanceRosterLoading=true;attendanceRosterDirty=false;attendanceRosterPanel.hidden=false;
+  currentAttendanceEvent=selected;currentAttendanceRows=[];attendancePermissionProofs=new Map();attendanceRosterDrafts.clear();attendanceRosterLoading=true;attendanceRosterDirty=false;attendanceRosterPanel.hidden=false;
   $('#attendance-save').disabled=true;
   $('#attendance-roster-title').textContent=selected.agenda?.title||selected.title;
   $('#attendance-event-meta').textContent=selected.event_date+' · '+(selected.session_name||'Umum')+(selected.location?' · '+selected.location:'')+(selected.agenda?.status==='published'?'':' · Agenda tidak terbit');
   $('#attendance-summary').textContent='';
   $('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Memuat daftar anggota…</td></tr>';
   try{
-    const rows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
+    const [rows,proofs]=await Promise.all([
+      api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId)),
+      loadAttendancePermissionProofs(selected.agenda_id),
+    ]);
     if(requestId!==attendanceRosterRequest)return;
-    currentAttendanceRows=rows;
+    currentAttendanceRows=rows.map(row=>({...row,permissionProof:proofs.get(row.member_id)}));
+    attendancePermissionProofs=proofs;
     renderAttendanceRoster();
   }catch(error){if(requestId===attendanceRosterRequest)$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">'+escapeHTML(error.message)+'</td></tr>';}
   finally{if(requestId===attendanceRosterRequest)attendanceRosterLoading=false;}
@@ -1435,7 +1455,13 @@ function renderAttendanceRoster(){
     const draft=attendanceRosterDrafts.get(row.member_id);
     const status=draft?.status||row.status;
     const reason=draft?.reason??row.reason??'';
-    const proof=row.proof_path&&row.proof_uploaded_at
+    const permission=row.permissionProof;
+    const permissionExpired=permission&&(permission.letter_deleted_at||Date.now()-Date.parse(permission.created_at)>=5*86400000);
+    const proof=status==='izin'&&permission
+      ? permissionExpired
+        ? '<small>'+(permission.drive_file_id?'Diarsipkan di Drive':'Menunggu arsip Drive')+'</small>'
+        : '<button class="text-button attendance-proof-button" type="button" data-attendance-permission-proof="'+escapeHTML(permission.id)+'">Lihat surat izin (PDF)</button>'
+      : row.proof_path&&row.proof_uploaded_at
       ? '<button class="text-button attendance-proof-button" type="button" data-attendance-proof="'+escapeHTML(row.member_id)+'">Lihat foto</button>'
       : row.proof_deleted_at
         ? '<small class="attendance-proof-expired">Dihapus otomatis</small>'
@@ -1452,11 +1478,15 @@ async function refreshOpenAttendanceRoster(){
   if(attendanceRosterLoading||!currentAttendanceEvent||attendanceRosterPanel.hidden||currentAttendanceEvent.status!=='open'||attendanceRosterHasChanges())return;
   const eventId=currentAttendanceEvent.id,requestId=attendanceRosterRequest;
   try{
-    const rows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
+    const [rows,proofs]=await Promise.all([
+      api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId)),
+      loadAttendancePermissionProofs(currentAttendanceEvent.agenda_id),
+    ]);
     if(requestId!==attendanceRosterRequest||attendanceRosterHasChanges())return;
     const signature=items=>items.map(row=>[row.member_id,row.status,row.updated_at,row.proof_path,row.proof_uploaded_at,row.proof_deleted_at].join('|')).join('\n');
-    if(signature(rows)!==signature(currentAttendanceRows)){
-      currentAttendanceRows=rows;
+    if(signature(rows)!==signature(currentAttendanceRows)||JSON.stringify([...proofs])!==JSON.stringify([...attendancePermissionProofs])){
+      currentAttendanceRows=rows.map(row=>({...row,permissionProof:proofs.get(row.member_id)}));
+      attendancePermissionProofs=proofs;
       renderAttendanceRoster();
     }
   }catch{}
@@ -1471,6 +1501,22 @@ async function getAttendanceProofUrl(eventId,memberId){
   return result.signed_url;
 }
 $('#attendance-roster').addEventListener('click',async event=>{
+  const permissionButton=event.target.closest('[data-attendance-permission-proof]');
+  if(permissionButton){
+    permissionButton.disabled=true;
+    const requestId=attendanceRosterRequest;
+    try{
+      const id=encodeURIComponent(permissionButton.dataset.attendancePermissionProof);
+      const result=await authenticatedFetch(config.url+'/storage/v1/object/authenticated/attendance-permission-letters/'+id+'.pdf',{cache:'no-store',headers:{apikey:config.publishableKey}});
+      if(!result.ok)throw new Error('Surat izin belum dapat dimuat.');
+      const pdf=await result.blob();
+      if(requestId!==attendanceRosterRequest)return;
+      $('#attendance-permission-pdf').src=URL.createObjectURL(pdf);
+      $('#attendance-permission-preview').showModal();
+    }catch(error){showMessage('#attendance-message',error.message,'error');}
+    finally{permissionButton.disabled=false;}
+    return;
+  }
   const button=event.target.closest('[data-attendance-proof]');
   if(!button||!currentAttendanceEvent)return;
   button.disabled=true;
@@ -1482,6 +1528,11 @@ $('#attendance-roster').addEventListener('click',async event=>{
   finally{button.disabled=attendanceRosterLoading;}
 });
 $('#attendance-proof-dialog').addEventListener('close',()=>{$('#attendance-proof-image').removeAttribute('src');});
+$('#attendance-permission-preview').addEventListener('close',()=>{
+  const frame=$('#attendance-permission-pdf');
+  URL.revokeObjectURL(frame.src);
+  frame.removeAttribute('src');
+});
 $('#attendance-save').addEventListener('click',async()=>{
   if(!currentAttendanceEvent||attendanceRosterLoading||currentAttendanceEvent.status==='closed'||currentAttendanceEvent.agenda?.status!=='published')return;
   const eventId=currentAttendanceEvent.id,requestId=attendanceRosterRequest;
@@ -1498,7 +1549,7 @@ $('#attendance-save').addEventListener('click',async()=>{
     await api('rpc/save_secretariat_attendance_changes',{method:'POST',body:{p_event_id:eventId,p_changes:changes}});
     const rows=await api('secretariat_attendance_records?select=*&event_id=eq.'+encodeURIComponent(eventId));
     if(requestId!==attendanceRosterRequest)return;
-    currentAttendanceRows=rows;
+    currentAttendanceRows=rows.map(row=>({...row,permissionProof:attendancePermissionProofs.get(row.member_id)}));
     attendanceRosterDrafts.clear();attendanceRosterDirty=false;
     renderAttendanceRoster();
     await loadAttendanceRecap();
