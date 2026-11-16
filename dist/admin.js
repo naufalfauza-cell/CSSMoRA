@@ -1933,7 +1933,7 @@ $('#outgoing-draft-list').addEventListener('click',async event=>{
       showMessage('#outgoing-draft-message','Menyiapkan PDF dari Google Docs terbaru…');
       await prepareOutgoingLetterPdf(draft_id);
       $('#tab-letter-signatures').click();
-      $('#letter-sign-signer').focus();
+      $('#letter-sign-self').focus();
       showMessage('#outgoing-draft-message','');
     }
   }catch(error){

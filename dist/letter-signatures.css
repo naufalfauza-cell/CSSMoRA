@@ -11,6 +11,10 @@
 .letter-signatures-layout{display:grid;grid-template-columns:minmax(285px,.7fr) minmax(0,1.3fr);gap:24px}
 .letter-signatures h4,.letter-sign-dialog h4{font:700 13px/1.4 'Plus Jakarta Sans',sans-serif;margin:0 0 12px}
 .letter-sign-request-form{display:grid;align-content:start;gap:9px;padding:18px;border:1px solid #e1e9e0;border-radius:16px;background:#fff}
+.letter-sign-request-form[hidden]{display:none}
+.letter-sign-request-form details{border-top:1px solid #e1e9e0;padding-top:8px}
+.letter-sign-request-form details label{display:block;margin-top:8px}
+.letter-sign-stamp-thumbnail{object-fit:contain}
 .letter-sign-request-form label,.letter-sign-controls>label{font-size:11px;font-weight:700}
 .letter-sign-request-form select,.letter-sign-request-form input[type=file]{min-width:0;width:100%;padding:9px;border:1px solid #cad8cd;border-radius:10px;background:white;font:inherit;font-size:11px;color:#17352a}
 .letter-sign-request-form .admin-button{margin-top:8px;font-size:11px}
