@@ -2323,3 +2323,7 @@
 .program-preparation-group { scroll-margin-top:75px; }
 
 .program-maintenance { padding: 12px 14px; border-radius: 10px; background: #eef7f3; color: #285a4b; }
+
+.proker-maintenance { min-height: 50vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:16px; padding:32px 20px; }
+.proker-maintenance-robot { width:112px; height:112px; }
+.proker-maintenance h3 { margin:0; color:#164d45; }
