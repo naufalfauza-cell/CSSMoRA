@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261116-public-uploads" defer></script>
-  <script src="./admin.js?v=20261117-info-izin" defer></script>
+  <script src="./admin.js?v=20261117-arsip-pengajuan" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261116-signed-filename" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -456,6 +456,9 @@
               <tbody id="attendance-permission-rows"></tbody>
             </table></div>
             <p class="form-message" id="attendance-permission-message" role="status"></p>
+            <details id="attendance-permission-archive"><summary>Riwayat pengajuan yang diarsipkan</summary>
+              <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Kegiatan</th><th>Anggota</th><th>Alasan</th><th>Surat dan status</th></tr></thead><tbody id="attendance-permission-archive-rows"></tbody></table></div>
+            </details>
           </details>
           <p class="form-message" id="event-message" role="status" aria-live="polite"></p>
           <section class="records-card attendance-roster-panel" id="attendance-roster-panel" hidden aria-labelledby="attendance-roster-title">

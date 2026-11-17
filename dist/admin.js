@@ -1175,15 +1175,24 @@ $('#member-csv').addEventListener('change',async event=>{
 });
 
 async function loadAttendancePermissions(){
-  const list=$('#attendance-permission-rows');
   const message='#attendance-permission-message';
   showMessage(message,'Memuat pengajuan…');
   try{
-    const rows=await api('secretariat_attendance_permissions?select=id,agenda_title,reason,approved_at,rejected_at,secretariat_members(full_name,cohort)&order=created_at.desc&limit=100');
-    list.innerHTML=(rows||[]).map(row=>{
+    const select='select=id,agenda_title,reason,approved_at,rejected_at,review_archived_at,letter_deleted_at,drive_file_id,secretariat_members(full_name,cohort)';
+    const [active,archived]=await Promise.all([
+      api('secretariat_attendance_permissions?'+select+'&review_archived_at=is.null&order=created_at.desc&limit=1000'),
+      api('secretariat_attendance_permissions?'+select+'&review_archived_at=not.is.null&order=review_archived_at.desc&limit=1000')
+    ]);
+    const render=(rows,isArchived)=>rows.map(row=>{
       const member=row.secretariat_members;
-      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td><button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button> ${row.approved_at?'Disetujui':row.rejected_at?'Ditolak':isSecretariatAdmin?`<button type="button" data-permission-decision="approve" data-id="${escapeHTML(row.id)}">Setujui</button> <button type="button" data-permission-decision="reject" data-id="${escapeHTML(row.id)}">Tolak</button>`:'Menunggu keputusan'}</td></tr>`;
-    }).join('')||'<tr><td colspan="4" class="records-empty">Belum ada pengajuan izin.</td></tr>';
+      const reviewed=!!(row.approved_at||row.rejected_at);
+      const status=row.approved_at?'Disetujui':row.rejected_at?'Ditolak':'Menunggu keputusan';
+      const proof=row.letter_deleted_at?(row.drive_file_id?'Surat diarsipkan di Drive':'Surat tidak tersedia'):`<button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button>`;
+      const actions=!isArchived&&isSecretariatAdmin?(reviewed?` <button type="button" data-permission-archive="${escapeHTML(row.id)}">Arsipkan</button>`:` <button type="button" data-permission-decision="approve" data-id="${escapeHTML(row.id)}">Setujui</button> <button type="button" data-permission-decision="reject" data-id="${escapeHTML(row.id)}">Tolak</button>`):'';
+      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td>${proof} ${status}${actions}</td></tr>`;
+    }).join('')||`<tr><td colspan="4" class="records-empty">${isArchived?'Belum ada pengajuan di arsip.':'Belum ada pengajuan izin.'}</td></tr>`;
+    $('#attendance-permission-rows').innerHTML=render(active||[],false);
+    $('#attendance-permission-archive-rows').innerHTML=render(archived||[],true);
     showMessage(message,'');
   }catch(error){showMessage(message,error.message||'Pengajuan belum dapat dimuat.','error');}
 }
@@ -1191,7 +1200,17 @@ $('#attendance-permissions').addEventListener('toggle',event=>{
   if(event.currentTarget.open)void loadAttendancePermissions();
 });
 $('#attendance-permissions-refresh').addEventListener('click',()=>void loadAttendancePermissions());
-$('#attendance-permission-rows').addEventListener('click',async event=>{
+$('#attendance-permissions').addEventListener('click',async event=>{
+  const archive=event.target.closest('[data-permission-archive]');
+  if(archive){
+    archive.disabled=true;
+    try{
+      await api('rpc/archive_cssmora_attendance_permission',{method:'POST',body:{p_permission_id:archive.dataset.permissionArchive}});
+      await loadAttendancePermissions();
+      showMessage('#attendance-permission-message','Pengajuan dipindahkan ke riwayat.','success');
+    }catch(error){showMessage('#attendance-permission-message',error.message,'error');archive.disabled=false;}
+    return;
+  }
   const decision=event.target.closest('[data-permission-decision]');
   if(decision){
     decision.disabled=true;
