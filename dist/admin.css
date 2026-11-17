@@ -2143,6 +2143,15 @@
 .admin-page .table-search:focus{outline:2px solid #b9d6bb;outline-offset:1px}
 .admin-page .attendance-event-search{margin-left:auto}
 .admin-page .attendance-recap-card .secretariat-table,.admin-page .attendance-roster-panel .secretariat-table{min-width:620px}
+.admin-page .attendance-recap-card .secretariat-table-wrap{overflow-x:auto}
+.admin-page .attendance-recap-card .secretariat-table{min-width:860px}
+.admin-page .attendance-recap-card .secretariat-table th:nth-child(1){width:25%}
+.admin-page .attendance-recap-card .secretariat-table th:nth-child(2){width:13%}
+.admin-page .attendance-recap-card .secretariat-table th:nth-child(3){width:8%}
+.admin-page .attendance-recap-card .secretariat-table th:nth-child(4){width:14%}
+.admin-page .attendance-recap-card .secretariat-table th:nth-child(5){width:19%}
+.admin-page .attendance-recap-card .secretariat-table th:nth-child(6){width:21%}
+.admin-page .attendance-recap-card .secretariat-table td:last-child{text-align:left;overflow-wrap:normal}
 .admin-page .attendance-recap-card .secretariat-table td:nth-child(3),.admin-page .attendance-recap-card .secretariat-table td:nth-child(4),.admin-page .attendance-recap-card .secretariat-table td:nth-child(5){font-variant-numeric:tabular-nums}
 .admin-page .attendance-rate{display:inline-flex;align-items:center;gap:7px;color:#2e6744;font-weight:700}
 .admin-page .attendance-rate-track{display:inline-block;width:54px;height:5px;overflow:hidden;border-radius:99px;background:#e8eee7;vertical-align:middle}
