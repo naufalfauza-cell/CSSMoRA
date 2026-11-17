@@ -2336,3 +2336,11 @@
 .proker-maintenance { min-height: 50vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:16px; padding:32px 20px; }
 .proker-maintenance-robot { width:112px; height:112px; }
 .proker-maintenance h3 { margin:0; color:#164d45; }
+
+/* Rekap kegiatan dengan kolom yang dapat digeser ke samping. */
+.admin-page .attendance-recap-card .attendance-recap-table{table-layout:auto;min-width:100%;width:max-content}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(n){width:auto;min-width:120px}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(1){min-width:45px}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(2){min-width:220px}
+.admin-page .attendance-recap-card .attendance-recap-table td{overflow-wrap:normal;vertical-align:middle}
+.admin-page .attendance-recap-card .attendance-recap-table td small{display:block}

@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261116-public-uploads" defer></script>
-  <script src="./admin.js?v=20261117-arsip-acara" defer></script>
+  <script src="./admin.js?v=20261117-rekap-kegiatan" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261116-signed-filename" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -445,7 +445,7 @@
             <div class="editor-heading"><div><span class="admin-kicker">AKUMULASI KEHADIRAN</span><h3 id="attendance-recap-title">Rekap anggota</h3></div></div>
             <div class="attendance-summary" id="attendance-recap-summary"></div>
             <div class="table-toolbar"><input class="table-search" id="attendance-recap-filter" type="search" placeholder="Cari nama atau NIA" aria-label="Cari anggota pada rekap kehadiran"></div>
-            <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Hadir</th><th>Agenda dihitung</th><th>Persentase hadir</th><th>Izin · batas 25%</th></tr></thead><tbody id="attendance-recap"><tr><td colspan="6" class="records-empty">Memuat rekap…</td></tr></tbody></table></div>
+            <div class="secretariat-table-wrap"><table class="secretariat-table attendance-recap-table"><thead><tr id="attendance-recap-head"><th>Anggota</th><th>NIA</th><th>Hadir</th><th>Agenda dihitung</th><th>Persentase hadir</th><th>Izin · batas 25%</th></tr></thead><tbody id="attendance-recap"><tr><td colspan="6" class="records-empty">Memuat rekap…</td></tr></tbody></table></div>
           </section>
           <details class="records-card" id="attendance-permissions">
             <summary>Pengajuan izin anggota</summary>
