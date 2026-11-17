@@ -1167,10 +1167,10 @@ async function loadAttendancePermissions(){
   const message='#attendance-permission-message';
   showMessage(message,'Memuat pengajuan…');
   try{
-    const rows=await api('secretariat_attendance_permissions?select=id,agenda_title,reason,approved_at,secretariat_members(full_name,cohort)&order=created_at.desc&limit=100');
+    const rows=await api('secretariat_attendance_permissions?select=id,agenda_title,reason,approved_at,rejected_at,secretariat_members(full_name,cohort)&order=created_at.desc&limit=100');
     list.innerHTML=(rows||[]).map(row=>{
       const member=row.secretariat_members;
-      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td><button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button> Surat diterima</td></tr>`;
+      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td><button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button> ${row.approved_at?'Disetujui':row.rejected_at?'Ditolak':isSecretariatAdmin?`<button type="button" data-permission-decision="approve" data-id="${escapeHTML(row.id)}">Setujui</button> <button type="button" data-permission-decision="reject" data-id="${escapeHTML(row.id)}">Tolak</button>`:'Menunggu keputusan'}</td></tr>`;
     }).join('')||'<tr><td colspan="4" class="records-empty">Belum ada pengajuan izin.</td></tr>';
     showMessage(message,'');
   }catch(error){showMessage(message,error.message||'Pengajuan belum dapat dimuat.','error');}
@@ -1180,6 +1180,18 @@ $('#attendance-permissions').addEventListener('toggle',event=>{
 });
 $('#attendance-permissions-refresh').addEventListener('click',()=>void loadAttendancePermissions());
 $('#attendance-permission-rows').addEventListener('click',async event=>{
+  const decision=event.target.closest('[data-permission-decision]');
+  if(decision){
+    decision.disabled=true;
+    try{
+      const action=decision.dataset.permissionDecision;
+      await api('rpc/'+(action==='approve'?'approve':'reject')+'_cssmora_attendance_permission',{method:'POST',body:{p_permission_id:decision.dataset.id}});
+      await loadAttendancePermissions();
+      if(currentAttendanceEvent&&!attendanceRosterDirty)await loadAttendanceRoster(currentAttendanceEvent.id);
+      showMessage('#attendance-permission-message',action==='approve'?'Izin disetujui dan tercatat di absensi.':'Pengajuan izin ditolak.','success');
+    }catch(error){showMessage('#attendance-permission-message',error.message,'error');decision.disabled=false;}
+    return;
+  }
   const button=event.target.closest('[data-permission-preview]');
   if(!button)return;
   const id=button.dataset.permissionPreview;
@@ -1234,9 +1246,8 @@ function renderAttendanceEvents(){
     const deadline=event.auto_close_at?'<span class="attendance-auto-close-label">Tutup otomatis '+escapeHTML(attendanceDeadlineLabel(event.auto_close_at))+'</span>':'';
     const copy=published?'<button type="button" data-copy-event="'+escapeHTML(event.id)+'">Salin tautan</button>':'';
     const toggle=published?'<button type="button" data-toggle-event="'+escapeHTML(event.id)+'">'+(event.status==='open'?'Tutup absensi':'Buka absensi')+'</button>':'';
-    const permissionToggle=published&&isSecretariatAdmin?'<button type="button" data-toggle-permission="'+escapeHTML(event.id)+'">'+(event.permission_reopened?'Tutup izin manual':'Buka kembali izin')+'</button>':'';
     const remove=!published?'<button type="button" data-delete-event="'+escapeHTML(event.id)+'">Hapus data</button>':'';
-    return '<article class="attendance-event-card" data-agenda-state="'+(published?'published':'unpublished')+'"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(event.id)+'"><span><strong>'+escapeHTML(title)+'</strong><small class="attendance-event-meta-line">'+escapeHTML(event.event_date)+' · '+escapeHTML(event.session_name||'Umum')+(event.location?' · '+escapeHTML(event.location):'')+' <span class="attendance-event-badge'+sourceClass+'">'+source+'</span>'+deadline+'</small></span><span class="record-status '+(event.status==='open'&&published?'published':'')+'">'+status+'</span></button><div class="attendance-event-actions">'+copy+toggle+permissionToggle+remove+'</div></article>';
+    return '<article class="attendance-event-card" data-agenda-state="'+(published?'published':'unpublished')+'"><button type="button" class="secretariat-record-select" data-event-id="'+escapeHTML(event.id)+'"><span><strong>'+escapeHTML(title)+'</strong><small class="attendance-event-meta-line">'+escapeHTML(event.event_date)+' · '+escapeHTML(event.session_name||'Umum')+(event.location?' · '+escapeHTML(event.location):'')+' <span class="attendance-event-badge'+sourceClass+'">'+source+'</span>'+deadline+'</small></span><span class="record-status '+(event.status==='open'&&published?'published':'')+'">'+status+'</span></button><div class="attendance-event-actions">'+copy+toggle+remove+'</div></article>';
   }).join('');
 }
 $('#attendance-event-filter').addEventListener('input',renderAttendanceEvents);
@@ -1260,18 +1271,6 @@ async function deleteAttendanceEvent(eventId){
   return result;
 }
 attendanceEventList.addEventListener('click',async event=>{
-  const permissionToggle=event.target.closest('[data-toggle-permission]');
-  if(permissionToggle){
-    const item=attendanceEvents.find(row=>row.id===permissionToggle.dataset.togglePermission);
-    if(!item||!attendanceEventIsPublished(item)||!isSecretariatAdmin)return;
-    permissionToggle.disabled=true;
-    try{
-      await api('secretariat_attendance_events?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',body:{permission_reopened:!item.permission_reopened}});
-      await loadAttendanceEvents();
-      showMessage('#event-message',item.permission_reopened?'Pembukaan manual izin dihentikan.':'Izin dibuka kembali.','success');
-    }catch(error){showMessage('#event-message',error.message,'error');permissionToggle.disabled=false;}
-    return;
-  }
   const copy=event.target.closest('[data-copy-event]');
   if(copy){
     const item=attendanceEvents.find(row=>row.id===copy.dataset.copyEvent);
