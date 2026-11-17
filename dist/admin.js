@@ -1397,8 +1397,8 @@ function renderAttendanceRecap(){
   if(!rows.length){$('#attendance-recap').innerHTML='<tr><td colspan="6" class="records-empty">Anggota yang cocok tidak ditemukan.</td></tr>';return;}
   $('#attendance-recap').innerHTML=rows.map(row=>{
     const percent=Math.max(0,Math.min(100,Number(row.attendance_percent)||0));
-    const izinCount=Number(row.permission_count||0), izinPercent=Number(row.permission_percent||0), warning=izinPercent>25?'Melebihi batas':izinPercent===25?'Mencapai batas':'Dalam batas';
-    return '<tr><td><strong>'+escapeHTML(row.full_name)+'</strong><small>Angkatan '+escapeHTML(row.cohort)+'</small></td><td>'+escapeHTML(row.nia)+'</td><td>'+Number(row.attended_count||0)+'</td><td>'+Number(row.eligible_count||0)+'</td><td><span class="attendance-rate"><span class="attendance-rate-track" aria-hidden="true"><i style="width:'+percent+'%"></i></span>'+percent+'%</span></td><td><strong>'+izinCount+' kali · '+izinPercent+'%</strong><small>'+warning+' 25%</small><span class="attendance-rate-track" aria-label="Persentase izin '+izinPercent+' persen"><i style="width:'+Math.min(100,Math.max(0,izinPercent))+'%"></i></span></td></tr>';
+    const izinCount=Number(row.permission_count||0), izinPercent=Number(row.permission_percent||0);
+    return '<tr><td><strong>'+escapeHTML(row.full_name)+'</strong><small>Angkatan '+escapeHTML(row.cohort)+'</small></td><td>'+escapeHTML(row.nia)+'</td><td>'+Number(row.attended_count||0)+'</td><td>'+Number(row.eligible_count||0)+'</td><td><span class="attendance-rate"><span class="attendance-rate-track" aria-hidden="true"><i style="width:'+percent+'%"></i></span>'+percent+'%</span></td><td><strong>'+izinCount+' kali · '+izinPercent+'%</strong></td></tr>';
   }).join('');
 }
 $('#attendance-recap-filter').addEventListener('input',renderAttendanceRecap);
