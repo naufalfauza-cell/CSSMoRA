@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261117-alur-proker">
+  <link rel="stylesheet" href="./admin.css?v=20261117-pemeliharaan-proker">
   <link rel="stylesheet" href="./workflows.css?v=20261111-proker-preparation">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -228,13 +228,13 @@
                   <p id="program-prep-create-hint" class="field-hint">Pilih proker dan klik Simpan monitoring untuk mengaktifkan pembuatan berkas.</p>
                   <p id="program-prep-create-message" class="form-message" role="status"></p>
                 </fieldset></details>
-                <details class="program-preparation-group" id="program-stage-proposal"><summary>3 · Proposal</summary><fieldset class="program-preparation"><legend>Proposal</legend><div id="program-cycle-proposal"></div></fieldset></details>
+                <details class="program-preparation-group" id="program-stage-proposal"><summary>3 · Proposal</summary><fieldset class="program-preparation"><legend>Proposal</legend><p class="program-maintenance" role="status">Bagian proposal sedang dalam pemeliharaan dan belum dapat digunakan.</p><div id="program-cycle-proposal" hidden></div></fieldset></details>
                 <details class="program-preparation-group" id="program-stage-execution"><summary>4 · Pelaksanaan dan evaluasi</summary><fieldset class="program-preparation"><legend>Hasil pelaksanaan</legend>
                 <label for="program-cycle-summary">Ringkasan pelaksanaan / LPJ</label><textarea id="program-cycle-summary" name="lpj_summary" rows="3" maxlength="5000" placeholder="Kegiatan yang dilaksanakan dan hasil utamanya"></textarea>
                 <label for="program-cycle-outputs">Luaran dan capaian</label><textarea id="program-cycle-outputs" name="output_summary" rows="2" maxlength="2000" placeholder="Contoh: jumlah peserta, produk, atau target tercapai"></textarea>
                 <label for="program-cycle-lessons">Evaluasi dan tindak lanjut</label><textarea id="program-cycle-lessons" name="lesson_learned" rows="2" maxlength="2000" placeholder="Catatan evaluasi untuk periode berikutnya"></textarea>
                 </fieldset></details>
-                <details class="program-preparation-group" id="program-stage-lpj"><summary>5 · LPJ</summary><fieldset class="program-preparation"><legend>LPJ setelah kegiatan</legend><div id="program-cycle-lpj"></div></fieldset></details>
+                <details class="program-preparation-group" id="program-stage-lpj"><summary>5 · LPJ</summary><fieldset class="program-preparation"><legend>LPJ setelah kegiatan</legend><p class="program-maintenance" role="status">Bagian LPJ sedang dalam pemeliharaan dan belum dapat digunakan.</p><div id="program-cycle-lpj" hidden></div></fieldset></details>
                 <p class="program-cycle-progress" id="program-cycle-progress">Progres 0% · 0 dari 0 tahapan selesai</p>
                 <button class="admin-button" id="save-program-cycle" type="submit">Simpan monitoring <span aria-hidden="true">↗</span></button>
                 <div class="program-cycle-actions" id="program-cycle-actions" hidden></div>
@@ -260,8 +260,8 @@
             </section>
           </div>
           <section id="program-documents-panel" aria-labelledby="program-documents-title">
-          <div class="program-workflow-heading"><div><span class="admin-kicker">DOKUMEN PROGRAM KERJA</span><h3 id="program-documents-title">Editor dan arsip Proposal &amp; LPJ</h3><p>PIC mengisi draf, meninjau narasi, membuat Google Docs, lalu mengajukan dokumen yang sama. Sekretaris meninjau dan menandatangani; PDF lalu disimpan di Drive dan diteruskan ke Ketua. Realisasi keuangan LPJ tetap diverifikasi Bendahara dari AkunPro.</p></div><button class="text-button" id="program-documents-refresh" type="button">Muat ulang</button></div>
-          <div class="program-documents-layout">
+          <div class="program-workflow-heading"><div><span class="admin-kicker">DOKUMEN PROGRAM KERJA</span><h3 id="program-documents-title">Proposal &amp; LPJ</h3><p class="program-maintenance" role="status">Sedang dalam pemeliharaan. Proposal dan LPJ belum dapat diakses sementara waktu.</p></div><button class="text-button" id="program-documents-refresh" type="button" hidden>Muat ulang</button></div>
+          <div class="program-documents-layout" hidden>
             <section class="editor-card program-document-editor" aria-labelledby="program-document-editor-title">
               <div class="editor-heading"><div><span class="admin-kicker">DRAF DOKUMEN</span><h4 id="program-document-editor-title">Mulai proposal atau LPJ</h4></div><button class="text-button" id="program-document-reset" type="button">Tutup editor</button></div>
               <div id="program-document-guidance" class="program-document-guidance"><p>Pilih siklus untuk membuat proposal atau LPJ, atau pilih draf yang sudah ada pada daftar dokumen.</p><button type="button" class="member-option-button" id="program-document-choose-cycle">Pilih atau buat siklus</button></div>
