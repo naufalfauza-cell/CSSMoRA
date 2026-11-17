@@ -2321,3 +2321,5 @@
 .program-stage-nav button { border:1px solid #cbded8; border-radius:8px; background:#fff; color:#22594d; padding:8px 12px; cursor:pointer; }
 .program-stage-nav button:hover, .program-stage-nav button:focus-visible { background:#e6f4ed; outline:2px solid #18785b; outline-offset:2px; }
 .program-preparation-group { scroll-margin-top:75px; }
+
+.program-maintenance { padding: 12px 14px; border-radius: 10px; background: #eef7f3; color: #285a4b; }
