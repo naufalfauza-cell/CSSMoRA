@@ -1170,7 +1170,7 @@ async function loadAttendancePermissions(){
     const rows=await api('secretariat_attendance_permissions?select=id,agenda_title,reason,approved_at,secretariat_members(full_name,cohort)&order=created_at.desc&limit=100');
     list.innerHTML=(rows||[]).map(row=>{
       const member=row.secretariat_members;
-      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td><button class="text-button" type="button" data-permission-download="${escapeHTML(row.id)}">Unduh PDF</button> ${row.approved_at?'Izin tercatat':isSecretariatAdmin?`<button class="member-option-button" type="button" data-permission-approve="${escapeHTML(row.id)}">Setujui dan catat izin</button>`:'Menunggu Sekretaris'}</td></tr>`;
+      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td><button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button> ${row.approved_at?'Izin tercatat':isSecretariatAdmin?`<button class="member-option-button" type="button" data-permission-approve="${escapeHTML(row.id)}">Setujui dan catat izin</button>`:'Menunggu Sekretaris'}</td></tr>`;
     }).join('')||'<tr><td colspan="4" class="records-empty">Belum ada pengajuan izin.</td></tr>';
     showMessage(message,'');
   }catch(error){showMessage(message,error.message||'Pengajuan belum dapat dimuat.','error');}
@@ -1192,17 +1192,15 @@ $('#attendance-permission-rows').addEventListener('click',async event=>{
     finally{approval.disabled=false;}
     return;
   }
-  const button=event.target.closest('[data-permission-download]');
+  const button=event.target.closest('[data-permission-preview]');
   if(!button)return;
-  const id=button.dataset.permissionDownload;
+  const id=button.dataset.permissionPreview;
   button.disabled=true;
   try{
     const result=await authenticatedFetch(`${config.url}/storage/v1/object/authenticated/attendance-permission-letters/${encodeURIComponent(id)}.pdf`,{cache:"no-store",headers:{apikey:config.publishableKey}});
-    if(!result.ok)throw new Error('Surat izin belum dapat diunduh.');
-    const url=URL.createObjectURL(await result.blob());
-    const anchor=document.createElement('a');
-    anchor.href=url;anchor.download='surat-izin.pdf';anchor.click();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(!result.ok)throw new Error('Surat izin belum dapat dimuat.');
+    $('#attendance-permission-pdf').src=URL.createObjectURL(await result.blob());
+    $('#attendance-permission-preview').showModal();
   }catch(error){showMessage('#attendance-permission-message',error.message,'error');}
   finally{button.disabled=false;}
 });
