@@ -2252,3 +2252,7 @@
 @media (max-width: 920px) {
   #outgoing-letter-composer { grid-template-columns: minmax(0, 1fr); }
 }
+
+#attendance-permission-preview{width:min(96vw,1200px);max-width:1200px;height:92vh;max-height:92vh;display:none;flex-direction:column}
+#attendance-permission-preview[open]{display:flex}
+#attendance-permission-pdf{width:100%;flex:1;min-height:0;border:0}

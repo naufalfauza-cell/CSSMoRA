@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261110-letter-layout">
+  <link rel="stylesheet" href="./admin.css?v=20261117-izin-preview">
   <link rel="stylesheet" href="./workflows.css?v=20261111-proker-preparation">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261116-public-uploads" defer></script>
-  <script src="./admin.js?v=20261116-attendance-archive" defer></script>
+  <script src="./admin.js?v=20261117-izin-preview" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261116-signed-filename" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -478,7 +478,7 @@
           <dialog class="attendance-proof-dialog" id="attendance-permission-preview" aria-labelledby="attendance-permission-preview-title">
             <form method="dialog"><button class="attendance-proof-close" aria-label="Tutup surat izin">×</button></form>
             <h3 id="attendance-permission-preview-title">Surat izin</h3>
-            <iframe id="attendance-permission-pdf" title="Pratinjau surat izin PDF" style="width:min(75vw,720px);height:65vh;border:0"></iframe>
+            <iframe id="attendance-permission-pdf" title="Pratinjau surat izin PDF"></iframe>
           </dialog>
         </section>
 
