@@ -2308,3 +2308,16 @@
   #attendance-permission-rows button { transition: none; }
   #attendance-permission-rows button:hover:not(:disabled) { transform: none; }
 }
+
+/* Kelompok kerja proker dan pencarian lomba */
+.program-preparation-group { margin: 12px 0; border: 1px solid #dce7e4; border-radius: 10px; }
+.program-preparation-group > summary { cursor: pointer; padding: 12px; font-weight: 600; }
+.program-preparation-group > .program-preparation { margin: 0 10px 10px; }
+.program-document-guidance { padding: 16px; border-radius: 10px; background: #eef7f3; }
+.competition-record-filters { display: grid; gap: 6px; margin: 12px 0; }
+.competition-record-filters input, .competition-record-filters select { width: 100%; }
+
+.program-stage-nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 16px; }
+.program-stage-nav button { border:1px solid #cbded8; border-radius:8px; background:#fff; color:#22594d; padding:8px 12px; cursor:pointer; }
+.program-stage-nav button:hover, .program-stage-nav button:focus-visible { background:#e6f4ed; outline:2px solid #18785b; outline-offset:2px; }
+.program-preparation-group { scroll-margin-top:75px; }

@@ -290,14 +290,26 @@ async function loadRecords(){
   }
 }
 
-function renderRecords(){
-  $('#record-count').textContent=String(competitions.length);
-  if(!competitions.length){recordList.innerHTML='<p class="records-empty">Belum ada lomba. Tambahkan dari form di samping.</p>';return;}
-  recordList.innerHTML=competitions.map(item=>`<article class="record-row">
-    <div><h4>${escapeHTML(item.title)}</h4><p>${escapeHTML(item.organizer)} · Tenggat ${escapeHTML(new Date(item.deadline).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Jakarta'}))}</p><span class="record-status ${item.status==='published'?'published':''}">${item.status==='published'?'TERBIT':'DRAF'}</span></div>
-    <div class="record-actions"><button type="button" data-action="edit" data-id="${escapeHTML(item.id)}">Edit</button><button type="button" class="delete" data-action="delete" data-id="${escapeHTML(item.id)}">Hapus</button></div>
-  </article>`).join('');
+function competitionState(item,now=Date.now()){
+  if(item.status!=='published')return 'draft';
+  const deadline=Date.parse(item.deadline);
+  if(!Number.isFinite(deadline))return 'unknown';
+  return deadline>=now?'open':deadline+72*60*60*1000>=now?'closed':'expired';
 }
+function renderRecords(){
+  const query=$('#competition-record-search').value.trim().toLocaleLowerCase('id');
+  const status=$('#competition-record-status').value;
+  const filtered=competitions.filter(item=>`${item.title||''} ${item.organizer||''}`.toLocaleLowerCase('id').includes(query)&&(status==='all'||competitionState(item)===status)).sort((a,b)=>(Date.parse(a.deadline)||Infinity)-(Date.parse(b.deadline)||Infinity));
+  $('#record-count').textContent=`${filtered.length} / ${competitions.length}`;
+  if(!filtered.length){recordList.innerHTML='<p class="records-empty">Tidak ada lomba yang cocok dengan pencarian atau filter.</p>';return;}
+  const labels={draft:'DRAF',open:'TERBIT · DIBUKA',closed:'TERBIT · PENDAFTARAN DITUTUP',expired:'TERBIT · TIDAK TAMPIL DI KATALOG',unknown:'TANGGAL PERLU DIPERIKSA'};
+  recordList.innerHTML=filtered.map(item=>{const state=competitionState(item);const date=Date.parse(item.deadline);return `<article class="record-row">
+    <div><h4>${escapeHTML(item.title)}</h4><p>${escapeHTML(item.organizer)} · Tenggat ${Number.isFinite(date)?escapeHTML(new Date(date).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Jakarta'})):'belum valid'}</p><span class="record-status ${state==='open'?'published':''}">${labels[state]}</span></div>
+    <div class="record-actions"><button type="button" data-action="edit" data-id="${escapeHTML(item.id)}">Edit</button><button type="button" class="delete" data-action="delete" data-id="${escapeHTML(item.id)}">Hapus</button></div>
+  </article>`}).join('');
+}
+$('#competition-record-search').addEventListener('input',renderRecords);
+$('#competition-record-status').addEventListener('change',renderRecords);
 
 function clearEditor(){
   competitionForm.reset();
