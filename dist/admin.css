@@ -2256,3 +2256,55 @@
 #attendance-permission-preview{width:min(96vw,1200px);max-width:1200px;height:92vh;max-height:92vh;display:none;flex-direction:column}
 #attendance-permission-preview[open]{display:flex}
 #attendance-permission-pdf{width:100%;flex:1;min-height:0;border:0}
+
+/* Consistent controls in the management workspace. */
+.admin-page button:focus-visible,
+.admin-page a:focus-visible,
+.admin-page input:focus-visible,
+.admin-page select:focus-visible,
+.admin-page textarea:focus-visible {
+  outline: 3px solid #16835b;
+  outline-offset: 2px;
+}
+.admin-page button:disabled { cursor: wait; opacity: .65; }
+.admin-page .secretariat-table td { line-height: 1.5; }
+.admin-page .secretariat-table td small { line-height: 1.4; }
+
+/* Leave requests keep document and decision actions easy to distinguish. */
+#attendance-permissions .secretariat-table { min-width: 760px; table-layout: auto; }
+#attendance-permissions .secretariat-table th:nth-child(1) { width: 30%; }
+#attendance-permissions .secretariat-table th:nth-child(2) { width: 19%; }
+#attendance-permissions .secretariat-table th:nth-child(3) { width: 28%; }
+#attendance-permissions .secretariat-table th:nth-child(4) { width: 23%; }
+#attendance-permission-rows td { padding: 12px; font-size: 12px; }
+#attendance-permission-rows td:last-child { text-align: left; min-width: 210px; }
+#attendance-permission-rows button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  margin: 3px 4px 3px 0;
+  padding: 7px 11px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: 700 11px 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s, transform .15s;
+}
+#attendance-permission-rows button:hover:not(:disabled) { transform: translateY(-1px); }
+#attendance-permission-rows [data-permission-preview] { color: #205d4b; background: #edf6f1; border-color: #d5e9de; }
+#attendance-permission-rows [data-permission-preview]:hover { background: #dcefe5; }
+#attendance-permission-rows [data-permission-decision="approve"] { color: #fff; background: #237c59; }
+#attendance-permission-rows [data-permission-decision="approve"]:hover { background: #196748; }
+#attendance-permission-rows [data-permission-decision="reject"] { color: #a23838; background: #fff3f1; border-color: #f1d6d2; }
+#attendance-permission-rows [data-permission-decision="reject"]:hover { background: #fae4e1; }
+@media (max-width: 680px) {
+  #attendance-permissions .secretariat-table-wrap { overscroll-behavior-x: contain; }
+  #attendance-permission-rows button { min-height: 40px; padding: 9px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #attendance-permission-rows button { transition: none; }
+  #attendance-permission-rows button:hover:not(:disabled) { transform: none; }
+}
