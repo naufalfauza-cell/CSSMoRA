@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261116-public-uploads" defer></script>
-  <script src="./admin.js?v=20261117-nia-opsional" defer></script>
+  <script src="./admin.js?v=20261117-akumulasi-izin" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261116-signed-filename" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -438,14 +438,14 @@
           </div>
           <button class="attendance-recap-trigger" id="attendance-recap-toggle" type="button" aria-expanded="false" aria-controls="attendance-recap-card">
             <span class="attendance-recap-trigger-icon" aria-hidden="true">↗</span>
-            <span class="attendance-recap-trigger-copy"><strong data-attendance-recap-label>Lihat akumulasi absen</strong><small>Rekap kehadiran seluruh agenda yang selesai</small></span>
+            <span class="attendance-recap-trigger-copy"><strong data-attendance-recap-label>Lihat akumulasi absen</strong><small>Agenda selesai dan izin yang sudah disetujui</small></span>
             <span class="attendance-recap-trigger-arrow" aria-hidden="true">⌄</span>
           </button>
           <section class="records-card attendance-recap-card" id="attendance-recap-card" aria-labelledby="attendance-recap-title" hidden>
             <div class="editor-heading"><div><span class="admin-kicker">AKUMULASI KEHADIRAN</span><h3 id="attendance-recap-title">Rekap anggota</h3></div></div>
             <div class="attendance-summary" id="attendance-recap-summary"></div>
             <div class="table-toolbar"><input class="table-search" id="attendance-recap-filter" type="search" placeholder="Cari nama atau NIA" aria-label="Cari anggota pada rekap kehadiran"></div>
-            <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Hadir</th><th>Agenda selesai</th><th>Persentase</th></tr></thead><tbody id="attendance-recap"><tr><td colspan="5" class="records-empty">Memuat rekap…</td></tr></tbody></table></div>
+            <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Anggota</th><th>NIA</th><th>Hadir</th><th>Agenda dihitung</th><th>Persentase hadir</th><th>Izin · batas 25%</th></tr></thead><tbody id="attendance-recap"><tr><td colspan="5" class="records-empty">Memuat rekap…</td></tr></tbody></table></div>
           </section>
           <details class="records-card" id="attendance-permissions">
             <summary>Pengajuan izin anggota</summary>
