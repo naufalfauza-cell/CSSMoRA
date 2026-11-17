@@ -1356,9 +1356,9 @@ $('#attendance-open-form').addEventListener('submit',async event=>{
 });
 async function loadAttendanceRecap(){
   const list=$('#attendance-recap');
-  list.innerHTML='<tr><td colspan="5" class="records-empty">Memuat rekap kehadiran…</td></tr>';
+  list.innerHTML='<tr><td colspan="6" class="records-empty">Memuat rekap kehadiran…</td></tr>';
   try{
-    attendanceRecapRows=await api('rpc/get_secretariat_attendance_recap',{method:'POST',body:{}})||[];
+    attendanceRecapRows=await api('rpc/get_secretariat_attendance_recap_izin',{method:'POST',body:{}})||[];
     renderAttendanceRecap();
   }catch(error){
     attendanceRecapRows=[];
@@ -1390,14 +1390,15 @@ function renderAttendanceRecap(){
   const attended=attendanceRecapRows.reduce((sum,row)=>sum+Number(row.attended_count||0),0);
   const eligible=attendanceRecapRows.reduce((sum,row)=>sum+Number(row.eligible_count||0),0);
   const rate=eligible?Math.round(attended*1000/eligible)/10:0;
-  $('#attendance-recap-summary').innerHTML='<span><strong>'+totalEvents+'</strong> agenda selesai</span><span><strong>'+rate+'%</strong> rata-rata kehadiran</span><span><strong>'+attendanceRecapRows.length+'</strong> anggota</span>';
-  if(!attendanceRecapRows.length){$('#attendance-recap').innerHTML='<tr><td colspan="5" class="records-empty">Belum ada data anggota untuk direkap.</td></tr>';return;}
+  $('#attendance-recap-summary').innerHTML='<span><strong>'+totalEvents+'</strong> agenda selesai</span><span><strong>'+rate+'%</strong> rata-rata kehadiran</span><span><strong>'+attendanceRecapRows.length+'</strong> anggota</span><small>Izin disetujui dihitung hadir; batas pemantauan izin 25% dari agenda yang dihitung, termasuk izin disetujui untuk agenda mendatang.</small>';
+  if(!attendanceRecapRows.length){$('#attendance-recap').innerHTML='<tr><td colspan="6" class="records-empty">Belum ada data anggota untuk direkap.</td></tr>';return;}
   const search=($('#attendance-recap-filter').value||'').trim().toLocaleLowerCase('id-ID');
   const rows=attendanceRecapRows.filter(row=>!search||String(row.full_name||'').toLocaleLowerCase('id-ID').includes(search)||String(row.nia||'').toLocaleLowerCase('id-ID').includes(search));
-  if(!rows.length){$('#attendance-recap').innerHTML='<tr><td colspan="5" class="records-empty">Anggota yang cocok tidak ditemukan.</td></tr>';return;}
+  if(!rows.length){$('#attendance-recap').innerHTML='<tr><td colspan="6" class="records-empty">Anggota yang cocok tidak ditemukan.</td></tr>';return;}
   $('#attendance-recap').innerHTML=rows.map(row=>{
     const percent=Math.max(0,Math.min(100,Number(row.attendance_percent)||0));
-    return '<tr><td><strong>'+escapeHTML(row.full_name)+'</strong><small>Angkatan '+escapeHTML(row.cohort)+'</small></td><td>'+escapeHTML(row.nia)+'</td><td>'+Number(row.attended_count||0)+'</td><td>'+Number(row.eligible_count||0)+'</td><td><span class="attendance-rate"><span class="attendance-rate-track" aria-hidden="true"><i style="width:'+percent+'%"></i></span>'+percent+'%</span></td></tr>';
+    const izinCount=Number(row.permission_count||0), izinPercent=Number(row.permission_percent||0), warning=izinPercent>25?'Melebihi batas':izinPercent===25?'Mencapai batas':'Dalam batas';
+    return '<tr><td><strong>'+escapeHTML(row.full_name)+'</strong><small>Angkatan '+escapeHTML(row.cohort)+'</small></td><td>'+escapeHTML(row.nia)+'</td><td>'+Number(row.attended_count||0)+'</td><td>'+Number(row.eligible_count||0)+'</td><td><span class="attendance-rate"><span class="attendance-rate-track" aria-hidden="true"><i style="width:'+percent+'%"></i></span>'+percent+'%</span></td><td><strong>'+izinCount+' kali · '+izinPercent+'%</strong><small>'+warning+' 25%</small><span class="attendance-rate-track" aria-label="Persentase izin '+izinPercent+' persen"><i style="width:'+Math.min(100,Math.max(0,izinPercent))+'%"></i></span></td></tr>';
   }).join('');
 }
 $('#attendance-recap-filter').addEventListener('input',renderAttendanceRecap);
