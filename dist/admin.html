@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261117-pemeliharaan-proker">
+  <link rel="stylesheet" href="./admin.css?v=20261117-robot-pemeliharaan">
   <link rel="stylesheet" href="./workflows.css?v=20261111-proker-preparation">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261116-public-uploads" defer></script>
-  <script src="./admin.js?v=20261117-audit-pengurus" defer></script>
+  <script src="./admin.js?v=20261117-nia-opsional" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261116-signed-filename" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -194,6 +194,8 @@
           </div>
         </section>
         <section class="agenda-admin-subpanel" id="program-workflow-panel" role="tabpanel" aria-labelledby="tab-program-workflow" hidden>
+          <div class="proker-maintenance" role="status"><svg class="proker-maintenance-robot" viewBox="0 0 120 120" role="img" aria-label="Ilustrasi wajah robot"><rect x="16" y="22" width="88" height="74" rx="24" fill="#e3f2ef" stroke="#08766d" stroke-width="5"/><rect x="29" y="37" width="62" height="39" rx="14" fill="#075e5d"/><circle cx="46" cy="56" r="5" fill="#fff"/><circle cx="74" cy="56" r="5" fill="#fff"/><path d="M50 84 Q60 91 70 84 M60 22 V12 M54 12 H66" fill="none" stroke="#08766d" stroke-linecap="round" stroke-width="5"/></svg><h3>Sedang dalam pemeliharaan</h3></div>
+          <div class="proker-workspace-content" hidden>
           <div class="program-workflow-heading"><div><span class="admin-kicker">MONITORING PROGRAM KERJA</span><h3>Ruang kerja proker</h3><p>Mulai atau pilih siklus, lalu kelola persiapan, proposal, pelaksanaan, dan LPJ. Simpan monitoring setelah mengubah isian.</p></div><button class="text-button" id="program-workflow-refresh" type="button">Muat ulang</button></div>
           <nav class="program-stage-nav" aria-label="Tahapan pengelolaan proker">
             <button type="button" data-stage-target="program-cycle-program">1 · Monitoring</button>
@@ -344,6 +346,7 @@
             <section class="records-card program-document-list-card" aria-labelledby="program-document-list-title"><div class="editor-heading"><div><span class="admin-kicker">ARSIP &amp; PERSETUJUAN</span><h4 id="program-document-list-title">Dokumen terbaru</h4></div><span class="record-count" id="program-document-count">—</span></div><section id="program-document-tasks" aria-label="Tugas saya"><h5>Tugas saya</h5><div id="program-document-task-list"></div></section><div id="program-document-list"><p class="records-empty">Memuat dokumen…</p></div><details class="program-document-template"><summary>Struktur tetap yang dipakai</summary><p><strong>Proposal:</strong> sampul dan lembar pengesahan, latar belakang, tujuan, nama/tema/deskripsi, sasaran, waktu-tempat, penutup, lalu lampiran rundown dan RAB. Panitia dipilih dari anggota aktif.</p><p><strong>LPJ:</strong> sampul dan lembar pengesahan, pendahuluan, realisasi umum/per divisi, indikator keberhasilan, evaluasi dan saran, laporan keuangan, penutup, lalu lampiran administrasi, absensi, serta galeri foto.</p></details></section>
           </div>
           </section>
+          </div>
         </section>
       </section>
       <section class="management-panel finance-management" id="finance-panel" role="tabpanel" aria-labelledby="tab-finance" hidden>
@@ -396,7 +399,7 @@
                 <div class="editor-heading"><div><span class="admin-kicker">ENTRI DATA</span><h3 id="member-editor-title">Tambah anggota</h3></div><button class="text-button" id="member-form-reset" type="button">Kosongkan</button></div>
                 <form id="member-form">
                   <input id="member-record-id" type="hidden">
-                  <div class="form-two"><div><label for="member-nia">NIA</label><input id="member-nia" maxlength="40" required></div><div><label for="member-cohort">Angkatan</label><input id="member-cohort" type="number" min="2000" max="2100" required></div></div>
+                  <div class="form-two"><div><label for="member-nia">NIA (jika sudah tersedia)</label><input id="member-nia" maxlength="40" placeholder="Belum ada NIA"></div><div><label for="member-cohort">Angkatan</label><input id="member-cohort" type="number" min="2000" max="2100" required></div></div>
                   <label for="member-name">Nama lengkap</label><input id="member-name" maxlength="140" required>
                   <label for="member-faculty">Fakultas</label><input id="member-faculty" maxlength="120">
                   <label for="member-program">Program studi</label><input id="member-program" maxlength="120">

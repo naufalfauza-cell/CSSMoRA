@@ -1,0 +1,2 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');
+test('ruang kerja proker shows maintenance instead of its contents',()=>{const h=fs.readFileSync('dist/admin.html','utf8');assert.match(h,/class="proker-maintenance" role="status"/);assert.match(h,/Ilustrasi wajah robot/);assert.match(h,/<h3>Sedang dalam pemeliharaan<\/h3>/);assert.match(h,/<div class="proker-workspace-content" hidden>/);});

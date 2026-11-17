@@ -1099,7 +1099,7 @@ function renderMembers(){
   memberList.innerHTML=rows.map(member=>{
     const status=member.study_status||'belum_ditentukan';
     const statusClass=status==='mahasiswa'?'published':status==='lulus'?'study-graduate':'study-unknown';
-    return '<tr><td><strong>'+escapeHTML(member.full_name)+'</strong><small>NIA '+escapeHTML(member.nia)+'</small>'+(member.nim?'<small>NIM '+escapeHTML(member.nim)+'</small>':'')+'</td><td>'+escapeHTML(member.cohort)+'</td><td>'+escapeHTML(member.study_program||'—')+'</td><td><span class="record-status '+statusClass+'">'+escapeHTML(memberStudyStatusLabel(status))+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(member.id)+'">Edit</button></div></td></tr>';
+    return '<tr><td><strong>'+escapeHTML(member.full_name)+'</strong><small>NIA '+escapeHTML(member.nia||'Belum ada')+'</small>'+(member.nim?'<small>NIM '+escapeHTML(member.nim)+'</small>':'')+'</td><td>'+escapeHTML(member.cohort)+'</td><td>'+escapeHTML(member.study_program||'—')+'</td><td><span class="record-status '+statusClass+'">'+escapeHTML(memberStudyStatusLabel(status))+'</span></td><td><div class="record-actions"><button type="button" data-member-action="edit" data-id="'+escapeHTML(member.id)+'">Edit</button></div></td></tr>';
   }).join('');
 }
 function resetMemberForm(){
@@ -1125,7 +1125,7 @@ memberList.addEventListener('click',event=>{
   if(!button)return;
   const member=memberById(button.dataset.id);if(!member)return;
   $('#member-record-id').value=member.id;
-  $('#member-nia').value=member.nia;$('#member-nia').readOnly=true;
+  $('#member-nia').value=member.nia||'';$('#member-nia').readOnly=Boolean(member.nia);
   $('#member-name').value=member.full_name;$('#member-cohort').value=member.cohort;
   $('#member-faculty').value=member.faculty||'';$('#member-program').value=member.study_program||'';
   $('#member-study-status').value=member.study_status||'belum_ditentukan';
@@ -1137,7 +1137,7 @@ memberList.addEventListener('click',event=>{
 memberForm.addEventListener('submit',async event=>{
   event.preventDefault();
   const id=$('#member-record-id').value;
-  const payload={nia:$('#member-nia').value.trim(),full_name:$('#member-name').value.trim(),cohort:Number($('#member-cohort').value),faculty:$('#member-faculty').value.trim()||null,study_program:$('#member-program').value.trim()||null,study_status:$('#member-study-status').value||'belum_ditentukan',is_active:$('#member-active').checked,updated_at:new Date().toISOString()};
+  const payload={nia:$('#member-nia').value.trim()||null,full_name:$('#member-name').value.trim(),cohort:Number($('#member-cohort').value),faculty:$('#member-faculty').value.trim()||null,study_program:$('#member-program').value.trim()||null,study_status:$('#member-study-status').value||'belum_ditentukan',is_active:$('#member-active').checked,updated_at:new Date().toISOString()};
   $('#save-member').disabled=true;showMessage('#member-message','Menyimpan data anggota…');
   try{
     if(id)await api('secretariat_members?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:payload});
@@ -1458,7 +1458,7 @@ function renderAttendanceRoster(){
   $('#attendance-summary').innerHTML='<span><strong>'+counts.hadir+'</strong> hadir</span><span><strong>'+counts.izin+'</strong> izin</span><span><strong>'+counts.sakit+'</strong> sakit</span><span><strong>'+counts.alpa+'</strong> tanpa keterangan</span><span><strong>'+rate+'%</strong> kehadiran</span>';
   if(!allRows.length){$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Belum ada roster pada daftar hadir ini.</td></tr>';return;}
   const search=($('#attendance-roster-filter').value||'').trim().toLocaleLowerCase('id-ID');
-  const rows=allRows.filter(row=>!search||row.member.full_name.toLocaleLowerCase('id-ID').includes(search)||row.member.nia.toLocaleLowerCase('id-ID').includes(search));
+  const rows=allRows.filter(row=>!search||row.member.full_name.toLocaleLowerCase('id-ID').includes(search)||String(row.member.nia||'').toLocaleLowerCase('id-ID').includes(search));
   if(!rows.length){$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Anggota yang cocok tidak ditemukan.</td></tr>';return;}
   const canEdit=currentAttendanceEvent.status==='open'&&attendanceEventIsPublished(currentAttendanceEvent);
   $('#attendance-roster').innerHTML=rows.map(row=>{
@@ -1826,7 +1826,7 @@ async function connectOutgoingOrganizerFields(controls, identity){
   try{
     const roster=await api('secretariat_members?select=full_name,nia,nim&order=full_name.asc');
     if(!options.isConnected)return;
-    const choices=new Map(roster.map(member=>[member.full_name+' · '+member.nia,member]));
+    const choices=new Map(roster.map(member=>[member.full_name+' · '+(member.nia||member.nim||'NIA belum ada'),member]));
     options.replaceChildren(...Array.from(choices.keys(),value=>new Option(value,value)));
     hint.textContent='Ketik nama atau NIA, lalu pilih anggota. Identitas terisi mengikuti cakupan surat.';
     for(const {name,number} of pairs){
