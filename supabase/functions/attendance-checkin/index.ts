@@ -461,7 +461,7 @@ const permissionWindowMs = 7 * 24 * 60 * 60 * 1000;
 async function getPermissionEvents(supabaseUrl: string, headers: Record<string, string>, eventId?: string) {
   const now = Date.now();
   const query = new URLSearchParams({
-    select: "id,permission_reopened,agenda!inner(id,title,starts_at)",
+    select: "id,agenda!inner(id,title,starts_at)",
     "agenda.status": "eq.published",
   });
   if (eventId) query.set("id", "eq." + eventId);
@@ -470,7 +470,7 @@ async function getPermissionEvents(supabaseUrl: string, headers: Record<string, 
   const rows = await response.json();
   return rows.filter((row: { permission_reopened: boolean; agenda: { starts_at: string } }) => {
     const startsAt = Date.parse(row.agenda.starts_at);
-    return row.permission_reopened || (startsAt > now + 24 * 60 * 60 * 1000 && startsAt <= now + permissionWindowMs);
+    return startsAt > now + 24 * 60 * 60 * 1000 && startsAt <= now + permissionWindowMs;
   }).map((row: { id: string; agenda: { id: string; title: string; starts_at: string } }) =>
     ({ id: row.id, agenda_id: row.agenda.id, title: row.agenda.title, starts_at: row.agenda.starts_at }))
     .sort((a: { starts_at: string }, b: { starts_at: string }) => Date.parse(a.starts_at) - Date.parse(b.starts_at));

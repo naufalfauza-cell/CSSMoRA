@@ -169,7 +169,7 @@ modeSelect.addEventListener("change", () => {
   $("#checkin-reason").disabled = !permission;
   $("#checkin-submit-label").textContent = permission ? "Kirim pengajuan izin" : "Catat kehadiran";
   $("#event-picker-label").textContent = permission ? "Kegiatan yang menerima izin" : "Kegiatan aktif";
-  $("#checkin-footnote").textContent = permission ? "Izin dibuka otomatis H-7 dan ditutup H-1 sebelum acara (WIB). Sekretaris dapat membuka kembali." : "Foto hanya bisa dikirim saat kegiatan dibuka.";
+  $("#checkin-footnote").textContent = permission ? "Izin dibuka otomatis H-7 dan ditutup H-1 sebelum acara (WIB)." : "Foto hanya bisa dikirim saat kegiatan dibuka.";
   hideCheckin("Memeriksa kegiatan…");
   void refreshActiveEvents();
 });
