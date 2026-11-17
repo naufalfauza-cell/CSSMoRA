@@ -2338,9 +2338,17 @@
 .proker-maintenance h3 { margin:0; color:#164d45; }
 
 /* Rekap kegiatan dengan kolom yang dapat digeser ke samping. */
-.admin-page .attendance-recap-card .attendance-recap-table{table-layout:auto;min-width:100%;width:max-content}
-.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(n){width:auto;min-width:120px}
-.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(1){min-width:45px}
-.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(2){min-width:220px}
-.admin-page .attendance-recap-card .attendance-recap-table td{overflow-wrap:normal;vertical-align:middle}
-.admin-page .attendance-recap-card .attendance-recap-table td small{display:block}
+.admin-page .attendance-recap-card .attendance-recap-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+.admin-page .attendance-recap-card .attendance-recap-table{table-layout:auto;width:max-content;min-width:100%;font-size:11px}
+.admin-page .attendance-recap-card .attendance-recap-table th{width:auto;min-width:0;padding:9px 10px;vertical-align:middle;white-space:nowrap}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(1),.admin-page .attendance-recap-card .attendance-recap-table td:nth-child(1){width:48px;min-width:48px;text-align:center}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(2),.admin-page .attendance-recap-card .attendance-recap-table td:nth-child(2){width:210px;min-width:210px}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(3),.admin-page .attendance-recap-card .attendance-recap-table td:nth-child(3){min-width:132px}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(4),.admin-page .attendance-recap-card .attendance-recap-table td:nth-child(4){min-width:88px;text-align:center}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-child(n+5):not(:last-child),.admin-page .attendance-recap-card .attendance-recap-table td:nth-child(n+5):not(:last-child){min-width:142px;text-align:center}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-last-child(3),.admin-page .attendance-recap-card .attendance-recap-table td:nth-last-child(3){min-width:112px}
+.admin-page .attendance-recap-card .attendance-recap-table th:nth-last-child(2),.admin-page .attendance-recap-card .attendance-recap-table td:nth-last-child(2){min-width:92px;text-align:center}
+.admin-page .attendance-recap-card .attendance-recap-table th:last-child,.admin-page .attendance-recap-card .attendance-recap-table td:last-child{min-width:92px;text-align:center}
+.admin-page .attendance-recap-card .attendance-recap-table td{overflow-wrap:normal;vertical-align:middle;white-space:nowrap}
+.admin-page .attendance-recap-card .attendance-recap-table td small{display:block;white-space:normal}
+.admin-page .attendance-recap-card .attendance-recap-table .attendance-rate{justify-content:center;white-space:nowrap}

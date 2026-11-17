@@ -407,6 +407,201 @@ async function syncIncomingLettersSpreadsheet(accessToken: string, connection: a
   }
 }
 
+async function loadAllServiceRows(table: string, select: string, order: string) {
+  const result: any[] = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await serviceRequest(queryPath(table, { select, order }), {
+      headers: { "Range-Unit": "items", Range: `${offset}-${offset + pageSize - 1}` },
+    });
+    const rows = Array.isArray(page.data) ? page.data : [];
+    result.push(...rows);
+    if (rows.length < pageSize) return result;
+  }
+}
+
+function attendanceSheetColumn(index: number) {
+  let value = index + 1;
+  let output = "";
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    output = String.fromCharCode(65 + remainder) + output;
+    value = Math.floor((value - 1) / 26);
+  }
+  return output;
+}
+
+function attendanceSheetDateSerial(value: string) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const date = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return date / 86_400_000 + 25_569;
+}
+
+async function syncAttendanceRecapSpreadsheet(accessToken: string) {
+  const queued = (await serviceRequest("cssmora_drive_attendance_recap_sync?select=spreadsheet_id,generation,pending,attempts&singleton=eq.true&limit=1")).data;
+  const job = Array.isArray(queued) ? queued[0] : null;
+  if (!job?.pending) return { processed: false, pending: false };
+  const generation = String(job.generation);
+  const spreadsheetId = String(job.spreadsheet_id || "");
+  try {
+    if (!spreadsheetId) throw new AppError(500, "ID spreadsheet rekap absensi belum diatur.");
+    const apiBase = "https://sheets.googleapis.com/v4/spreadsheets/" + encodeURIComponent(spreadsheetId);
+    const info = (await googleJson(accessToken, apiBase + "?fields=spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title,gridProperties)")).data;
+    const sheet = (Array.isArray(info?.sheets) ? info.sheets : []).find((item: any) => item?.properties?.title === "Rekap Presensi");
+    if (!sheet?.properties?.sheetId) throw new AppError(404, "Tab Rekap Presensi tidak ditemukan di spreadsheet.");
+    const sheetId = Number(sheet.properties.sheetId);
+    const [members, attendanceEvents, agendas, records, permissionRows] = await Promise.all([
+      loadAllServiceRows("secretariat_members", "id,full_name,nim,cohort", "full_name.asc"),
+      loadAllServiceRows("secretariat_attendance_events", "id,agenda_id,event_date,title,status", "event_date.asc"),
+      loadAllServiceRows("agenda", "id,title,starts_at,ends_at,status", "starts_at.asc"),
+      loadAllServiceRows("secretariat_attendance_records", "event_id,member_id,status", "event_id.asc,member_id.asc"),
+      loadAllServiceRows("secretariat_attendance_permissions", "agenda_id,member_id,approved_at,rejected_at", "agenda_id.asc,member_id.asc"),
+    ]);
+    const agendaById = new Map(agendas.filter((item: any) => item.status === "published").map((item: any) => [String(item.id), item]));
+    const events = attendanceEvents
+      .filter((event: any) => agendaById.has(String(event.agenda_id)))
+      .map((event: any) => ({ ...event, agenda: agendaById.get(String(event.agenda_id)) }))
+      .sort((left: any, right: any) => String(left.event_date || "").localeCompare(String(right.event_date || "")));
+    const now = Date.now();
+    const isComplete = (event: any) => {
+      const agenda = event.agenda || {};
+      const timestamp = Date.parse(agenda.ends_at || agenda.starts_at || (String(event.event_date || "") + "T23:59:59+07:00"));
+      return Number.isFinite(timestamp) && timestamp <= now;
+    };
+    const recordByMemberEvent = new Map(records.map((row: any) => [`${row.event_id}:${row.member_id}`, String(row.status || "")]));
+    const permissionsByAgendaMember = new Map<string, { approved: boolean; pending: boolean; rejected: boolean }>();
+    for (const permission of permissionRows) {
+      const key = `${permission.agenda_id}:${permission.member_id}`;
+      const state = permissionsByAgendaMember.get(key) || { approved: false, pending: false, rejected: false };
+      if (permission.approved_at && !permission.rejected_at) state.approved = true;
+      else if (permission.rejected_at) state.rejected = true;
+      else state.pending = true;
+      permissionsByAgendaMember.set(key, state);
+    }
+    const completedEventCount = events.filter(isComplete).length;
+    const memberTotals = new Map<string, { attended: number; eligible: number; permissions: number }>();
+    for (const member of members) {
+      let attended = 0;
+      let eligible = 0;
+      let permissions = 0;
+      for (const event of events) {
+        const status = recordByMemberEvent.get(`${event.id}:${member.id}`);
+        const permission = permissionsByAgendaMember.get(`${event.agenda_id}:${member.id}`);
+        const approved = status === "izin" && Boolean(permission?.approved);
+        if (status !== undefined && (isComplete(event) || approved)) eligible += 1;
+        if ((isComplete(event) && status === "hadir") || approved) attended += 1;
+        if (approved) permissions += 1;
+      }
+      memberTotals.set(String(member.id), { attended, eligible, permissions });
+    }
+    const statusLabel = (event: any, member: any) => {
+      const key = `${event.agenda_id}:${member.id}`;
+      const status = recordByMemberEvent.get(`${event.id}:${member.id}`);
+      const permission = permissionsByAgendaMember.get(key);
+      if (status === "hadir") return "Hadir";
+      if (permission?.approved) return "Izin";
+      if (permission?.pending) return "Menunggu izin";
+      if (permission?.rejected) return "Izin ditolak";
+      if (status === undefined) return "—";
+      if (status === "izin") return "Izin (belum disetujui)";
+      if (status === "sakit") return "Sakit";
+      if (status === "alpa") return "Tanpa Keterangan";
+      if (status === "belum") return isComplete(event) ? "Tanpa Keterangan" : "Belum";
+      return status;
+    };
+    const eventStartColumn = 5;
+    const gapColumn = eventStartColumn + events.length;
+    const accumulatedColumn = gapColumn + 1;
+    const permissionCountColumn = accumulatedColumn + 1;
+    const permissionPercentColumn = accumulatedColumn + 2;
+    const lastColumnExclusive = permissionPercentColumn + 1;
+    const requiredRows = Math.max(Number(sheet.properties.gridProperties?.rowCount || 0), members.length + 4);
+    const requiredColumns = Math.max(Number(sheet.properties.gridProperties?.columnCount || 0), lastColumnExclusive);
+    if (requiredRows !== Number(sheet.properties.gridProperties?.rowCount || 0) || requiredColumns !== Number(sheet.properties.gridProperties?.columnCount || 0)) {
+      await googleJson(accessToken, apiBase + ":batchUpdate", {
+        method: "POST",
+        body: { requests: [{ updateSheetProperties: { properties: { sheetId, gridProperties: { rowCount: requiredRows, columnCount: requiredColumns } }, fields: "gridProperties.rowCount,gridProperties.columnCount" } }] },
+      });
+    }
+    const lastColumn = attendanceSheetColumn(requiredColumns - 1);
+    await googleJson(accessToken, apiBase + "/values:batchClear", {
+      method: "POST",
+      body: { ranges: [`'Rekap Presensi'!A1:${lastColumn}${requiredRows}`] },
+    });
+    const tableColumnCount = 4 + events.length + 1 + 3;
+    const makeCell = (value: unknown) => {
+      if (typeof value === "number" && Number.isFinite(value)) return { userEnteredValue: { numberValue: value } };
+      if (value === null || value === undefined || value === "") return {};
+      return { userEnteredValue: { stringValue: String(value) } };
+    };
+    const title = "REKAP PRESENSI KEGIATAN CSSMoRA UNAIR 2026–2027";
+    const headerValues = ["NO", "NAMA", "NIM", "ANGKATAN", ...events.map((event: any) => String(event.agenda?.title || event.title || "Kegiatan")), "", "Akumulasi", "Izin (kali)", "Izin (%)"];
+    const headerCells = headerValues.map(makeCell);
+    const dateValues = ["", "", "", "", ...events.map((event: any) => attendanceSheetDateSerial(String(event.event_date || ""))), "", "", "", ""];
+    const dataRows = members.map((member: any, index: number) => {
+      const totals = memberTotals.get(String(member.id)) || { attended: 0, eligible: 0, permissions: 0 };
+      const attendanceRate = totals.eligible ? totals.attended / totals.eligible : 0;
+      const permissionRate = totals.eligible ? totals.permissions / totals.eligible : 0;
+      return {
+        values: [
+          makeCell(index + 1), makeCell(member.full_name), makeCell(member.nim), makeCell(member.cohort),
+          ...events.map((event: any) => makeCell(statusLabel(event, member))), {},
+          makeCell(attendanceRate), makeCell(totals.permissions), makeCell(permissionRate),
+        ],
+      };
+    });
+    const yellow = { red: 1, green: 0.8980392, blue: 0.6 };
+    const blackBorder = { style: "SOLID", width: 1, color: { red: 0, green: 0, blue: 0 } };
+    const headerFormat = {
+      backgroundColor: yellow,
+      borders: { top: blackBorder, bottom: blackBorder, left: blackBorder, right: blackBorder },
+      horizontalAlignment: "CENTER",
+      verticalAlignment: "MIDDLE",
+      textFormat: { fontFamily: "Times New Roman", fontSize: 11, bold: true },
+    };
+    const bodyFormat = {
+      borders: { bottom: blackBorder, left: blackBorder, right: blackBorder },
+      horizontalAlignment: "CENTER",
+      verticalAlignment: "MIDDLE",
+      textFormat: { fontFamily: "Times New Roman", fontSize: 11, bold: true },
+    };
+    const requests: any[] = [];
+    for (let column = eventStartColumn; column < eventStartColumn + events.length; column += 1) {
+      requests.push({ repeatCell: { range: { sheetId, startRowIndex: 2, endRowIndex: 3, startColumnIndex: column, endColumnIndex: column + 1 }, cell: { userEnteredFormat: headerFormat }, fields: "userEnteredFormat.backgroundColor,userEnteredFormat.borders,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment,userEnteredFormat.textFormat" } });
+      requests.push({ repeatCell: { range: { sheetId, startRowIndex: 3, endRowIndex: 4, startColumnIndex: column, endColumnIndex: column + 1 }, cell: { userEnteredFormat: { ...headerFormat, numberFormat: { type: "DATE", pattern: 'd"-"mmm"-"yyyy' } } }, fields: "userEnteredFormat.backgroundColor,userEnteredFormat.borders,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment,userEnteredFormat.textFormat,userEnteredFormat.numberFormat" } });
+      if (members.length) requests.push({ repeatCell: { range: { sheetId, startRowIndex: 4, endRowIndex: members.length + 4, startColumnIndex: column, endColumnIndex: column + 1 }, cell: { userEnteredFormat: { ...bodyFormat, textFormat: { fontFamily: "Times New Roman", fontSize: 11 } } }, fields: "userEnteredFormat.borders,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment,userEnteredFormat.textFormat" } });
+      requests.push({ updateDimensionProperties: { range: { sheetId, dimension: "COLUMNS", startIndex: column, endIndex: column + 1 }, properties: { pixelSize: 136 }, fields: "pixelSize" } });
+    }
+    for (const column of [accumulatedColumn, permissionCountColumn, permissionPercentColumn]) {
+      requests.push({ repeatCell: { range: { sheetId, startRowIndex: 2, endRowIndex: 3, startColumnIndex: column, endColumnIndex: column + 1 }, cell: { userEnteredFormat: headerFormat }, fields: "userEnteredFormat.backgroundColor,userEnteredFormat.borders,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment,userEnteredFormat.textFormat" } });
+    }
+    if (members.length) {
+      requests.push({ repeatCell: { range: { sheetId, startRowIndex: 4, endRowIndex: members.length + 4, startColumnIndex: accumulatedColumn, endColumnIndex: accumulatedColumn + 1 }, cell: { userEnteredFormat: { ...bodyFormat, numberFormat: { type: "PERCENT", pattern: "0.00%" } } }, fields: "userEnteredFormat.borders,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment,userEnteredFormat.textFormat,userEnteredFormat.numberFormat" } });
+      requests.push({ repeatCell: { range: { sheetId, startRowIndex: 4, endRowIndex: members.length + 4, startColumnIndex: permissionCountColumn, endColumnIndex: permissionCountColumn + 1 }, cell: { userEnteredFormat: { ...bodyFormat, numberFormat: { type: "NUMBER", pattern: "0" } } }, fields: "userEnteredFormat.borders,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment,userEnteredFormat.textFormat,userEnteredFormat.numberFormat" } });
+      requests.push({ repeatCell: { range: { sheetId, startRowIndex: 4, endRowIndex: members.length + 4, startColumnIndex: permissionPercentColumn, endColumnIndex: permissionPercentColumn + 1 }, cell: { userEnteredFormat: { ...bodyFormat, numberFormat: { type: "PERCENT", pattern: "0.00%" } } }, fields: "userEnteredFormat.borders,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment,userEnteredFormat.textFormat,userEnteredFormat.numberFormat" } });
+    }
+    requests.push({ updateDimensionProperties: { range: { sheetId, dimension: "COLUMNS", startIndex: accumulatedColumn, endIndex: accumulatedColumn + 1 }, properties: { pixelSize: 112 }, fields: "pixelSize" } });
+    requests.push({ updateDimensionProperties: { range: { sheetId, dimension: "COLUMNS", startIndex: permissionCountColumn, endIndex: permissionCountColumn + 1 }, properties: { pixelSize: 90 }, fields: "pixelSize" } });
+    requests.push({ updateDimensionProperties: { range: { sheetId, dimension: "COLUMNS", startIndex: permissionPercentColumn, endIndex: permissionPercentColumn + 1 }, properties: { pixelSize: 90 }, fields: "pixelSize" } });
+    requests.push({ updateCells: { range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 4, endColumnIndex: 5 }, rows: [{ values: [makeCell(title)] }], fields: "userEnteredValue" } });
+    requests.push({ updateCells: { range: { sheetId, startRowIndex: 2, endRowIndex: 4, startColumnIndex: 1, endColumnIndex: lastColumnExclusive }, rows: [{ values: headerCells }, { values: dateValues.map(makeCell) }], fields: "userEnteredValue" } });
+    if (dataRows.length) requests.push({ updateCells: { range: { sheetId, startRowIndex: 4, endRowIndex: members.length + 4, startColumnIndex: 1, endColumnIndex: lastColumnExclusive }, rows: dataRows, fields: "userEnteredValue" } });
+    if (headerCells.length !== tableColumnCount) throw new AppError(500, "Lebar kolom rekap absensi tidak konsisten.");
+    await googleJson(accessToken, apiBase + ":batchUpdate", { method: "POST", body: { requests } });
+    await serviceRequest("cssmora_drive_attendance_recap_sync?singleton=eq.true&generation=eq." + encodeURIComponent(generation) + "&pending=eq.true", {
+      method: "PATCH", body: { pending: false, attempts: 0, last_error: null, updated_at: new Date().toISOString() },
+    });
+    return { processed: true, pending: false, rows: members.length, events: events.length, completedEventCount, spreadsheetUrl: String(info.spreadsheetUrl || "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(spreadsheetId) + "/edit") };
+  } catch (error) {
+    const attempts = Number(job.attempts || 0) + 1;
+    await serviceRequest("cssmora_drive_attendance_recap_sync?singleton=eq.true&generation=eq." + encodeURIComponent(generation), {
+      method: "PATCH", body: { pending: true, attempts, last_error: safeSyncError(error), updated_at: new Date().toISOString() },
+    }).catch(() => null);
+    return { processed: true, pending: true, failed: true };
+  }
+}
+
 async function findDriveArchiveFile(accessToken: string, folderId: string, pathHash: string) {
   return await findDriveFolder(
     accessToken,
@@ -2912,7 +3107,9 @@ async function runSync(retryFailed = false) {
   }
   const incomingLetterSheet = await syncIncomingLettersSpreadsheet(accessToken, connection);
   if (incomingLetterSheet.failed) failed += 1;
-  return { processed: jobs.length, succeeded, failed, incomingLetterSheet };
+  const attendanceRecapSheet = await syncAttendanceRecapSpreadsheet(accessToken);
+  if (attendanceRecapSheet.failed) failed += 1;
+  return { processed: jobs.length, succeeded, failed, incomingLetterSheet, attendanceRecapSheet };
 }
 
 async function gzipBytes(bytes: Uint8Array) {
