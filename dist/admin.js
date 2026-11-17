@@ -1178,19 +1178,27 @@ async function loadAttendancePermissions(){
   const message='#attendance-permission-message';
   showMessage(message,'Memuat pengajuan…');
   try{
-    const select='select=id,agenda_title,reason,approved_at,rejected_at,review_archived_at,letter_deleted_at,drive_file_id,secretariat_members(full_name,cohort)';
+    const select='select=id,agenda_id,agenda_title,reason,approved_at,rejected_at,review_archived_at,letter_deleted_at,drive_file_id,secretariat_members(full_name,cohort)';
     const [active,archived]=await Promise.all([
       api('secretariat_attendance_permissions?'+select+'&review_archived_at=is.null&order=created_at.desc&limit=1000'),
       api('secretariat_attendance_permissions?'+select+'&review_archived_at=not.is.null&order=review_archived_at.desc&limit=1000')
     ]);
-    const render=(rows,isArchived)=>rows.map(row=>{
-      const member=row.secretariat_members;
-      const reviewed=!!(row.approved_at||row.rejected_at);
-      const status=row.approved_at?'Disetujui':row.rejected_at?'Ditolak':'Menunggu keputusan';
-      const proof=row.letter_deleted_at?(row.drive_file_id?'Surat diarsipkan di Drive':'Surat tidak tersedia'):`<button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button>`;
-      const actions=!isArchived&&isSecretariatAdmin?(reviewed?` <button type="button" data-permission-archive="${escapeHTML(row.id)}">Arsipkan</button>`:` <button type="button" data-permission-decision="approve" data-id="${escapeHTML(row.id)}">Setujui</button> <button type="button" data-permission-decision="reject" data-id="${escapeHTML(row.id)}">Tolak</button>`):'';
-      return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td>${proof} ${status}${actions}</td></tr>`;
-    }).join('')||`<tr><td colspan="4" class="records-empty">${isArchived?'Belum ada pengajuan di arsip.':'Belum ada pengajuan izin.'}</td></tr>`;
+    const render=(rows,isArchived)=>{
+      const groups=new Map();
+      rows.forEach(row=>{const key=row.agenda_id||'removed:'+row.id;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);});
+      return [...groups.values()].map(group=>{
+        const first=group[0],reviewed=group.every(row=>row.approved_at||row.rejected_at);
+        const archiveAction=!isArchived&&isSecretariatAdmin&&first.agenda_id?(reviewed?` <button type="button" data-permission-archive="${escapeHTML(first.agenda_id)}">Arsipkan semua izin acara</button>`:' <small>Tinjau semua pengajuan sebelum mengarsipkan.</small>'):'';
+        const header=`<tr><td colspan="4"><strong>${escapeHTML(first.agenda_title)}</strong> · ${group.length} pengajuan${archiveAction}</td></tr>`;
+        return header+group.map(row=>{
+          const member=row.secretariat_members;
+          const status=row.approved_at?'Disetujui':row.rejected_at?'Ditolak':'Menunggu keputusan';
+          const proof=row.letter_deleted_at?(row.drive_file_id?'Surat diarsipkan di Drive':'Surat tidak tersedia'):`<button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button>`;
+          const actions=!isArchived&&isSecretariatAdmin&&!row.approved_at&&!row.rejected_at?` <button type="button" data-permission-decision="approve" data-id="${escapeHTML(row.id)}">Setujui</button> <button type="button" data-permission-decision="reject" data-id="${escapeHTML(row.id)}">Tolak</button>`:'';
+          return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td>${proof} ${status}${actions}</td></tr>`;
+        }).join('');
+      }).join('')||`<tr><td colspan="4" class="records-empty">${isArchived?'Belum ada pengajuan di arsip.':'Belum ada pengajuan izin.'}</td></tr>`;
+    };
     $('#attendance-permission-rows').innerHTML=render(active||[],false);
     $('#attendance-permission-archive-rows').innerHTML=render(archived||[],true);
     showMessage(message,'');
@@ -1205,9 +1213,9 @@ $('#attendance-permissions').addEventListener('click',async event=>{
   if(archive){
     archive.disabled=true;
     try{
-      await api('rpc/archive_cssmora_attendance_permission',{method:'POST',body:{p_permission_id:archive.dataset.permissionArchive}});
+      await api('rpc/archive_cssmora_attendance_permission_event',{method:'POST',body:{p_agenda_id:archive.dataset.permissionArchive}});
       await loadAttendancePermissions();
-      showMessage('#attendance-permission-message','Pengajuan dipindahkan ke riwayat.','success');
+      showMessage('#attendance-permission-message','Semua pengajuan acara dipindahkan ke riwayat.','success');
     }catch(error){showMessage('#attendance-permission-message',error.message,'error');archive.disabled=false;}
     return;
   }
