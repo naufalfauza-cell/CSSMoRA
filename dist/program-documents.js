@@ -105,6 +105,9 @@
   function selectedSections(){const out={};document.querySelectorAll(`.program-document-options [data-option-for="${selectedType()}"] input`).forEach(node=>out[node.name]=node.checked);return out;}
   function documentReadyForSubmission(){return Boolean(current?.google_doc_id&&current?.google_doc_generated_at&&current?.ai_content?.generated_at&&!formDirty&&!subrecordsDirty);}
   function renderType(){
+    const hasDocument=Boolean(current||draftCycle);
+    $('#program-document-form').hidden=!hasDocument;
+    $('#program-document-guidance').hidden=hasDocument;
     const type=selectedType();
     document.querySelectorAll('.program-document-fields').forEach(section=>{
       const active=section.dataset.documentType===type;section.hidden=!active;
@@ -581,6 +584,7 @@
     finally{button.disabled=false;}
   });
   document.querySelectorAll('.program-document-options input').forEach(input=>input.addEventListener('change',()=>{formDirty=true;renderType();}));
+  $('#program-document-choose-cycle').addEventListener('click',()=>{const target=$('#program-cycle-program');target.scrollIntoView({behavior:'smooth',block:'center'});target.focus({preventScroll:true});});
   $('#program-document-reset').addEventListener('click',()=>{
     if((formDirty||subrecordsDirty)&&!window.confirm('Tutup editor dan buang perubahan yang belum disimpan?'))return;
     clearEditor();

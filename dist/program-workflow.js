@@ -30,6 +30,15 @@
   let pendingLoad=null;
   let creatingPreparation=false;
 
+  document.querySelectorAll('[data-stage-target]').forEach(button=>button.addEventListener('click',()=>{
+    const target=document.getElementById(button.dataset.stageTarget);
+    if(!target)return;
+    if(target.tagName==='DETAILS')target.open=true;
+    target.scrollIntoView({behavior:'smooth',block:'start'});
+    if(target.tagName==='DETAILS')target.querySelector('summary')?.focus({preventScroll:true});
+    else target.focus({preventScroll:true});
+  }));
+
   const api=()=>window.CSSMoRAAdmin?.api;
   const context=()=>window.CSSMoRAAdmin?.context?.()||{};
   const dateField=value=>/^\d{4}-\d{2}-\d{2}$/.test(String(value||''))?value:'';

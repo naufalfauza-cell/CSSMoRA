@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261117-ui-pengurus">
+  <link rel="stylesheet" href="./admin.css?v=20261117-alur-proker">
   <link rel="stylesheet" href="./workflows.css?v=20261111-proker-preparation">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -26,14 +26,14 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261116-public-uploads" defer></script>
-  <script src="./admin.js?v=20261117-persetujuan-izin" defer></script>
+  <script src="./admin.js?v=20261117-audit-pengurus" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261116-signed-filename" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
   <script src="./workflows.js?v=20261116-public-uploads" defer></script>
   <script src="./program-workflow-domain.js?v=20261023-program-lpj-v1" defer></script>
-  <script src="./program-workflow.js?v=20261112-unified-program-workspace" defer></script>
-  <script src="./program-documents.js?v=20261112-unified-program-workspace" defer></script>
+  <script src="./program-workflow.js?v=20261117-alur-proker" defer></script>
+  <script src="./program-documents.js?v=20261117-audit-pengurus" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261026-login-logos">
   <link rel="stylesheet" href="./letter-signatures.css?v=20261116-signature-queue">
   <link rel="stylesheet" href="./letter-inbox.css?v=20261103-incoming-letters-v2">
@@ -194,7 +194,14 @@
           </div>
         </section>
         <section class="agenda-admin-subpanel" id="program-workflow-panel" role="tabpanel" aria-labelledby="tab-program-workflow" hidden>
-          <div class="program-workflow-heading"><div><span class="admin-kicker">MONITORING PROGRAM KERJA</span><h3>Ruang kerja proker</h3><p>Pilih siklus untuk mengelola lembar kerja, proposal, dan LPJ di halaman ini.</p></div><button class="text-button" id="program-workflow-refresh" type="button">Muat ulang</button></div>
+          <div class="program-workflow-heading"><div><span class="admin-kicker">MONITORING PROGRAM KERJA</span><h3>Ruang kerja proker</h3><p>Mulai atau pilih siklus, lalu kelola persiapan, proposal, pelaksanaan, dan LPJ. Simpan monitoring setelah mengubah isian.</p></div><button class="text-button" id="program-workflow-refresh" type="button">Muat ulang</button></div>
+          <nav class="program-stage-nav" aria-label="Tahapan pengelolaan proker">
+            <button type="button" data-stage-target="program-cycle-program">1 · Monitoring</button>
+            <button type="button" data-stage-target="program-stage-preparation">2 · Persiapan</button>
+            <button type="button" data-stage-target="program-stage-proposal">3 · Proposal</button>
+            <button type="button" data-stage-target="program-stage-execution">4 · Pelaksanaan</button>
+            <button type="button" data-stage-target="program-stage-lpj">5 · LPJ</button>
+          </nav>
           <section class="program-reminders" id="program-reminders" aria-live="polite"><h4>Perlu ditindaklanjuti</h4><div id="program-reminder-list"><p class="records-empty">Memuat tenggat…</p></div></section>
           <div class="admin-columns program-workflow-grid">
             <section class="editor-card program-cycle-editor" aria-labelledby="program-cycle-editor-title">
@@ -204,7 +211,7 @@
                 <div class="form-two"><div><label for="program-cycle-program">Program kerja</label><select id="program-cycle-program" name="program_id" required><option value="">Pilih proker…</option></select></div><div><label for="program-cycle-period">Periode</label><input id="program-cycle-period" name="period_label" maxlength="24" required></div></div>
                 <div class="form-two"><div><label for="program-cycle-start">Mulai periode</label><input id="program-cycle-start" name="period_start" type="date"></div><div><label for="program-cycle-end">Akhir periode</label><input id="program-cycle-end" name="period_end" type="date"></div></div>
                 <div class="form-two"><div><label for="program-cycle-status">Status</label><select id="program-cycle-status" name="status"><option value="planning">Rencana</option><option value="ongoing">Berjalan</option></select></div><div><label for="program-cycle-deadline">Tenggat LPJ</label><input id="program-cycle-deadline" name="lpj_due_date" type="date"></div></div>
-                <fieldset class="program-preparation">
+                <details class="program-preparation-group" id="program-stage-preparation"><summary>2 · Persiapan sebelum proposal</summary><fieldset class="program-preparation">
                   <legend>Persiapan sebelum proposal</legend>
                   <p>Simpan lembar kerja, anggaran, dan notulen untuk proker pada periode ini.</p>
                   <div class="form-two">
@@ -220,14 +227,14 @@
                   <button id="program-prep-create" class="member-option-button" type="button" disabled aria-describedby="program-prep-create-hint">Buat Google Docs dan Sheets</button>
                   <p id="program-prep-create-hint" class="field-hint">Pilih proker dan klik Simpan monitoring untuk mengaktifkan pembuatan berkas.</p>
                   <p id="program-prep-create-message" class="form-message" role="status"></p>
-                </fieldset>
-                <fieldset class="program-preparation"><legend>Proposal</legend><div id="program-cycle-proposal"></div></fieldset>
-                <fieldset class="program-preparation"><legend>LPJ setelah kegiatan</legend>
+                </fieldset></details>
+                <details class="program-preparation-group" id="program-stage-proposal"><summary>3 · Proposal</summary><fieldset class="program-preparation"><legend>Proposal</legend><div id="program-cycle-proposal"></div></fieldset></details>
+                <details class="program-preparation-group" id="program-stage-execution"><summary>4 · Pelaksanaan dan evaluasi</summary><fieldset class="program-preparation"><legend>Hasil pelaksanaan</legend>
                 <label for="program-cycle-summary">Ringkasan pelaksanaan / LPJ</label><textarea id="program-cycle-summary" name="lpj_summary" rows="3" maxlength="5000" placeholder="Kegiatan yang dilaksanakan dan hasil utamanya"></textarea>
                 <label for="program-cycle-outputs">Luaran dan capaian</label><textarea id="program-cycle-outputs" name="output_summary" rows="2" maxlength="2000" placeholder="Contoh: jumlah peserta, produk, atau target tercapai"></textarea>
                 <label for="program-cycle-lessons">Evaluasi dan tindak lanjut</label><textarea id="program-cycle-lessons" name="lesson_learned" rows="2" maxlength="2000" placeholder="Catatan evaluasi untuk periode berikutnya"></textarea>
-                <div id="program-cycle-lpj"></div>
-                </fieldset>
+                </fieldset></details>
+                <details class="program-preparation-group" id="program-stage-lpj"><summary>5 · LPJ</summary><fieldset class="program-preparation"><legend>LPJ setelah kegiatan</legend><div id="program-cycle-lpj"></div></fieldset></details>
                 <p class="program-cycle-progress" id="program-cycle-progress">Progres 0% · 0 dari 0 tahapan selesai</p>
                 <button class="admin-button" id="save-program-cycle" type="submit">Simpan monitoring <span aria-hidden="true">↗</span></button>
                 <div class="program-cycle-actions" id="program-cycle-actions" hidden></div>
@@ -257,7 +264,8 @@
           <div class="program-documents-layout">
             <section class="editor-card program-document-editor" aria-labelledby="program-document-editor-title">
               <div class="editor-heading"><div><span class="admin-kicker">DRAF DOKUMEN</span><h4 id="program-document-editor-title">Mulai proposal atau LPJ</h4></div><button class="text-button" id="program-document-reset" type="button">Tutup editor</button></div>
-              <form id="program-document-form">
+              <div id="program-document-guidance" class="program-document-guidance"><p>Pilih siklus untuk membuat proposal atau LPJ, atau pilih draf yang sudah ada pada daftar dokumen.</p><button type="button" class="member-option-button" id="program-document-choose-cycle">Pilih atau buat siklus</button></div>
+              <form id="program-document-form" hidden>
                 <input type="hidden" id="program-document-id" name="id">
                 <div class="form-two"><div><label for="program-document-type">Jenis dokumen</label><select id="program-document-type" name="document_type"><option value="proposal">Proposal</option><option value="lpj">LPJ</option></select></div><div><label for="program-document-program">Proker</label><select id="program-document-program" name="program_id" required><option value="">Pilih proker…</option></select></div></div>
                 <div class="form-two"><div><label for="program-document-period">Periode</label><input id="program-document-period" name="period_label" maxlength="24" placeholder="2026/2027" required></div><div><label for="program-document-title">Judul kegiatan</label><input id="program-document-title" name="title" maxlength="180" placeholder="Nama kegiatan" required></div></div>
@@ -651,7 +659,7 @@
         </section>
         <section class="records-card" aria-labelledby="records-title">
           <div class="editor-heading"><div><span class="admin-kicker">DATA SUPABASE</span><h3 id="records-title">Lomba tersimpan</h3></div><span class="record-count" id="record-count">—</span></div>
-          <div class="record-list" id="record-list"><p class="records-empty">Memuat data…</p></div>
+          <div class="competition-record-filters"><label for="competition-record-search">Cari lomba</label><input id="competition-record-search" type="search" placeholder="Nama atau penyelenggara"><label for="competition-record-status">Status</label><select id="competition-record-status"><option value="all">Semua status</option><option value="open">Pendaftaran dibuka</option><option value="closed">Pendaftaran ditutup</option><option value="expired">Tidak tampil di katalog (&gt; 3 hari)</option><option value="draft">Draf</option></select></div><div class="record-list" id="record-list"><p class="records-empty">Memuat data…</p></div>
         </section>
       </div>
       </section>
