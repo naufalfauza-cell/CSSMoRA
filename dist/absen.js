@@ -5,7 +5,7 @@ const eventSelect = $("#event-select");
 const eventLabel = $("#event-picker-label");
 const statusMessage = $("#checkin-message");
 const photoFields = $("#checkin-photo-fields");
-const photoInput = $("#checkin-photo");
+const photoInputs = [$("#checkin-camera"), $("#checkin-photo")];
 const photoPreview = $("#photo-preview");
 const photoPreviewImage = $("#photo-preview-image");
 const photoSize = $("#photo-size");
@@ -213,7 +213,7 @@ function resetPhoto() {
   compressedPhoto = null;
   if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
   photoPreviewUrl = null;
-  photoInput.value = "";
+  for (const input of photoInputs) input.value = "";
   photoPreviewImage.removeAttribute("src");
   photoSize.textContent = "";
   photoPreview.hidden = true;
@@ -259,7 +259,9 @@ async function compressPhoto(file) {
   }
   throw new Error("Foto belum bisa dikompres otomatis. Coba pilih foto yang lebih kecil.");
 }
-$("#checkin-photo-picker").addEventListener("click", () => photoInput.click());
+for (const button of photoFields.querySelectorAll("[data-photo-input]")) {
+  button.addEventListener("click", () => $("#" + button.dataset.photoInput).click());
+}
 async function preparePhoto(event) {
   const file = event.currentTarget.files?.[0];
   if (!file || processingPhoto || submitting || permissionMode()) return;
@@ -285,7 +287,7 @@ async function preparePhoto(event) {
     photoFields.disabled = permissionMode();
   }
 }
-photoInput.addEventListener("change", preparePhoto);
+for (const input of photoInputs) input.addEventListener("change", preparePhoto);
 form.addEventListener("submit", async event => {
   event.preventDefault();
   if (submitting || !selectedEvent) return;
@@ -323,7 +325,7 @@ form.addEventListener("submit", async event => {
     return;
   }
   if (!compressedPhoto) {
-    setMessage(processingPhoto ? "Tunggu sampai foto selesai dikompres." : "Pilih foto bukti terlebih dahulu.", "error");
+    setMessage(processingPhoto ? "Tunggu sampai foto selesai dikompres." : "Ambil foto atau pilih foto bukti dari galeri / file.", "error");
     return;
   }
   const cohort = $("#checkin-cohort").value;
