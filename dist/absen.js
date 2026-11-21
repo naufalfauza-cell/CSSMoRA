@@ -4,13 +4,15 @@ const form = $("#checkin-form");
 const eventSelect = $("#event-select");
 const eventLabel = $("#event-picker-label");
 const statusMessage = $("#checkin-message");
-const photoInput = $("#checkin-photo");
+const photoFields = $("#checkin-photo-fields");
+const photoInputs = [$("#checkin-camera"), $("#checkin-photo")];
 const photoPreview = $("#photo-preview");
 const photoPreviewImage = $("#photo-preview-image");
 const photoSize = $("#photo-size");
 const MAX_PHOTO_BYTES = 512000;
 let compressedPhoto = null;
 let photoPreviewUrl = null;
+let processingPhoto = false;
 const directToken = new URLSearchParams(location.search).get("t");
 let activeEvents = [];
 const modeSelect = $("#checkin-mode");
@@ -162,8 +164,8 @@ modeSelect.addEventListener("change", () => {
   eventSelect.value = "";
   resetMemberFields();
   const permission = permissionMode();
-  $("#checkin-photo-fields").hidden = permission;
-  photoInput.disabled = permission;
+  photoFields.hidden = permission;
+  photoFields.disabled = permission || processingPhoto;
   $("#checkin-permission-fields").hidden = !permission;
   $("#checkin-letter").disabled = !permission;
   $("#checkin-reason").disabled = !permission;
@@ -211,7 +213,7 @@ function resetPhoto() {
   compressedPhoto = null;
   if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
   photoPreviewUrl = null;
-  photoInput.value = "";
+  for (const input of photoInputs) input.value = "";
   photoPreviewImage.removeAttribute("src");
   photoSize.textContent = "";
   photoPreview.hidden = true;
@@ -257,19 +259,17 @@ async function compressPhoto(file) {
   }
   throw new Error("Foto belum bisa dikompres otomatis. Coba pilih foto yang lebih kecil.");
 }
-photoInput.addEventListener("change", async () => {
-  const file = photoInput.files?.[0];
+for (const button of photoFields.querySelectorAll("[data-photo-input]")) {
+  button.addEventListener("click", () => $("#" + button.dataset.photoInput).click());
+}
+async function preparePhoto(event) {
+  const file = event.currentTarget.files?.[0];
+  if (!file || processingPhoto || submitting || permissionMode()) return;
   const version = modeVersion;
   const token = eventKey(selectedEvent);
-  compressedPhoto = null;
-  if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-  photoPreviewUrl = null;
-  photoPreviewImage.removeAttribute("src");
-  photoSize.textContent = "";
-  photoPreview.hidden = true;
-  if (!file) return;
+  resetPhoto();
   setMessage("Mengompres foto di perangkat…");
-  photoInput.disabled = true;
+  processingPhoto = photoFields.disabled = true;
   try {
     const photo = await compressPhoto(file);
     if (version !== modeVersion || token !== eventKey(selectedEvent)) return;
@@ -281,12 +281,13 @@ photoInput.addEventListener("change", async () => {
     setMessage("Foto siap. Lanjutkan untuk mencatat kehadiran.", "success");
   } catch (error) {
     if (version !== modeVersion || token !== eventKey(selectedEvent)) return;
-    resetPhoto();
     setMessage(error.message, "error");
   } finally {
-    photoInput.disabled = permissionMode();
+    processingPhoto = false;
+    photoFields.disabled = permissionMode();
   }
-});
+}
+for (const input of photoInputs) input.addEventListener("change", preparePhoto);
 form.addEventListener("submit", async event => {
   event.preventDefault();
   if (submitting || !selectedEvent) return;
@@ -324,7 +325,7 @@ form.addEventListener("submit", async event => {
     return;
   }
   if (!compressedPhoto) {
-    setMessage("Pilih foto bukti terlebih dahulu.", "error");
+    setMessage(processingPhoto ? "Tunggu sampai foto selesai dikompres." : "Ambil foto atau pilih foto bukti dari galeri / file.", "error");
     return;
   }
   const cohort = $("#checkin-cohort").value;
@@ -332,7 +333,7 @@ form.addEventListener("submit", async event => {
   const memberId = $("#checkin-member").value;
   const button = $("#checkin-submit");
   submitting = true;
-  modeSelect.disabled = eventSelect.disabled = button.disabled = true;
+  modeSelect.disabled = eventSelect.disabled = button.disabled = photoFields.disabled = true;
   try {
     setMessage("Menyiapkan unggahan foto…");
     const upload = await request("POST", { token: selectedEvent.public_token }, {
@@ -362,7 +363,7 @@ form.addEventListener("submit", async event => {
     setMessage(error.message, "error");
   } finally {
     submitting = false;
-    modeSelect.disabled = eventSelect.disabled = button.disabled = false;
+    modeSelect.disabled = eventSelect.disabled = button.disabled = photoFields.disabled = false;
   }
 });
 window.addEventListener("beforeunload", () => { if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl); });
