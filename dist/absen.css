@@ -24,10 +24,9 @@
 
 .checkin-photo-fields{min-width:0;margin:8px 0 0;padding:0;border:0}
 .checkin-photo-fields legend{padding:0;font-size:.82rem;font-weight:800}
-.checkin-photo-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 6px}
-.checkin-photo-actions button{flex:1 1 auto;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:#f8faf7;color:var(--ink);font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}
-.checkin-photo-actions button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
-.checkin-photo-actions button:disabled{opacity:.6;cursor:default}
+.checkin-photo-picker{width:100%;margin:8px 0 6px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:#f8faf7;color:var(--ink);font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}
+.checkin-photo-picker:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.checkin-photo-picker:disabled{opacity:.6;cursor:default}
 .checkin-photo-hint{display:block;margin:0 0 4px;color:var(--muted);font-size:.76rem;line-height:1.45}
 .checkin-card input[type=file]{width:100%;padding:10px;border:1px dashed #b9c8bc;border-radius:12px;background:#f8faf7;color:var(--muted);font-size:.78rem}
 .checkin-card input[type=file]::file-selector-button{margin-right:10px;padding:7px 10px;border:0;border-radius:8px;background:#eaf3e8;color:var(--green);font-weight:800;cursor:pointer}
