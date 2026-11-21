@@ -8,9 +8,9 @@
   <title>Absensi Anggota · CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png?v=20261023-perf-assets">
   <link rel="stylesheet" href="./style.css?v=20261103-transparent-partners-v2">
-  <link rel="stylesheet" href="./absen.css?v=20261112-perizinan">
+  <link rel="stylesheet" href="./absen.css?v=20261121-pilihan-foto">
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
-  <script src="./absen.js?v=20261117-persetujuan-izin" defer></script>
+  <script src="./absen.js?v=20261121-pilihan-foto" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261103-secondary-pages-v1">
   <link rel="stylesheet" href="./wallet-theme.css?v=20261103-mobile-nav-scroll-video-v1">
 </head>
@@ -41,15 +41,20 @@
         <select id="checkin-program" name="study_program" required disabled><option value="">Pilih prodi</option></select>
         <label for="checkin-member">Nama</label>
         <select id="checkin-member" name="member_id" required disabled><option value="">Pilih nama</option></select>
-        <div id="checkin-photo-fields">
-        <label for="checkin-photo">Foto bukti kehadiran</label>
-        <input id="checkin-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required aria-describedby="checkin-photo-hint">
-        <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat.</small>
-        <div class="checkin-photo-preview" id="photo-preview" hidden>
-          <img id="photo-preview-image" alt="Pratinjau foto bukti kehadiran">
-          <span id="photo-size"></span>
-        </div>
-        </div>
+        <fieldset class="checkin-photo-fields" id="checkin-photo-fields" aria-describedby="checkin-photo-hint">
+          <legend>Foto bukti kehadiran</legend>
+          <div class="checkin-photo-actions">
+            <button type="button" data-photo-input="checkin-camera">Ambil foto</button>
+            <button type="button" data-photo-input="checkin-photo">Pilih dari galeri / file</button>
+          </div>
+          <input id="checkin-camera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden>
+          <input id="checkin-photo" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat.</small>
+          <div class="checkin-photo-preview" id="photo-preview" hidden>
+            <img id="photo-preview-image" alt="Pratinjau foto bukti kehadiran">
+            <span id="photo-size"></span>
+          </div>
+        </fieldset>
         <div id="checkin-permission-fields" hidden>
           <label for="checkin-reason">Alasan izin</label>
           <textarea id="checkin-reason" name="reason" rows="3" maxlength="1000" required disabled></textarea>
