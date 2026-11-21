@@ -1482,8 +1482,13 @@ function renderAttendanceRoster(){
   const allRows=currentAttendanceRows.map(row=>({...row,member:memberById(row.member_id)})).filter(row=>row.member);
   allRows.sort((a,b)=>Number(b.status==='hadir')-Number(a.status==='hadir')||Date.parse(b.updated_at||0)-Date.parse(a.updated_at||0)||a.member.full_name.localeCompare(b.member.full_name,'id'));
   const counts={hadir:0,izin:0,sakit:0,alpa:0,belum:0};allRows.forEach(row=>counts[row.status]=(counts[row.status]||0)+1);
-  const rate=allRows.length?Math.round(counts.hadir*1000/allRows.length)/10:0;
-  $('#attendance-summary').innerHTML='<span><strong>'+counts.hadir+'</strong> hadir</span><span><strong>'+counts.izin+'</strong> izin</span><span><strong>'+counts.sakit+'</strong> sakit</span><span><strong>'+counts.alpa+'</strong> tanpa keterangan</span><span><strong>'+rate+'%</strong> kehadiran</span>';
+  const percent=count=>allRows.length?Math.round(count*1000/allRows.length)/10:0;
+  $('#attendance-summary').innerHTML=
+    '<span><strong>'+counts.hadir+'</strong> hadir · '+percent(counts.hadir)+'%</span>'+
+    '<span><strong>'+counts.izin+'</strong> izin · '+percent(counts.izin)+'%</span>'+
+    '<span><strong>'+percent(counts.hadir+counts.izin)+'%</strong> hadir + izin</span>'+
+    '<span><strong>'+counts.sakit+'</strong> sakit</span>'+
+    '<span><strong>'+counts.alpa+'</strong> tanpa keterangan</span>';
   if(!allRows.length){$('#attendance-roster').innerHTML='<tr><td colspan="4" class="records-empty">Belum ada roster pada daftar hadir ini.</td></tr>';return;}
   const search=($('#attendance-roster-filter').value||'').trim().toLocaleLowerCase('id-ID');
   const rows=allRows.filter(row=>!search||row.member.full_name.toLocaleLowerCase('id-ID').includes(search)||String(row.member.nia||'').toLocaleLowerCase('id-ID').includes(search));
