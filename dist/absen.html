@@ -8,9 +8,9 @@
   <title>Absensi Anggota · CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png?v=20261023-perf-assets">
   <link rel="stylesheet" href="./style.css?v=20261103-transparent-partners-v2">
-  <link rel="stylesheet" href="./absen.css?v=20261121-pilihan-foto">
+  <link rel="stylesheet" href="./absen.css?v=20261121-pemilih-foto">
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
-  <script src="./absen.js?v=20261121-pilihan-foto" defer></script>
+  <script src="./absen.js?v=20261121-pemilih-foto" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261103-secondary-pages-v1">
   <link rel="stylesheet" href="./wallet-theme.css?v=20261103-mobile-nav-scroll-video-v1">
 </head>
@@ -43,11 +43,7 @@
         <select id="checkin-member" name="member_id" required disabled><option value="">Pilih nama</option></select>
         <fieldset class="checkin-photo-fields" id="checkin-photo-fields" aria-describedby="checkin-photo-hint">
           <legend>Foto bukti kehadiran</legend>
-          <div class="checkin-photo-actions">
-            <button type="button" data-photo-input="checkin-camera">Ambil foto</button>
-            <button type="button" data-photo-input="checkin-photo">Pilih dari galeri / file</button>
-          </div>
-          <input id="checkin-camera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden>
+          <button class="checkin-photo-picker" id="checkin-photo-picker" type="button">Pilih foto</button>
           <input id="checkin-photo" type="file" accept="image/jpeg,image/png,image/webp" hidden>
           <small class="checkin-photo-hint" id="checkin-photo-hint">Foto dikompres otomatis di perangkat.</small>
           <div class="checkin-photo-preview" id="photo-preview" hidden>
