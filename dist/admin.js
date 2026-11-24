@@ -1438,22 +1438,31 @@ function attendanceRecapTableRows(rows){
 $('#attendance-recap-filter').addEventListener('input',renderAttendanceRecap);
 attendanceRecapPrintButton.addEventListener('click',()=>{
   if(!attendanceRecapRows.length||attendanceRecapPrintButton.disabled||$('#attendance-recap-card').hidden)return;
-  $('#attendance-recap-printout')?.remove();
+  prepareAttendanceRecapPrint();
+  window.print();
+});
+window.addEventListener('beforeprint',()=>{
+  if(!$('#attendance-recap-card').closest('[hidden]'))prepareAttendanceRecapPrint();
+});
+function prepareAttendanceRecapPrint(){
+  if($('#attendance-recap-printout'))return;
   const report=document.createElement('section');
   report.id='attendance-recap-printout';
+  report.className='admin-content-area attendance-recap-card';
   const date=new Intl.DateTimeFormat('id-ID',{dateStyle:'long',timeStyle:'short',timeZone:'Asia/Jakarta'}).format(new Date());
-  report.innerHTML='<header><span class="admin-kicker">CSSMoRA UNAIR</span><h1>Akumulasi kehadiran</h1><p>Rekap seluruh anggota aktif · Dicetak '+escapeHTML(date)+' WIB</p></header>';
+  report.innerHTML='<div class="editor-heading" title="Akumulasi kehadiran · '+escapeHTML(date)+' WIB"><h3>Rekap anggota</h3></div>';
   const summary=$('#attendance-recap-summary').cloneNode(true);
   summary.removeAttribute('id');
   const table=$('#attendance-recap').closest('table').cloneNode(true);
   const body=table.tBodies[0];
   body.removeAttribute('id');
-  body.innerHTML=attendanceRecapTableRows(attendanceRecapRows);
+  if(attendanceRecapRows.length&&!attendanceRecapPrintButton.disabled){
+    body.innerHTML=attendanceRecapTableRows(attendanceRecapRows);
+  }
   report.append(summary,table);
   document.body.append(report);
   window.addEventListener('afterprint',()=>report.remove(),{once:true});
-  window.print();
-});
+}
 function attendanceStatusLabel(status){return({hadir:'Hadir',izin:'Izin',sakit:'Sakit',alpa:'Tanpa keterangan',belum:'Belum dicatat'})[status]||status;}
 let attendanceRosterRequest=0;
 let attendanceRosterLoading=false;

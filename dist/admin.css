@@ -2338,24 +2338,23 @@
 .proker-maintenance h3 { margin:0; color:#164d45; }
 
 #attendance-recap-printout{display:none}
-@page attendance-recap{size:A4 portrait;margin:14mm}
+@page attendance-recap{size:letter landscape;margin:9mm}
 @media print{
-  body.admin-page:has(> #attendance-recap-printout){
-    display:block;min-height:0;overflow:visible;background:#fff;color:#182720
+  html:has(#attendance-recap-printout),body.admin-page:has(> #attendance-recap-printout){
+    display:block;height:auto;min-height:0;margin:0;padding:0;overflow:visible;background:white
   }
   body.admin-page:has(> #attendance-recap-printout)>:not(#attendance-recap-printout){display:none!important}
   #attendance-recap-printout{
-    display:block;page:attendance-recap;
-    font:11pt 'Plus Jakarta Sans',sans-serif;
-    print-color-adjust:exact;-webkit-print-color-adjust:exact
+    display:block;page:attendance-recap;position:static;
+    width:100%;min-width:0;max-width:none;height:auto;margin:0;padding:0;overflow:visible;
+    background:white;color:#182735;box-shadow:none
   }
-  #attendance-recap-printout header h1{margin:3mm 0 1mm;font-size:19pt}
-  #attendance-recap-printout header p{margin:0;font-size:9pt;color:#4a6054}
-  #attendance-recap-printout header,#attendance-recap-printout .attendance-summary{break-inside:avoid}
-  #attendance-recap-printout .attendance-summary small{flex-basis:100%;font-size:8pt}
-  #attendance-recap-printout .secretariat-table{width:100%;min-width:0}
+  #attendance-recap-printout .editor-heading{margin:0 0 8px;break-after:avoid}
+  #attendance-recap-printout .attendance-summary{break-inside:avoid;break-after:avoid}
+  #attendance-recap-printout .secretariat-table{width:100%;min-width:0;table-layout:fixed;border:1px solid #dce5ec}
   #attendance-recap-printout thead{display:table-header-group}
-  #attendance-recap-printout tr{break-inside:avoid}
-  #attendance-recap-printout th{position:static;white-space:normal}
-  #attendance-recap-printout :is(th,td){padding:2mm 2.5mm}
+  #attendance-recap-printout tr{break-inside:avoid;page-break-inside:avoid}
+  #attendance-recap-printout th{position:static;background:white}
+  #attendance-recap-printout :is(th,td){text-align:left;border-bottom:1px solid #dce5ec}
+  #attendance-recap-printout .attendance-rate-track{visibility:hidden}
 }
