@@ -200,6 +200,7 @@ async function checkAdmin() {
   isSecretariatAdmin=roleSet.has('sekretaris');
   $('#incoming-letter-upload-form').hidden=!(isLeadership||isSecretariatAdmin);
   $('#outgoing-letter-composer').hidden=!isSecretariatAdmin;
+  $('#open-letter-number').hidden=!isSecretariatAdmin;
   achievementRoles=isLeadership?['ketua']:(roleSet.has('bendahara')?['bendahara']:[]);
   canReviewAchievementApplications=isLeadership||roleSet.has('bendahara');
   canVerifyAchievementRecords=isLeadership||roleSet.has('bph_departemen')||roleSet.has('sekretaris')||roleSet.has('bendahara');
@@ -1663,6 +1664,12 @@ async function loadLetters(){
         form.before(link);
       }
       if(letter.archive_status==='void'||!isSecretariatAdmin)return;
+      const sign=document.createElement('button');
+      sign.type='button';
+      sign.className='member-option-button';
+      sign.dataset.signLetter=letter.id;
+      sign.textContent='Ajukan tanda tangan';
+      form.before(sign);
       const upload=document.createElement('form');
       upload.className='letter-upload-form';
       upload.dataset.letterId=letter.id;
@@ -2077,7 +2084,27 @@ $('#outgoing-draft-list').addEventListener('click',async event=>{
 });
 
 $('#letters-refresh').addEventListener('click',loadLetters);
+$('#open-letter-number').addEventListener('click',()=>{
+  if(!isSecretariatAdmin)return;
+  $('#letter-number-editor').open=true;
+  $('#letter-subject').focus();
+});
 $('#letter-record-list').addEventListener('click',async event=>{
+  const sign=event.target.closest('[data-sign-letter]');
+  if(sign&&isSecretariatAdmin){
+    if(outgoingSignatureSelect.disabled)return;
+    const pdf=$('#letter-sign-pdf');
+    if(outgoingSignatureSelect.value!==sign.dataset.signLetter){
+      pdf.value='';
+      preparedOutgoingLetterId=null;
+    }
+    outgoingSignatureSelect.value=sign.dataset.signLetter;
+    if(outgoingSignatureSelect.value){
+      $('#tab-letter-signatures').click();
+      pdf.focus();
+    }
+    return;
+  }
   const button=event.target.closest('[data-copy-letter]');if(!button)return;
   try{await navigator.clipboard.writeText(button.dataset.copyLetter);showMessage('#letter-message','Nomor surat disalin.','success');}
   catch{showMessage('#letter-message','Nomor surat: '+button.dataset.copyLetter);}
@@ -2097,7 +2124,7 @@ letterForm.addEventListener('submit',async event=>{
     }});
     const data=Array.isArray(issued)?issued[0]:issued;
     letterForm.reset();$('#letter-issued-on').value=localDateInput();$('#letter-attachments').value='0';
-    showMessage('#letter-message','Nomor terbit: '+(data?.letter_number||'berhasil dibuat')+'.','success');
+    showMessage('#letter-message','Nomor '+data.letter_number+' tercatat di Surat Tersimpan. Gunakan catatan itu untuk mengarsipkan PDF atau mengajukan tanda tangan.','success');
     await loadLetters();
   }catch(error){showMessage('#letter-message',error.message,'error');}
   finally{button.disabled=false;}
