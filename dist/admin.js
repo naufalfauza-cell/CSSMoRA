@@ -1291,6 +1291,7 @@ function renderAttendanceEvents(){
 }
 $('#attendance-event-filter').addEventListener('input',renderAttendanceEvents);
 let attendanceRecapRows=[];
+const attendanceRecapPrintButton=$('#attendance-recap-print');
 let attendanceOpenEventId=null;
 async function refreshAttendanceData(){
   const selectedId=currentAttendanceEvent?.id;
@@ -1383,14 +1384,17 @@ $('#attendance-open-form').addEventListener('submit',async event=>{
 });
 async function loadAttendanceRecap(){
   const list=$('#attendance-recap');
+  attendanceRecapRows=[];
+  attendanceRecapPrintButton.disabled=true;
   list.innerHTML='<tr><td colspan="6" class="records-empty">Memuat rekap kehadiran…</td></tr>';
   try{
     attendanceRecapRows=await api('rpc/get_secretariat_attendance_recap_izin',{method:'POST',body:{}})||[];
     renderAttendanceRecap();
+    attendanceRecapPrintButton.disabled=!attendanceRecapRows.length;
   }catch(error){
     attendanceRecapRows=[];
     $('#attendance-recap-summary').innerHTML='';
-    list.innerHTML='<tr><td colspan="5" class="records-empty">'+escapeHTML(error.message)+'</td></tr>';
+    list.innerHTML='<tr><td colspan="6" class="records-empty">'+escapeHTML(error.message)+'</td></tr>';
   }
 }
 $('#attendance-recap-toggle').addEventListener('click',async()=>{
@@ -1417,18 +1421,39 @@ function renderAttendanceRecap(){
   const attended=attendanceRecapRows.reduce((sum,row)=>sum+Number(row.attended_count||0),0);
   const eligible=attendanceRecapRows.reduce((sum,row)=>sum+Number(row.eligible_count||0),0);
   const rate=eligible?Math.round(attended*1000/eligible)/10:0;
-  $('#attendance-recap-summary').innerHTML='<span><strong>'+totalEvents+'</strong> agenda selesai</span><span><strong>'+rate+'%</strong> rata-rata kehadiran</span><span><strong>'+attendanceRecapRows.length+'</strong> anggota</span><small>Izin disetujui dihitung hadir; batas pemantauan izin 25% dari agenda yang dihitung, termasuk izin disetujui untuk agenda mendatang.</small>';
+  $('#attendance-recap-summary').innerHTML='<span><strong>'+totalEvents+'</strong> agenda selesai</span><span><strong>'+rate+'%</strong> rata-rata kehadiran</span><span><strong>'+attendanceRecapRows.length+'</strong> anggota aktif</span><small>Izin disetujui dihitung hadir; batas pemantauan izin 25% dari agenda yang dihitung, termasuk izin disetujui untuk agenda mendatang.</small>';
   if(!attendanceRecapRows.length){$('#attendance-recap').innerHTML='<tr><td colspan="6" class="records-empty">Belum ada data anggota untuk direkap.</td></tr>';return;}
   const search=($('#attendance-recap-filter').value||'').trim().toLocaleLowerCase('id-ID');
   const rows=attendanceRecapRows.filter(row=>!search||String(row.full_name||'').toLocaleLowerCase('id-ID').includes(search)||String(row.nia||'').toLocaleLowerCase('id-ID').includes(search));
   if(!rows.length){$('#attendance-recap').innerHTML='<tr><td colspan="6" class="records-empty">Anggota yang cocok tidak ditemukan.</td></tr>';return;}
-  $('#attendance-recap').innerHTML=rows.map(row=>{
+  $('#attendance-recap').innerHTML=attendanceRecapTableRows(rows);
+}
+function attendanceRecapTableRows(rows){
+  return rows.map(row=>{
     const percent=Math.max(0,Math.min(100,Number(row.attendance_percent)||0));
     const izinCount=Number(row.permission_count||0), izinPercent=Number(row.permission_percent||0);
     return '<tr><td><strong>'+escapeHTML(row.full_name)+'</strong><small>Angkatan '+escapeHTML(row.cohort)+'</small></td><td>'+escapeHTML(row.nia)+'</td><td>'+Number(row.attended_count||0)+'</td><td>'+Number(row.eligible_count||0)+'</td><td><span class="attendance-rate"><span class="attendance-rate-track" aria-hidden="true"><i style="width:'+percent+'%"></i></span>'+percent+'%</span></td><td><strong>'+izinCount+' kali · '+izinPercent+'%</strong></td></tr>';
   }).join('');
 }
 $('#attendance-recap-filter').addEventListener('input',renderAttendanceRecap);
+attendanceRecapPrintButton.addEventListener('click',()=>{
+  if(!attendanceRecapRows.length||attendanceRecapPrintButton.disabled||$('#attendance-recap-card').hidden)return;
+  $('#attendance-recap-printout')?.remove();
+  const report=document.createElement('section');
+  report.id='attendance-recap-printout';
+  const date=new Intl.DateTimeFormat('id-ID',{dateStyle:'long',timeStyle:'short',timeZone:'Asia/Jakarta'}).format(new Date());
+  report.innerHTML='<header><span class="admin-kicker">CSSMoRA UNAIR</span><h1>Akumulasi kehadiran</h1><p>Rekap seluruh anggota aktif · Dicetak '+escapeHTML(date)+' WIB</p></header>';
+  const summary=$('#attendance-recap-summary').cloneNode(true);
+  summary.removeAttribute('id');
+  const table=$('#attendance-recap').closest('table').cloneNode(true);
+  const body=table.tBodies[0];
+  body.removeAttribute('id');
+  body.innerHTML=attendanceRecapTableRows(attendanceRecapRows);
+  report.append(summary,table);
+  document.body.append(report);
+  window.addEventListener('afterprint',()=>report.remove(),{once:true});
+  window.print();
+});
 function attendanceStatusLabel(status){return({hadir:'Hadir',izin:'Izin',sakit:'Sakit',alpa:'Tanpa keterangan',belum:'Belum dicatat'})[status]||status;}
 let attendanceRosterRequest=0;
 let attendanceRosterLoading=false;
@@ -1479,7 +1504,7 @@ async function loadAttendanceRoster(eventId){
   finally{if(requestId===attendanceRosterRequest)attendanceRosterLoading=false;}
 }
 function renderAttendanceRoster(){
-  const allRows=currentAttendanceRows.map(row=>({...row,member:memberById(row.member_id)})).filter(row=>row.member);
+  const allRows=activeAttendanceRoster();
   allRows.sort((a,b)=>Number(b.status==='hadir')-Number(a.status==='hadir')||Date.parse(b.updated_at||0)-Date.parse(a.updated_at||0)||a.member.full_name.localeCompare(b.member.full_name,'id'));
   const counts={hadir:0,izin:0,sakit:0,alpa:0,belum:0};allRows.forEach(row=>counts[row.status]=(counts[row.status]||0)+1);
   const percent=count=>allRows.length?Math.round(count*1000/allRows.length)/10:0;
@@ -1513,6 +1538,9 @@ function renderAttendanceRoster(){
   }).join('');
   document.querySelectorAll('#attendance-roster select,#attendance-roster input').forEach(field=>field.disabled=!canEdit);
   $('#attendance-save').disabled=!canEdit||!attendanceRosterDirty;
+}
+function activeAttendanceRoster(){
+  return currentAttendanceRows.map(row=>({...row,member:memberById(row.member_id)})).filter(row=>row.member?.is_active===true);
 }
 $('#attendance-roster').addEventListener('input',event=>{if(event.target.matches('[data-attendance-reason]'))updateAttendanceSaveState();});
 $('#attendance-roster').addEventListener('change',event=>{if(event.target.matches('[data-attendance-status]'))updateAttendanceSaveState();});
@@ -1602,7 +1630,7 @@ $('#attendance-save').addEventListener('click',async()=>{
 });
 $('#attendance-export').addEventListener('click',()=>{
   if(!currentAttendanceEvent)return;
-  const rows=currentAttendanceRows.map(row=>{const m=memberById(row.member_id);return[m?.nia,m?.full_name,m?.cohort,attendanceStatusLabel(row.status),row.reason||'',row.proof_deleted_at?'Dihapus otomatis':row.proof_uploaded_at?'Tersedia':'Tidak ada'];});
+  const rows=activeAttendanceRoster().map(row=>[row.member.nia,row.member.full_name,row.member.cohort,attendanceStatusLabel(row.status),row.reason||'',row.proof_deleted_at?'Dihapus otomatis':row.proof_uploaded_at?'Tersedia':'Tidak ada']);
   downloadCSV('absensi-'+currentAttendanceEvent.event_date+'.csv',[['NIA','Nama','Angkatan','Status','Catatan','Bukti foto'],...rows]);
 });
 
