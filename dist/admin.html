@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261126-izin-whatsapp">
+  <link rel="stylesheet" href="./admin.css?v=20261126-notifikasi-pengurus">
   <link rel="stylesheet" href="./workflows.css?v=20261121-rekap-absensi">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -26,7 +26,8 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261116-public-uploads" defer></script>
-  <script src="./admin.js?v=20261126-izin-buka-whatsapp" defer></script>
+  <script src="./admin.js?v=20261126-notifikasi-pengurus" defer></script>
+  <script src="./admin-notifications.js?v=20261126-notifikasi-pengurus" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261116-signed-filename" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -117,6 +118,17 @@
             <div class="admin-topbar-user">
               <div class="admin-user-copy"><span>RUANG PENGURUS</span><strong id="signed-in-as"></strong></div>
               <span class="admin-user-avatar" aria-hidden="true">CM</span>
+              <details class="admin-notifications" id="admin-notifications">
+                <summary aria-label="Notifikasi pengurus">
+                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 8a7 7 0 0 0-14 0c0 7-2 8-2 8h18s-2-1-2-8M10 20a2 2 0 0 0 4 0"/></svg>
+                  <span id="admin-notification-count" hidden></span>
+                </summary>
+                <section class="admin-notification-panel" aria-label="Daftar notifikasi">
+                  <div class="admin-notification-heading"><h3>Notifikasi</h3><button id="admin-notification-read-all" type="button" class="text-button" disabled>Tandai dibaca</button></div>
+                  <p id="admin-notification-status" role="status"></p>
+                  <ul id="admin-notification-list"></ul>
+                </section>
+              </details>
               <button class="text-button" id="logout" type="button">Keluar</button>
             </div>
           </header>

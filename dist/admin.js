@@ -55,6 +55,7 @@ const saveSession = value => {
   }else{
     localStorage.removeItem('cssmora-admin-session');
     sessionStorage.removeItem('cssmora-admin-session');
+    window.CSSMoRAAdminNotifications?.reset();
   }
 };
 
@@ -237,6 +238,7 @@ async function checkAdmin() {
     ||Array.from(document.querySelectorAll('.admin-tab')).find(tab=>tab.id===preferred&&!tab.hidden)
     ||Array.from(document.querySelectorAll('.admin-tab')).find(tab=>!tab.hidden);
   if(target)target.click();
+  window.CSSMoRAAdminNotifications?.start({userId:user.id,isLeadership,isSecretariatAdmin,achievementRole:achievementRoles[0]});
   void loadDriveIntegrationStatus();
 }
 async function signIn(email,password) {
