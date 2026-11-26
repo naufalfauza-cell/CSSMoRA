@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./admin.css?v=20261124-cetak-absen-ringkas">
+  <link rel="stylesheet" href="./admin.css?v=20261126-izin-whatsapp">
   <link rel="stylesheet" href="./workflows.css?v=20261121-rekap-absensi">
   <style>
     html.admin-session-restoring #auth-view{display:none!important}
@@ -26,7 +26,7 @@
   </script>
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
   <script src="./upload-utils.js?v=20261116-public-uploads" defer></script>
-  <script src="./admin.js?v=20261124-cetak-absen-ringkas" defer></script>
+  <script src="./admin.js?v=20261126-izin-whatsapp" defer></script>
   <script src="./letter-signature-placement.js?v=20261029-v2" defer></script>
   <script src="./letter-signatures.js?v=20261116-signed-filename" defer></script>
   <script src="./workflow-domain.js?v=20261023-akunpro-launch-v1" defer></script>
@@ -460,6 +460,27 @@
               <div class="secretariat-table-wrap"><table class="secretariat-table"><thead><tr><th>Kegiatan</th><th>Anggota</th><th>Alasan</th><th>Surat dan status</th></tr></thead><tbody id="attendance-permission-archive-rows"></tbody></table></div>
             </details>
           </details>
+          <dialog class="attendance-open-dialog" id="attendance-reject-dialog" aria-labelledby="attendance-reject-title">
+            <form id="attendance-reject-form">
+              <h3 id="attendance-reject-title">Tolak pengajuan izin</h3>
+              <label for="attendance-reject-reason">Alasan penolakan</label>
+              <select id="attendance-reject-reason" name="reason" required>
+                <option value="">Pilih alasan</option>
+                <option value="invalid_proof">Bukti tidak valid atau belum ada bukti</option>
+                <option value="old_template">Template surat tidak sesuai format terbaru</option>
+                <option value="unreasonable_reason">Alasan izin tidak masuk akal</option>
+                <option value="permission_limit">Melebihi batas izin</option>
+                <option value="other">Alasan lain</option>
+              </select>
+              <label id="attendance-reject-note-label" for="attendance-reject-note" hidden>Jelaskan alasan penolakan</label>
+              <textarea id="attendance-reject-note" name="note" rows="3" maxlength="500" hidden disabled></textarea>
+              <p id="attendance-reject-message" class="form-message" role="status"></p>
+              <div class="attendance-open-actions">
+                <button class="text-button" id="attendance-reject-cancel" type="button">Batal</button>
+                <button class="admin-button" id="attendance-reject-confirm" type="submit">Simpan penolakan</button>
+              </div>
+            </form>
+          </dialog>
           <p class="form-message" id="event-message" role="status" aria-live="polite"></p>
           <section class="records-card attendance-roster-panel" id="attendance-roster-panel" hidden aria-labelledby="attendance-roster-title">
             <div class="editor-heading"><div><span class="admin-kicker">REKAP KEGIATAN</span><h3 id="attendance-roster-title">Daftar hadir</h3><p class="admin-muted" id="attendance-event-meta"></p></div><div class="attendance-actions"><button class="text-button" id="attendance-export" type="button">Ekspor CSV</button><button class="admin-button attendance-save" id="attendance-save" type="button">Simpan status</button></div></div>

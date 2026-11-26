@@ -64,6 +64,7 @@ function resetMemberFields() {
   resetPhoto();
   $("#checkin-letter").value = "";
   $("#checkin-reason").value = "";
+  $("#checkin-whatsapp").value = "";
 }
 function hideCheckin(message, kind = "") {
   form.hidden = true;
@@ -169,6 +170,7 @@ modeSelect.addEventListener("change", () => {
   $("#checkin-permission-fields").hidden = !permission;
   $("#checkin-letter").disabled = !permission;
   $("#checkin-reason").disabled = !permission;
+  $("#checkin-whatsapp").disabled = !permission;
   $("#checkin-submit-label").textContent = permission ? "Kirim pengajuan izin" : "Catat kehadiran";
   $("#event-picker-label").textContent = permission ? "Kegiatan yang menerima izin" : "Kegiatan aktif";
   $("#checkin-footnote").textContent = permission ? "Izin dibuka otomatis H-7 dan ditutup H-1 sebelum acara (WIB)." : "Foto hanya bisa dikirim saat kegiatan dibuka.";

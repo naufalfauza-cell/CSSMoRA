@@ -122,7 +122,7 @@ async function cleanExpiredAttendancePhotos(request: Request, supabaseUrl: strin
     .filter((item: { eventId: string; memberId: string; path: string }) =>
       isUuid(item.eventId) && isUuid(item.memberId) && item.path === `${item.eventId}/${item.memberId}/proof.jpg`
     );
-  const paths = [...new Set(entries.map((item: { path: string }) => item.path))];
+  const paths = [...new Set<string>(entries.map((item: { path: string }) => item.path))];
   if (!paths.length) return json({ success: true, deleted: 0, records_updated: 0 });
 
   const infoResults = await Promise.all(paths.map(async (path: string) => {
@@ -373,7 +373,7 @@ async function deleteAttendanceEvent(request: Request, url: URL, supabaseUrl: st
   if (proofPaths.some((path: string) => !/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/proof\.jpg$/i.test(path))) {
     return json({ error: "Jalur foto bukti tidak valid. Data absensi tetap tersimpan." }, 409);
   }
-  const paths = [...new Set(proofPaths)];
+  const paths = [...new Set<string>(proofPaths)];
   if (paths.length) {
     if (!await archiveAttendancePhotos(supabaseUrl, serviceKey, paths.map((path: string) => ({ eventId, path })))) {
       return json({ error: "Foto belum dapat diarsipkan ke Drive. Foto sumber dan data absensi tetap tersimpan di Supabase." }, 503);
@@ -476,6 +476,17 @@ async function getPermissionEvents(supabaseUrl: string, headers: Record<string, 
     .sort((a: { starts_at: string }, b: { starts_at: string }) => Date.parse(a.starts_at) - Date.parse(b.starts_at));
 }
 
+function normalizePermissionWhatsApp(value: FormDataEntryValue | null | undefined) {
+  if (typeof value !== "string" || value.length > 32 || !/^\+?[0-9 ().-]+$/.test(value.trim())) return null;
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  else if (!value.trim().startsWith("+") && digits.startsWith("08")) digits = "62" + digits.slice(1);
+  else if (!value.trim().startsWith("+") && digits.startsWith("8")) digits = "62" + digits;
+  if (digits.startsWith("62")) return /^628[1-9][0-9]{7,10}$/.test(digits) ? digits : null;
+  const international = /^(\+|00)/.test(value.trim());
+  return international && /^[1-9][0-9]{7,14}$/.test(digits) ? digits : null;
+}
+
 async function submitPermission(request: Request, supabaseUrl: string, serviceKey: string, headers: Record<string, string>, storage: FileStorageProvider, event: { id: string; agenda_id: string }) {
   if (Number(request.headers.get("content-length")) > maxPermissionPdfBytes + 16384) {
     return json({ error: "Surat izin PDF maksimal 2 MB." }, 413);
@@ -483,6 +494,8 @@ async function submitPermission(request: Request, supabaseUrl: string, serviceKe
   const form = await request.formData().catch(() => null);
   const file = form?.get("letter");
   const reason = String(form?.get("reason") ?? "").trim();
+  const whatsappNumber = normalizePermissionWhatsApp(form?.get("whatsapp_number"));
+  if (!whatsappNumber) return json({ error: "Isi nomor WhatsApp aktif, misalnya 081234567890 atau +6281234567890." }, 400);
   if (!reason || reason.length > 1000) return json({ error: "Isi alasan izin, maksimal 1.000 karakter." }, 400);
   if (!(file instanceof File) || !file.size || file.size > maxPermissionPdfBytes ||
       !file.name.toLowerCase().endsWith(".pdf") || (file.type && file.type !== "application/pdf") ||
@@ -513,7 +526,7 @@ async function submitPermission(request: Request, supabaseUrl: string, serviceKe
 
   const saved = await fetch(supabaseUrl + "/rest/v1/rpc/record_cssmora_attendance_permission", {
     method: "POST", headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({ p_id: id, p_event_id: event.id, p_member_id: memberId, p_reason: reason }),
+    body: JSON.stringify({ p_id: id, p_event_id: event.id, p_member_id: memberId, p_reason: reason, p_whatsapp_number: whatsappNumber }),
   }).catch(() => null);
   const result = await saved?.json().catch(() => null);
   async function confirmPermission() {
