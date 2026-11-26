@@ -1190,17 +1190,24 @@ function syncAttendanceRejectNote(){
 }
 function attendanceRejectionNotice(row){
   if(!row.rejected_at)return '';
-  const reason=row.rejection_reason_code==='other'?row.rejection_note:
-    Array.from(attendanceRejectReason.options).find(option=>option.value===row.rejection_reason_code)?.textContent;
+  const reason=attendanceRejectionReasonLabel(row);
   const reasonLabel=reason?`<p>Alasan penolakan: ${escapeHTML(reason)}</p>`:'';
   if(!isSecretariatAdmin)return reasonLabel;
+  const url=attendanceRejectionWhatsAppUrl(row,reason);
+  return url?reasonLabel+`<a class="text-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Buka WhatsApp</a>`:
+    reasonLabel+'<small>Nomor WhatsApp belum tersedia.</small>';
+}
+function attendanceRejectionWhatsAppUrl(row,reason=attendanceRejectionReasonLabel(row)){
   const number=row.whatsapp_number||'';
-  if(!/^[1-9][0-9]{7,14}$/.test(number))return reasonLabel+'<small>Nomor WhatsApp belum tersedia.</small>';
+  if(!row.rejected_at||!/^[1-9][0-9]{7,14}$/.test(number))return '';
   const name=row.secretariat_members?.full_name||'anggota CSSMoRA';
   const message=`Halo ${name}, kami dari Sekretariat CSSMoRA UNAIR. Pengajuan izin kamu untuk kegiatan “${row.agenda_title}” telah ditolak.`+
     (reason?`\n\nAlasan: ${reason}`:'')+'\n\nJika ada pertanyaan, silakan balas pesan ini. Terima kasih.';
-  const url='https://wa.me/'+number+'?text='+encodeURIComponent(message);
-  return reasonLabel+`<a class="text-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Buka WhatsApp</a>`;
+  return 'https://wa.me/'+number+'?text='+encodeURIComponent(message);
+}
+function attendanceRejectionReasonLabel(row){
+  return row.rejection_reason_code==='other'?row.rejection_note:
+    Array.from(attendanceRejectReason.options).find(option=>option.value===row.rejection_reason_code)?.textContent;
 }
 attendanceRejectReason.addEventListener('change',syncAttendanceRejectNote);
 attendanceRejectCancel.addEventListener('click',()=>attendanceRejectDialog.close());
@@ -1215,18 +1222,29 @@ attendanceRejectForm.addEventListener('submit',async event=>{
     attendanceRejectNote.focus();
     return;
   }
+  const {permissionId,hasWhatsapp}=attendanceRejectForm.dataset;
+  const chat=hasWhatsapp==='true'?window.open('about:blank','_blank'):null;
+  if(chat)chat.opener=null;
   attendanceRejectConfirm.disabled=attendanceRejectCancel.disabled=true;
   try{
     await api('rpc/reject_cssmora_attendance_permission',{method:'POST',body:{
-      p_permission_id:attendanceRejectForm.dataset.permissionId,p_reason_code:reason,p_note:note
+      p_permission_id:permissionId,p_reason_code:reason,p_note:note
     }});
     attendanceRejectDialog.close();
-    await loadAttendancePermissions();
-  }catch(error){showMessage('#attendance-reject-message',error.message,'error');}
-  finally{attendanceRejectConfirm.disabled=attendanceRejectCancel.disabled=false;}
+    const saved=await loadAttendancePermissions(permissionId);
+    const url=saved?attendanceRejectionWhatsAppUrl(saved):'';
+    if(chat&&!chat.closed&&url){
+      try{chat.location.replace(url);return;}catch{chat.close();}
+    }
+    chat?.close();
+    if(url)showMessage('#attendance-permission-message','Penolakan tersimpan. Gunakan tombol Buka WhatsApp pada pengajuan.','success');
+  }catch(error){
+    chat?.close();
+    showMessage('#attendance-reject-message',error.message,'error');
+  }finally{attendanceRejectConfirm.disabled=attendanceRejectCancel.disabled=false;}
 });
 
-async function loadAttendancePermissions(){
+async function loadAttendancePermissions(permissionId){
   const message='#attendance-permission-message';
   showMessage(message,'Memuat pengajuan…');
   try{
@@ -1246,7 +1264,7 @@ async function loadAttendancePermissions(){
           const member=row.secretariat_members;
           const status=row.approved_at?'Disetujui':row.rejected_at?'Ditolak':'Menunggu keputusan';
           const proof=row.letter_deleted_at?(row.drive_file_id?'Surat diarsipkan di Drive':'Surat tidak tersedia'):`<button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button>`;
-          const actions=!isArchived&&isSecretariatAdmin&&!row.approved_at&&!row.rejected_at?` <button type="button" data-permission-decision="approve" data-id="${escapeHTML(row.id)}">Setujui</button> <button type="button" data-permission-decision="reject" data-id="${escapeHTML(row.id)}">Tolak</button>`:'';
+          const actions=!isArchived&&isSecretariatAdmin&&!row.approved_at&&!row.rejected_at?` <button type="button" data-permission-decision="approve" data-id="${escapeHTML(row.id)}">Setujui</button> <button type="button" data-permission-decision="reject" data-id="${escapeHTML(row.id)}" data-has-whatsapp="${Boolean(row.whatsapp_number)}">Tolak</button>`:'';
           return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td>${proof} ${status}${actions}${attendanceRejectionNotice(row)}</td></tr>`;
         }).join('');
       }).join('')||`<tr><td colspan="4" class="records-empty">${isArchived?'Belum ada pengajuan di arsip.':'Belum ada pengajuan izin.'}</td></tr>`;
@@ -1254,6 +1272,7 @@ async function loadAttendancePermissions(){
     $('#attendance-permission-rows').innerHTML=render(active||[],false);
     $('#attendance-permission-archive-rows').innerHTML=render(archived||[],true);
     showMessage(message,'');
+    if(permissionId)return active?.find(row=>row.id===permissionId)||archived?.find(row=>row.id===permissionId);
   }catch(error){showMessage(message,error.message||'Pengajuan belum dapat dimuat.','error');}
 }
 $('#attendance-permissions').addEventListener('toggle',event=>{
@@ -1276,6 +1295,8 @@ $('#attendance-permissions').addEventListener('click',async event=>{
     if(decision.dataset.permissionDecision==='reject'){
       attendanceRejectForm.reset();
       attendanceRejectForm.dataset.permissionId=decision.dataset.id;
+      attendanceRejectForm.dataset.hasWhatsapp=decision.dataset.hasWhatsapp;
+      attendanceRejectConfirm.textContent=decision.dataset.hasWhatsapp==='true'?'Simpan dan buka WhatsApp':'Simpan penolakan';
       syncAttendanceRejectNote();
       showMessage('#attendance-reject-message','');
       attendanceRejectDialog.showModal();
