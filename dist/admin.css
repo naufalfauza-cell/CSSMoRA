@@ -2373,3 +2373,37 @@
   #attendance-recap-printout td:nth-child(n+2){white-space:nowrap}
   #attendance-recap-printout .attendance-rate-track{display:none}
 }
+
+.admin-notifications{position:relative;flex:none}
+.admin-notifications>summary{
+  list-style:none;position:relative;display:grid;place-items:center;
+  width:38px;height:38px;border:1px solid #d9e5eb;border-radius:10px;background:#fff;
+  color:#31566e;cursor:pointer
+}
+.admin-notifications>summary::-webkit-details-marker{display:none}
+.admin-notifications>summary:focus-visible,.admin-notification-panel button:focus-visible{outline:2px solid #087fa7;outline-offset:2px}
+#admin-notification-count{
+  position:absolute;top:-5px;right:-7px;min-width:19px;padding:3px 4px;border-radius:999px;
+  background:#086f92;color:white;text-align:center;font-size:9px;font-weight:800;line-height:1
+}
+.admin-notification-panel{
+  position:absolute;z-index:25;top:calc(100% + 9px);right:0;width:min(360px,calc(100vw - 24px));
+  border:1px solid #dce5ec;border-radius:14px;background:#fff;box-shadow:0 12px 30px #23374e24;
+  color:#20384a
+}
+.admin-notification-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid #e5ebf0}
+.admin-notification-heading h3{font-size:14px;margin:0}
+.admin-notification-heading button{font-size:10px}
+.admin-notification-heading button:disabled{opacity:.45;cursor:default}
+#admin-notification-status:not(:empty){margin:0;padding:10px 12px;font-size:11px}
+#admin-notification-list{list-style:none;max-height:min(420px,55vh);overflow:auto;padding:0;margin:0}
+#admin-notification-list button{
+  display:grid;gap:3px;width:100%;padding:10px 12px;border:0;border-bottom:1px solid #edf1f5;
+  background:#fff;color:inherit;text-align:left;font:inherit;font-size:11px;overflow-wrap:anywhere
+}
+#admin-notification-list button:is(.is-unread,:hover){background:#edf7fb}
+#admin-notification-list small{color:#526b7c}
+@media(max-width:700px){
+  .admin-notifications>summary{width:34px;height:34px}
+  .admin-notification-panel{position:fixed;top:58px;right:12px}
+}
