@@ -1175,11 +1175,62 @@ $('#member-csv').addEventListener('change',async event=>{
   finally{event.target.value='';}
 });
 
+const attendanceRejectDialog=$('#attendance-reject-dialog');
+const attendanceRejectForm=$('#attendance-reject-form');
+const attendanceRejectReason=$('#attendance-reject-reason');
+const attendanceRejectNote=$('#attendance-reject-note');
+const attendanceRejectConfirm=$('#attendance-reject-confirm');
+const attendanceRejectCancel=$('#attendance-reject-cancel');
+
+function syncAttendanceRejectNote(){
+  const custom=attendanceRejectReason.value==='other';
+  $('#attendance-reject-note-label').hidden=attendanceRejectNote.hidden=!custom;
+  attendanceRejectNote.required=custom;
+  attendanceRejectNote.disabled=!custom;
+}
+function attendanceRejectionNotice(row){
+  if(!row.rejected_at)return '';
+  const reason=row.rejection_reason_code==='other'?row.rejection_note:
+    Array.from(attendanceRejectReason.options).find(option=>option.value===row.rejection_reason_code)?.textContent;
+  const reasonLabel=reason?`<p>Alasan penolakan: ${escapeHTML(reason)}</p>`:'';
+  if(!isSecretariatAdmin)return reasonLabel;
+  const number=row.whatsapp_number||'';
+  if(!/^[1-9][0-9]{7,14}$/.test(number))return reasonLabel+'<small>Nomor WhatsApp belum tersedia.</small>';
+  const name=row.secretariat_members?.full_name||'anggota CSSMoRA';
+  const message=`Halo ${name}, kami dari Sekretariat CSSMoRA UNAIR. Pengajuan izin kamu untuk kegiatan “${row.agenda_title}” telah ditolak.`+
+    (reason?`\n\nAlasan: ${reason}`:'')+'\n\nJika ada pertanyaan, silakan balas pesan ini. Terima kasih.';
+  const url='https://wa.me/'+number+'?text='+encodeURIComponent(message);
+  return reasonLabel+`<a class="text-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">Buka WhatsApp</a>`;
+}
+attendanceRejectReason.addEventListener('change',syncAttendanceRejectNote);
+attendanceRejectCancel.addEventListener('click',()=>attendanceRejectDialog.close());
+attendanceRejectDialog.addEventListener('cancel',event=>{if(attendanceRejectConfirm.disabled)event.preventDefault();});
+attendanceRejectForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(!isSecretariatAdmin||attendanceRejectConfirm.disabled)return;
+  const reason=attendanceRejectReason.value;
+  const note=reason==='other'?attendanceRejectNote.value.trim():null;
+  if(reason==='other'&&!note){
+    showMessage('#attendance-reject-message','Isi alasan penolakan terlebih dahulu.','error');
+    attendanceRejectNote.focus();
+    return;
+  }
+  attendanceRejectConfirm.disabled=attendanceRejectCancel.disabled=true;
+  try{
+    await api('rpc/reject_cssmora_attendance_permission',{method:'POST',body:{
+      p_permission_id:attendanceRejectForm.dataset.permissionId,p_reason_code:reason,p_note:note
+    }});
+    attendanceRejectDialog.close();
+    await loadAttendancePermissions();
+  }catch(error){showMessage('#attendance-reject-message',error.message,'error');}
+  finally{attendanceRejectConfirm.disabled=attendanceRejectCancel.disabled=false;}
+});
+
 async function loadAttendancePermissions(){
   const message='#attendance-permission-message';
   showMessage(message,'Memuat pengajuan…');
   try{
-    const select='select=id,agenda_id,agenda_title,reason,approved_at,rejected_at,review_archived_at,letter_deleted_at,drive_file_id,secretariat_members(full_name,cohort)';
+    const select='select=id,agenda_id,agenda_title,reason,approved_at,rejected_at,whatsapp_number,rejection_reason_code,rejection_note,review_archived_at,letter_deleted_at,drive_file_id,secretariat_members(full_name,cohort)';
     const [active,archived]=await Promise.all([
       api('secretariat_attendance_permissions?'+select+'&review_archived_at=is.null&order=created_at.desc&limit=1000'),
       api('secretariat_attendance_permissions?'+select+'&review_archived_at=not.is.null&order=review_archived_at.desc&limit=1000')
@@ -1196,7 +1247,7 @@ async function loadAttendancePermissions(){
           const status=row.approved_at?'Disetujui':row.rejected_at?'Ditolak':'Menunggu keputusan';
           const proof=row.letter_deleted_at?(row.drive_file_id?'Surat diarsipkan di Drive':'Surat tidak tersedia'):`<button class="text-button" type="button" data-permission-preview="${escapeHTML(row.id)}">Lihat PDF</button>`;
           const actions=!isArchived&&isSecretariatAdmin&&!row.approved_at&&!row.rejected_at?` <button type="button" data-permission-decision="approve" data-id="${escapeHTML(row.id)}">Setujui</button> <button type="button" data-permission-decision="reject" data-id="${escapeHTML(row.id)}">Tolak</button>`:'';
-          return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td>${proof} ${status}${actions}</td></tr>`;
+          return `<tr><td>${escapeHTML(row.agenda_title)}</td><td>${escapeHTML(member?.full_name||'—')} <small>${escapeHTML(member?.cohort||'')}</small></td><td>${escapeHTML(row.reason)}</td><td>${proof} ${status}${actions}${attendanceRejectionNotice(row)}</td></tr>`;
         }).join('');
       }).join('')||`<tr><td colspan="4" class="records-empty">${isArchived?'Belum ada pengajuan di arsip.':'Belum ada pengajuan izin.'}</td></tr>`;
     };
@@ -1221,14 +1272,21 @@ $('#attendance-permissions').addEventListener('click',async event=>{
     return;
   }
   const decision=event.target.closest('[data-permission-decision]');
-  if(decision){
+  if(decision&&isSecretariatAdmin){
+    if(decision.dataset.permissionDecision==='reject'){
+      attendanceRejectForm.reset();
+      attendanceRejectForm.dataset.permissionId=decision.dataset.id;
+      syncAttendanceRejectNote();
+      showMessage('#attendance-reject-message','');
+      attendanceRejectDialog.showModal();
+      return;
+    }
     decision.disabled=true;
     try{
-      const action=decision.dataset.permissionDecision;
-      await api('rpc/'+(action==='approve'?'approve':'reject')+'_cssmora_attendance_permission',{method:'POST',body:{p_permission_id:decision.dataset.id}});
+      await api('rpc/approve_cssmora_attendance_permission',{method:'POST',body:{p_permission_id:decision.dataset.id}});
       await loadAttendancePermissions();
       if(currentAttendanceEvent&&!attendanceRosterDirty)await loadAttendanceRoster(currentAttendanceEvent.id);
-      showMessage('#attendance-permission-message',action==='approve'?'Izin disetujui dan tercatat di absensi.':'Pengajuan izin ditolak.','success');
+      showMessage('#attendance-permission-message','Izin disetujui dan tercatat di absensi.','success');
     }catch(error){showMessage('#attendance-permission-message',error.message,'error');decision.disabled=false;}
     return;
   }

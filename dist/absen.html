@@ -8,9 +8,9 @@
   <title>Absensi Anggota · CSSMoRA UNAIR</title>
   <link rel="icon" type="image/png" href="./assets/cssmora-logo.png?v=20261023-perf-assets">
   <link rel="stylesheet" href="./style.css?v=20261103-transparent-partners-v2">
-  <link rel="stylesheet" href="./absen.css?v=20261121-kamera-galeri">
+  <link rel="stylesheet" href="./absen.css?v=20261126-izin-whatsapp">
   <script src="./supabase-config.js?v=20261023-performance-v1" defer></script>
-  <script src="./absen.js?v=20261121-kamera-galeri" defer></script>
+  <script src="./absen.js?v=20261126-izin-whatsapp" defer></script>
   <link rel="stylesheet" href="./ui-refresh.css?v=20261103-secondary-pages-v1">
   <link rel="stylesheet" href="./wallet-theme.css?v=20261103-mobile-nav-scroll-video-v1">
 </head>
@@ -58,6 +58,9 @@
         <div id="checkin-permission-fields" hidden>
           <label for="checkin-reason">Alasan izin</label>
           <textarea id="checkin-reason" name="reason" rows="3" maxlength="1000" required disabled></textarea>
+          <label for="checkin-whatsapp">Nomor WhatsApp aktif</label>
+          <input id="checkin-whatsapp" name="whatsapp_number" type="tel" autocomplete="tel" maxlength="32" placeholder="Contoh: 081234567890" aria-describedby="checkin-whatsapp-hint" required disabled>
+          <small id="checkin-whatsapp-hint">Sekretaris menggunakan nomor ini untuk menghubungi kamu terkait pengajuan izin.</small>
           <label for="checkin-letter">Surat izin (PDF)</label>
           <input id="checkin-letter" name="letter" type="file" accept="application/pdf,.pdf" required disabled>
           <div class="checkin-template-callout"><p><strong>Template surat izin tersedia.</strong> Gunakan format resmi CSSMoRA, lalu simpan surat yang sudah ditandatangani sebagai PDF.</p><a class="checkin-template-link" href="./template-surat-izin-cssmora-unair.docx" download="Template Surat Izin CSSMoRA UNAIR.docx" type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"><span aria-hidden="true">↓</span> Unduh template surat izin (.docx)</a></div>
